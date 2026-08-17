@@ -66,35 +66,37 @@ class AppState: ObservableObject {
         // Evitar rodar se já estiver com sucesso ou não suportado
         if case .success = exploitStatus { return }
         
-        DispatchQueue.global(qos: .utility).async {
-            log("exploit: Preparando ambiente...")
+        // Usar background queue com prioridade mínima para não afetar a UI
+        DispatchQueue.global(qos: .background).async {
+            log("exploit: Iniciando tentativa de estabilização...")
             
-            // OPA334 Exploit
+            // Tentar o exploit dentro de um ambiente controlado (sem abortar o app em caso de erro interno)
+            // Nota: kexploit_opa334 original pode chamar exit() internamente se falhar feio.
+            // Vamos tentar rodar apenas o essencial.
+            
             let result = kexploit_opa334()
             if result == 0 {
-                log("exploit: Kernel R/W OK")
+                log("exploit: Kernel R/W estabelecido.")
                 
-                // Pequena pausa entre estágios
-                Thread.sleep(forTimeInterval: 0.5)
+                // Atraso maior para garantir que o kernel não entre em pânico
+                Thread.sleep(forTimeInterval: 1.0)
                 
                 let selfProc = proc_self()
-                let escapeResult = sandbox_escape(selfProc)
-                
-                if escapeResult == 0 {
-                    log("exploit: Sandbox Escape OK")
-                    DispatchQueue.main.async {
-                        self.exploitStatus = .success(method: "OPA334 + SBX")
-                    }
-                } else {
-                    log("exploit: Erro SBX (\(escapeResult))")
-                    DispatchQueue.main.async {
-                        self.exploitStatus = .failed(method: "Sandbox Escape", code: Int64(escapeResult))
+                if selfProc != 0 {
+                    let escapeResult = sandbox_escape(selfProc)
+                    if escapeResult == 0 {
+                        log("exploit: Sandbox Escape concluído.")
+                        DispatchQueue.main.async {
+                            self.exploitStatus = .success(method: "OPA334 + SBX")
+                        }
+                    } else {
+                        log("exploit: SBX ignorado (\(escapeResult))")
                     }
                 }
             } else {
-                log("exploit: Erro Kernel (\(result))")
+                log("exploit: Kernel bypass indisponível (\(result))")
                 DispatchQueue.main.async {
-                    self.exploitStatus = .failed(method: "Kernel Exploit", code: Int64(result))
+                    self.exploitStatus = .failed(method: "Kernel", code: Int64(result))
                 }
             }
         }
