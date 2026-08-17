@@ -144,8 +144,6 @@ struct CleanerView: View {
     private func restoreOriginalAssets() {
         do {
             let backupRoot = try PatchProjectLibrary.backupRootURL()
-            let receipts = PatchTransaction.latestReceipt(projectID: UUID(), backupRoot: backupRoot)
-            // Tentar restaurar todos os backups disponíveis
             let fileManager = FileManager.default
             if let items = try? fileManager.contentsOfDirectory(at: backupRoot, includingPropertiesForKeys: nil) {
                 for item in items {
@@ -154,9 +152,8 @@ struct CleanerView: View {
                     }
                 }
             }
-            activeAlert = .result("Arquivos originais restaurados com sucesso!")
+            activeAlert = .result("Arquivos originais restaurados com sucesso com nome original!")
         } catch {
-            // Fallback: Tentar limpar e avisar
             activeAlert = .result("Restauração concluída ou nenhum backup pendente.")
         }
     }
@@ -378,6 +375,18 @@ struct CleanerView: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 32)
+        }
+    }
+
+    private enum CleanerAlert: Identifiable {
+        case confirmation
+        case result(String)
+
+        var id: Int {
+            switch self {
+            case .confirmation: return 1
+            case .result: return 2
+            }
         }
     }
 
