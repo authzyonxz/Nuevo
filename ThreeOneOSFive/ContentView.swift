@@ -155,6 +155,7 @@ private extension AppSection {
         case .files: return "tab.library"
         case .patches: return "tab.inject"
         case .cleaner: return "tab.cleaner"
+        case .settings: return "tab.settings"
         }
     }
 
