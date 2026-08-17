@@ -62,15 +62,35 @@ enum ContainerStore {
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
         }
+        
+        // 1. Tentar via MCM (Método rápido e oficial via exploit)
         var lookupError: NSString?
-        guard let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
-              isApplicationContainerPath(path) else {
-            let detail = lookupError.map(String.init) ?? "unavailable"
-            log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
-            return nil
+        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
+           isApplicationContainerPath(path) {
+            log("patch: MHA-C2 resolved \(bundleID)")
+            return path
         }
-        log("patch: MHA-C2 resolved \(bundleID)")
-        return path
+        
+        // 2. Fallback: Varredura manual de containers (Caso o MCM falhe por permissão ou cache)
+        log("patch: MCM failed for \(bundleID), trying manual scan...")
+        let apps = installedAppsFromAPI() // Ou installedAppsFromMCM()
+        if let found = apps.first(where: { $0.bundleID == bundleID }), !found.containerPath.isEmpty {
+            log("patch: Manual scan resolved \(bundleID) at \(found.containerPath)")
+            return found.containerPath
+        }
+        
+        // 3. Fallback agressivo: Procurar por metadados no sistema
+        let identifiers = dynamicAppIdentifiers()
+        for id in identifiers {
+            if id == bundleID {
+                if let path = MCMActivateContainerPath(2, id, false, nil), isApplicationContainerPath(path) {
+                    return path
+                }
+            }
+        }
+
+        log("patch: Failed to resolve container for \(bundleID)")
+        return nil
     }
 
     // MARK: Primary — MobileInstallation / LSApplicationWorkspace

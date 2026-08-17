@@ -222,9 +222,13 @@ private struct ZyvexInjectView: View {
     @State private var resultTitle = ""
     @State private var resultMessage = ""
 
-    private let targets = [
-        DemoTarget(name: "Free Fire", identifier: "com.dts.freefireth"),
-        DemoTarget(name: "Free Fire MAX", identifier: "com.dts.freefiremax")
+    @State private var detectedTargets: [DemoTarget] = []
+    
+    private let targetTemplates = [
+        DemoTarget(name: "Free Fire (Global/TH)", identifier: "com.dts.freefireth"),
+        DemoTarget(name: "Free Fire MAX", identifier: "com.dts.freefiremax"),
+        DemoTarget(name: "Free Fire (Vietnam)", identifier: "com.garena.game.fcm"),
+        DemoTarget(name: "Free Fire (Taiwan)", identifier: "com.garena.game.kgtw")
     ]
 
     var body: some View {
@@ -232,14 +236,27 @@ private struct ZyvexInjectView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     ZyvexSectionTitle(title: "1. Selecionar Jogo Alvo")
-                    ForEach(targets) { target in
+                    
+                    if detectedTargets.isEmpty {
+                        Text("Nenhum jogo detectado automaticamente. Tente selecionar manualmente:")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 4)
+                    }
+                    
+                    ForEach(targetTemplates) { target in
                         Button {
                             selectedTarget = target
                         } label: {
                             HStack {
-                                Text(target.name)
-                                    .font(.headline)
-                                    .foregroundColor(.white)
+                                VStack(alignment: .leading) {
+                                    Text(target.name)
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                    Text(target.identifier)
+                                        .font(.caption2)
+                                        .foregroundColor(.gray)
+                                }
                                 Spacer()
                                 if selectedTarget?.identifier == target.identifier {
                                     Image(systemName: "checkmark.circle.fill")
@@ -311,7 +328,16 @@ private struct ZyvexInjectView: View {
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 importedAssets = OnyxImporterService.shared.getImportedAssets()
-                if selectedTarget == nil { selectedTarget = targets.first }
+                
+                // Tentar detectar qual jogo está instalado
+                let installed = ContainerStore.installedAppsFromAPI()
+                detectedTargets = targetTemplates.filter { template in
+                    installed.contains(where: { $0.bundleID == template.identifier })
+                }
+                
+                if selectedTarget == nil {
+                    selectedTarget = detectedTargets.first ?? targetTemplates.first
+                }
                 if selectedAsset == nil { selectedAsset = importedAssets.first }
             }
             .alert(resultTitle, isPresented: $showResult) {
