@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		66A6E493B8AF4D688C5A4A1E /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB144680C9D54FA3913B6561; };
-		82E791EC8FDA49169CAB27B2 /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8591301342B84864BA77B146; };
-		D63875FB70744D19A32E4B38 /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47674AC3B2B545108F137352; };
+		F0830B99264845C68441DB7A /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465AB8F854D14C07AE92F292; };
+		A9CD0DFB4BEF40F3B130F34C /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC2FD6DF9BC247AAB6EDF509; };
+		68808290C3D04DB084A11D89 /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE295A76D9AD47B8837E6761; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
@@ -71,9 +71,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		FB144680C9D54FA3913B6561 /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = helpers/OnyxImporterService.swift; sourceTree = "<group>"; };
-		8591301342B84864BA77B146 /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = views/DocumentPickerView.swift; sourceTree = "<group>"; };
-		47674AC3B2B545108F137352 /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = views/PatchProjectsView.swift; sourceTree = "<group>"; };
+		465AB8F854D14C07AE92F292 /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
+		EC2FD6DF9BC247AAB6EDF509 /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
+		AE295A76D9AD47B8837E6761 /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
 		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -176,9 +176,10 @@
 				3105A050 /* ThreeOneOSFive-Bridging-Header.h */,
 				3105A060 /* Info.plist */,
 				3105A020 /* App.swift */,
-		FB144680C9D54FA3913B6561 /* OnyxImporterService.swift */,
-		8591301342B84864BA77B146 /* DocumentPickerView.swift */,
-		47674AC3B2B545108F137352 /* PatchProjectsView.swift */,
+		465AB8F854D14C07AE92F292 /* OnyxImporterService.swift */,
+		EC2FD6DF9BC247AAB6EDF509 /* DocumentPickerView.swift */,
+		AE295A76D9AD47B8837E6761 /* PatchProjectsView.swift */,
+
 
 
 				3105A021 /* ContentView.swift */,
