@@ -11,15 +11,7 @@ struct LoginView: View {
         ZStack {
             Color.black.ignoresSafeArea()
             
-            // Background gradient effect (Reduzido para evitar crash de GPU)
-            VStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.12))
-                    .blur(radius: 50)
-                    .frame(width: 300, height: 300)
-                    .offset(y: -150)
-                Spacer()
-            }
+            // Background puro sem blur para máxima estabilidade
             
             ScrollView {
                 VStack(spacing: 30) {
