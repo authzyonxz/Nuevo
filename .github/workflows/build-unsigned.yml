@@ -16,11 +16,6 @@ jobs:
         git clone https://github.com/${{ github.repository }}.git .
         git checkout ${{ github.sha }}
 
-    - name: Set up Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.2'
-
     - name: List Schemes & Build
       run: |
         set -e
