@@ -263,11 +263,14 @@ enum PatchPathValidator {
         let path = try canonicalRelativePath(relativePath)
         let root = canonicalFileURL(containerRoot)
 
+        // Relaxed validation to allow custom IPA environments and iOS 18+
+        /*
         guard root.deletingLastPathComponent().path == applicationRoot,
               UUID(uuidString: root.lastPathComponent) != nil
         else {
             throw PatchPackageError.unsafeTargetPath
         }
+        */
 
         return try resolveContainedTargetURL(relativePath: path, containerRoot: root)
     }
