@@ -371,17 +371,15 @@ enum ContainerStore {
     }
 
     static func isApplicationContainerPath(_ path: String) -> Bool {
-        let canonicalRoot = ContainerDiscoveryMerger.canonicalPath(appDataRoot)
-        let canonicalPath = ContainerDiscoveryMerger.canonicalPath(path)
-        
-        // Se o caminho já contém o prefixo correto, aceitamos (mesmo que não termine em UUID, 
-        // pois alguns sistemas de side-load ou jailbreak podem ter caminhos diferentes)
-        if canonicalPath.hasPrefix(canonicalRoot) {
+        // Se o kernel exploit estiver ativo e a sandbox escapada, podemos ser muito mais flexíveis.
+        // Aceitamos qualquer caminho que pareça um container de aplicação.
+        let lowPath = path.lowercased()
+        if lowPath.contains("/containers/data/application/") || lowPath.contains("/containers/bundle/application/") {
             return true
         }
         
-        // Se for um caminho de container do sistema mas que sabemos ser de app
-        if canonicalPath.contains("/Containers/Data/Application/") {
+        // Fallback para caminhos de jailbreak ou side-load
+        if path.hasPrefix("/var/mobile/Containers") || path.hasPrefix("/private/var/mobile/Containers") {
             return true
         }
 

