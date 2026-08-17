@@ -2,9 +2,10 @@ import Foundation
 
 enum AppSection: Int, CaseIterable, Identifiable {
     case home
-    case files
     case patches
+    case files
     case cleaner
+    case settings
 
     var id: Int { rawValue }
 }
@@ -22,7 +23,7 @@ struct FeatureVisibility: Equatable {
         switch section {
         case .cleaner:
             return cleanerEnabled
-        case .home, .files, .patches:
+        case .home, .files, .patches, .settings:
             return true
         }
     }

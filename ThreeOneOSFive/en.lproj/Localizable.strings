@@ -39,6 +39,7 @@
 "tab.files" = "Files";
 "tab.patches" = "Patches";
 "tab.cleaner" = "Cleaner";
+"tab.settings" = "Settings";
 
 "cleaner.title" = "Cleaner";
 "cleaner.limited_mode" = "Limited Cleanup";

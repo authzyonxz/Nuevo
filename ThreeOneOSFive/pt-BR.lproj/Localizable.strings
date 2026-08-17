@@ -2,6 +2,7 @@
 "tab.library" = "Biblioteca";
 "tab.inject" = "Injetar";
 "tab.cleaner" = "Limpar";
+"tab.settings" = "Ajustes";
 "tab.files" = "Biblioteca";
 "tab.patches" = "Injetar";
 "tab.wallpapers" = "Papéis de parede";

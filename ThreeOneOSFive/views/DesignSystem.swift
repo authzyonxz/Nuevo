@@ -1,13 +1,10 @@
 import SwiftUI
 
 enum AppTheme {
-    static let accent = Color(
-        uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 1.00, green: 0.64, blue: 0.42, alpha: 1.00)
-                : UIColor(red: 0.85, green: 0.42, blue: 0.20, alpha: 1.00)
-        }
-    )
+    static let accent = Color(red: 0.0, green: 0.48, blue: 1.0) // Azul vibrante ONYX
+    static let onyxBackground = Color(red: 0.05, green: 0.05, blue: 0.07)
+    static let onyxCardBackground = Color(red: 0.11, green: 0.11, blue: 0.14)
+    static let onyxSecondaryText = Color(red: 0.6, green: 0.6, blue: 0.6)
     static let pageBackground = Color(uiColor: .systemBackground)
     static let consoleBackground = Color(uiColor: .secondarySystemBackground)
     static let pageInset: CGFloat = 16
