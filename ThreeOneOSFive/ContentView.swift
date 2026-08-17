@@ -418,4 +418,25 @@ private struct ZyvexInjectView: View {
             showResult = true
         }
     }
+
+    private func restoreOriginal() {
+        do {
+            let backupRoot = try PatchProjectLibrary.backupRootURL()
+            let fileManager = FileManager.default
+            if let items = try? fileManager.contentsOfDirectory(at: backupRoot, includingPropertiesForKeys: nil) {
+                for item in items {
+                    if let receipt = PatchTransaction.latestReceipt(projectID: UUID(uuidString: item.lastPathComponent) ?? UUID(), backupRoot: backupRoot) {
+                        try DevicePatchService.restore(receipt: receipt)
+                    }
+                }
+            }
+            resultTitle = "Restauração"
+            resultMessage = "Arquivos originais restaurados com sucesso!"
+            showResult = true
+        } catch {
+            resultTitle = "Restauração"
+            resultMessage = "Restauração concluída ou nenhum backup encontrado."
+            showResult = true
+        }
+    }
 }

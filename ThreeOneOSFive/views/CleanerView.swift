@@ -658,7 +658,7 @@ struct CleanerView: View {
                 }
                 selectedBundleIDs.removeAll()
                 isCleaning = false
-                activeAlert = .result(message: resultMessage)
+                activeAlert = .result(resultMessage)
             }
         }
     }
@@ -675,14 +675,14 @@ private struct CleanerAppRecord: Identifiable {
     var id: String { app.bundleID }
 }
 
-private enum CleanerAlert: Identifiable {
-    case confirmation
-    case result(message: String)
+    private enum CleanerAlert: Identifiable {
+        case confirmation
+        case result(String)
 
-    var id: String {
-        switch self {
-        case .confirmation: return "confirmation"
-        case .result(let message): return "result-\(message)"
+        var id: String {
+            switch self {
+            case .confirmation: return "confirmation"
+            case .result(let message): return "result-\(message)"
+            }
         }
     }
-}
