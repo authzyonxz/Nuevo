@@ -1,0 +1,16 @@
+=== IMAGE RESOURCE ===
+84b075b7423a6b07067fa039f881f60ed5b69d3737a1fdc1c21c5ea3f5406b1e  /home/ubuntu/3105-source/ThreeOneOSFive/Assets.xcassets/FreeFireLogo.imageset/FreeFireLogo.png
+=== VIEW USAGE ===
+12:        case freeFireMax = "Free Fire MAX"
+20:                gameSelectionSection
+68:                            "Em breve",
+70:                            description: Text("O suporte ao Free Fire MAX será adicionado em uma atualização futura.")
+77:            .alert("Free Fire MAX", isPresented: $showMaxAlert) {
+82:                Text("Em breve. Por enquanto, selecione Free Fire.")
+92:    private var gameSelectionSection: some View {
+103:                        Image("FreeFireLogo")
+117:                                Text("Em breve")
+=== PROJECT RESOURCES ===
+68:		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
+=== DIFF CHECK ===
+ok

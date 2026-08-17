@@ -1,8 +1,0 @@
-=== LOGIN FIX ===
-/home/ubuntu/FilzaJailedDS-34306-integrated/Tweak.m:662:    NSLog(@"[Tweak] exploit automático desativado; login não inicia acesso ao sandbox");
-/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:967:        [[FFH4XSession sharedSession] restoreSavedKeyWithCompletion:^(BOOL success,
-/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:979:                r7x_KeychainDeleteLicenseKey();
-/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:981:                NSLog(@"[FFH4X] saved-key restore rejected: %@", errorMessage ?: errorCode);
-=== AUTOMATIC AUTHORIZE OBSERVER ===
-=== HEARTBEAT ===
-136:        self.heartbeatTimer = [NSTimer scheduledTimerWithTimeInterval:300.0

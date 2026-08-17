@@ -1,0 +1,31 @@
+=== GIT DIFF CHECK ===
+ok
+=== PBX IDS ===
+3105J100=3
+3105J101=3
+3105J102=3
+3105J103=2
+3105J200=2
+3105J201=2
+3105J202=2
+=== NAVIGATION ===
+/home/ubuntu/3105-source/ThreeOneOSFive/ContentView.swift:112:            FreeFireTargetSelectionView()
+/home/ubuntu/3105-source/ThreeOneOSFive/helpers/AppTabNavigationState.swift:4:    case home
+/home/ubuntu/3105-source/ThreeOneOSFive/helpers/AppTabNavigationState.swift:5:    case files
+/home/ubuntu/3105-source/ThreeOneOSFive/helpers/AppTabNavigationState.swift:6:    case patches
+/home/ubuntu/3105-source/ThreeOneOSFive/helpers/AppTabNavigationState.swift:7:    case cleaner
+=== AVATAR RESOURCES ===
+HSAlto/assetindexer 46096 bytes
+HSNeck/assetindexer 46096 bytes
+HSOriginal/assetindexer 46096 bytes
+7917eb9c3e49d79ff6cbb9d0647573820fd4162759d78d01e63a90d5d4fcffad  /home/ubuntu/3105-source/ThreeOneOSFive/Resources/AvatarAssets/HSAlto/assetindexer
+ac8a6db1096a03a2b67a2bff3b9a024553d4f3eb039ee18ba735c6989f41f3df  /home/ubuntu/3105-source/ThreeOneOSFive/Resources/AvatarAssets/HSNeck/assetindexer
+05d235840319edb6978630d3eeadfe8459cbe4e7349f5963c2cf883d46574929  /home/ubuntu/3105-source/ThreeOneOSFive/Resources/AvatarAssets/HSOriginal/assetindexer
+=== PORTUGUESE ===
+1:"tab.home" = "Início";
+2:"tab.library" = "Biblioteca";
+3:"tab.inject" = "Injetar";
+4:"tab.cleaner" = "Limpar";
+11:"dashboard.enterprise_signing" = "Build unsigned personalizada para testes. A disponibilidade depende do dispositivo e do método de instalação.";
+=== WORKFLOW ===
+present
