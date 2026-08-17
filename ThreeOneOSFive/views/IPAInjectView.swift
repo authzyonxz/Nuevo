@@ -46,7 +46,8 @@ struct IPAInjectView: View {
                         name: "Free Fire",
                         bundleID: "com.dts.freefireth",
                         icon: "FreeFireLogo",
-                        isSelected: selectedGame == .freeFire
+                        isSelected: selectedGame == .freeFire,
+                        badge: nil
                     ) {
                         selectedGame = .freeFire
                     }
@@ -55,7 +56,8 @@ struct IPAInjectView: View {
                         name: "Free Fire MAX",
                         bundleID: "com.dts.freefiremax",
                         icon: "FreeFireLogo",
-                        isSelected: selectedGame == .freeFireMax
+                        isSelected: selectedGame == .freeFireMax,
+                        badge: "EM BREVE"
                     ) {
                         showMaxAlert = true
                     }
@@ -87,7 +89,7 @@ struct IPAInjectView: View {
         .alert("Free Fire MAX", isPresented: $showMaxAlert) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("O suporte ao Free Fire MAX será adicionado em breve.")
+            Text("O suporte ao Free Fire MAX estará disponível em breve.")
         }
         .sheet(item: $selectedGame) { game in
             IPAPackageSelectionView(game: game)
@@ -100,15 +102,27 @@ struct GameTargetCard: View {
     let bundleID: String
     let icon: String
     let isSelected: Bool
+    let badge: String?
     let action: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Image(icon)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
+            HStack {
+                Image(icon)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 60, height: 60)
+                Spacer()
+                if let badge = badge {
+                    Text(badge)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.orange)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color.orange.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(name)
@@ -122,12 +136,12 @@ struct GameTargetCard: View {
             Spacer()
             
             Button(action: action) {
-                Text("SELECT TARGET")
+                Text(badge != nil ? "EM BREVE" : "SELECT TARGET")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AppTheme.accent)
+                    .foregroundStyle(badge != nil ? .orange : AppTheme.accent)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 15)
-                    .background(AppTheme.accent.opacity(0.1))
+                    .background((badge != nil ? Color.orange : AppTheme.accent).opacity(0.1))
                     .clipShape(Capsule())
             }
         }
@@ -182,59 +196,72 @@ struct IPAPackageSelectionView: View {
                         }
                         Spacer()
                     }
-                    .padding()
+                    .padding(20)
                     .background(AppTheme.ipaCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 15))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                     
-                    Text("Select an IPA Package from your imported library")
-                        .font(.system(size: 14))
-                        .foregroundStyle(AppTheme.ipaSecondaryText)
-                    
-                    // Package List
-                    ForEach(AvatarAssetCatalog.assets) { asset in
-                        Button {
-                            prepareInjection(asset: asset)
-                        } label: {
-                            HStack {
-                                ZStack {
-                                    Circle()
-                                        .fill(AppTheme.accent.opacity(0.2))
-                                        .frame(width: 40, height: 40)
-                                    Image(systemName: asset.id == "hs-original" ? "doc.fill" : "lock.fill")
-                                        .foregroundStyle(AppTheme.accent)
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(asset.displayName)
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundStyle(.white)
-                                    Text("PROTECTED · \(asset.id == "hs-original" ? "ORIGINAL" : "MODDED")")
-                                        .font(.system(size: 10))
-                                        .foregroundStyle(AppTheme.ipaSecondaryText)
-                                }
-                                
-                                Spacer()
-                                
-                                Circle()
-                                    .stroke(AppTheme.ipaSecondaryText, lineWidth: 2)
-                                    .frame(width: 20, height: 20)
-                            }
-                            .padding()
-                            .background(AppTheme.ipaCardBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 15))
+                    // Available Asset Packages
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("AVAILABLE AVATAR PACKAGES")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(AppTheme.ipaSecondaryText)
+                        
+                        ForEach(AvatarAssetCatalog.assets) { asset in
+                            AvatarAssetRow(asset: asset)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding()
             }
-            .background(AppTheme.ipaBackground)
         }
+        .background(AppTheme.ipaBackground.ignoresSafeArea())
+    }
+}
+
+struct AvatarAssetRow: View {
+    let asset: AvatarAsset
+    @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
+    @State private var isApplying = false
+    
+    var isSelected: Bool {
+        draftCoordinator.selectedAssets.contains(asset)
     }
     
-    private func prepareInjection(asset: AvatarAsset) {
-        guard let draft = AvatarAssetCatalog.makeFreeFireDraft(selectedAssets: [asset]) else { return }
-        dismiss()
-        draftCoordinator.present(draft)
+    var body: some View {
+        HStack(spacing: 15) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(AppTheme.ipaCardBackground)
+                    .frame(width: 50, height: 50)
+                Image(systemName: "cube.box.fill")
+                    .foregroundStyle(AppTheme.accent)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(asset.displayName)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                Text(asset.resourceFolder)
+                    .font(.system(size: 12))
+                    .foregroundStyle(AppTheme.ipaSecondaryText)
+            }
+            
+            Spacer()
+            
+            Button {
+                draftCoordinator.toggleAsset(asset)
+            } label: {
+                Text(isSelected ? "ATIVADO" : "SELECIONAR")
+                    .font(.system(size: 12, weight: .bold))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(isSelected ? AppTheme.accent : AppTheme.ipaCardBackground)
+                    .foregroundStyle(isSelected ? .black : .white)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(16)
+        .background(AppTheme.ipaCardBackground.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 }
