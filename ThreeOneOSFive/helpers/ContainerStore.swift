@@ -697,3 +697,41 @@ enum ContainerStore {
         return "Binary data (\(data.count) bytes) — not text."
     }
 }
+
+extension ContainerStore {
+    static func findFilesRecursively(at rootPath: String, filename: String) -> [String] {
+        var results: [String] = []
+        let fileManager = FileManager.default
+        
+        // Obter acesso ao diretório atual
+        let handle = grantContainerAccess(rootPath)
+        defer { if handle >= 0 { bad_query_release(handle) } }
+        
+        guard let items = try? fileManager.contentsOfDirectory(atPath: rootPath) else {
+            return []
+        }
+        
+        for item in items {
+            let fullPath = (rootPath as NSString).appendingPathComponent(item)
+            
+            // Verificar se o nome bate (Case Insensitive)
+            if item.lowercased() == filename.lowercased() {
+                results.append(fullPath)
+            }
+            
+            // Se for diretório, buscar recursivamente
+            var isDir: ObjCBool = false
+            if fileManager.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue {
+                // Evitar entrar em pastas de sistema óbvias para economizar tempo
+                if item == "Library" || item == "Documents" || item == "tmp" || item == "ContentCache" || item == "Compulsory" || item == "ios" || item == "gameassetbundles" {
+                    results.append(contentsOf: findFilesRecursively(at: fullPath, filename: filename))
+                } else if !item.hasPrefix(".") {
+                    // Buscar em outras pastas também, mas com cautela
+                    results.append(contentsOf: findFilesRecursively(at: fullPath, filename: filename))
+                }
+            }
+        }
+        
+        return results
+    }
+}

@@ -354,46 +354,51 @@ private struct ZyvexInjectView: View {
         let sourceFileName = selectedAsset.lastPathComponent
         
         do {
-            // Tentar extrair o payload real (funciona para .onyx e arquivos brutos)
+            // 1. Extrair payload (Asset Puro)
             guard let patchData = OnyxImporterService.shared.extractPayload(from: selectedAsset) else {
                 throw NSError(domain: "Onyx", code: 2, userInfo: [NSLocalizedDescriptionKey: "Falha ao ler dados do arquivo."])
             }
             
-            // Se for .onyx, o nome do arquivo de destino pode ser diferente do nome do pacote
-            // Se for bruto, usamos o próprio nome do arquivo
+            // 2. Determinar nome do arquivo alvo
             var targetFileName = sourceFileName
             if sourceFileName.hasSuffix(".onyx") || sourceFileName.hasSuffix(".3105") {
-                // Tentar ler metadados para pegar o nome real do payload (ex: cache_res)
                 if let (meta, _) = try? OnyxImporterService.shared.importOnyxFile(from: selectedAsset).get() {
                     targetFileName = meta.payload_filename
                 }
             }
             
-            // Caminho de injeção definitivo na raiz de gameassetbundles/
-            let relativePath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)"
-
-            let rule = PatchRule(
-                id: UUID(),
-                bundleID: selectedTarget.identifier,
-                relativePath: relativePath,
-                replacementFilename: targetFileName,
-                replacementData: patchData
-            )
+            // 3. Localizar container do jogo
+            guard let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier) else {
+                throw NSError(domain: "Patch", code: 404, userInfo: [NSLocalizedDescriptionKey: "Não foi possível localizar a pasta do jogo."])
+            }
             
-            let project = PatchProject(
-                id: UUID(),
-                name: "Onyx Dynamic Inject",
-                createdAt: Date(),
-                updatedAt: Date(),
-                bundleIdentifiers: [selectedTarget.identifier],
-                directories: [],
-                rules: [rule]
-            )
+            // 4. Varredura Profunda (Deep Scan) para encontrar o arquivo original
+            log("patch: Iniciando varredura profunda por '\(targetFileName)' em \(selectedTarget.identifier)")
+            let foundPaths = ContainerStore.findFilesRecursively(at: containerPath, filename: targetFileName)
             
-            _ = try DevicePatchService.apply(project: project)
+            if foundPaths.isEmpty {
+                // Fallback: Se não achou na varredura, tenta o caminho padrão
+                log("patch: Arquivo não encontrado na varredura, tentando caminho padrão...")
+                let defaultRelPath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)"
+                let rule = PatchRule(id: UUID(), bundleID: selectedTarget.identifier, relativePath: defaultRelPath, replacementFilename: targetFileName, replacementData: patchData)
+                let project = PatchProject(id: UUID(), name: "Fallback Inject", createdAt: Date(), updatedAt: Date(), bundleIdentifiers: [selectedTarget.identifier], directories: [], rules: [rule])
+                _ = try DevicePatchService.apply(project: project)
+            } else {
+                // Injetar em TODOS os locais encontrados (as vezes o jogo tem duplicatas)
+                log("patch: Encontrado \(foundPaths.count) locais para substituição.")
+                for fullPath in foundPaths {
+                    // Converter caminho absoluto para relativo ao container
+                    let relPath = String(fullPath.dropFirst(containerPath.count + (containerPath.hasSuffix("/") ? 0 : 1)))
+                    log("patch: Injetando em \(relPath)")
+                    
+                    let rule = PatchRule(id: UUID(), bundleID: selectedTarget.identifier, relativePath: relPath, replacementFilename: targetFileName, replacementData: patchData)
+                    let project = PatchProject(id: UUID(), name: "Deep Inject", createdAt: Date(), updatedAt: Date(), bundleIdentifiers: [selectedTarget.identifier], directories: [], rules: [rule])
+                    _ = try DevicePatchService.apply(project: project)
+                }
+            }
             
             resultTitle = "Sucesso!"
-            resultMessage = "Injetado com sucesso em \(selectedTarget.name) usando \(sourceFileName)!"
+            resultMessage = "Substituição concluída em \(foundPaths.count > 0 ? "\(foundPaths.count) locais" : "caminho padrão")!"
             showResult = true
         } catch {
             resultTitle = "Erro"
