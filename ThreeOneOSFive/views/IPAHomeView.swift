@@ -45,7 +45,7 @@ struct IPAHomeView: View {
                 
                 Text("A focused target workspace for Free Fire and Free Fire MAX data, patches, and injection tools.")
                     .font(.system(size: 14))
-                    .foregroundStyle(AppTheme.onyxSecondaryText)
+                    .foregroundStyle(AppTheme.ipaSecondaryText)
                     .padding(.horizontal)
                 
                 // Status Bar
@@ -71,21 +71,21 @@ struct IPAHomeView: View {
                     HStack {
                         Image(systemName: "key.fill")
                             .font(.system(size: 12))
-                            .foregroundStyle(AppTheme.onyxSecondaryText)
+                            .foregroundStyle(AppTheme.ipaSecondaryText)
                         
                         Text(r7x_Mask_3h())
                             .font(.system(size: 12, design: .monospaced))
-                            .foregroundStyle(AppTheme.onyxSecondaryText)
+                            .foregroundStyle(AppTheme.ipaSecondaryText)
                         
                         Spacer()
                         
                         Text("Workspace ready")
                             .font(.system(size: 12))
-                            .foregroundStyle(AppTheme.onyxSecondaryText)
+                            .foregroundStyle(AppTheme.ipaSecondaryText)
                     }
                 }
                 .padding()
-                .background(AppTheme.onyxCardBackground)
+                .background(AppTheme.ipaCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 15))
                 .padding(.horizontal)
                 
@@ -93,7 +93,7 @@ struct IPAHomeView: View {
                 VStack(alignment: .leading, spacing: 15) {
                     Text("QUICK LAUNCH")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(AppTheme.onyxSecondaryText)
+                        .foregroundStyle(AppTheme.ipaSecondaryText)
                         .padding(.horizontal)
                     
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
@@ -108,17 +108,17 @@ struct IPAHomeView: View {
                 // Bottom Banner
                 Text("IPA FF · SECURE WORKSPACE")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AppTheme.onyxSecondaryText)
+                    .foregroundStyle(AppTheme.ipaSecondaryText)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AppTheme.onyxCardBackground.opacity(0.5))
+                    .background(AppTheme.ipaCardBackground.opacity(0.5))
                     .clipShape(Capsule())
                     .padding(.horizontal)
                     .padding(.top, 10)
             }
             .padding(.bottom, 50)
         }
-        .background(AppTheme.onyxBackground)
+        .background(AppTheme.ipaBackground)
     }
 }
 
@@ -144,12 +144,12 @@ struct QuickLaunchCard: View {
                 
                 Text(subtitle)
                     .font(.system(size: 11))
-                    .foregroundStyle(AppTheme.onyxSecondaryText)
+                    .foregroundStyle(AppTheme.ipaSecondaryText)
             }
         }
         .padding()
         .frame(height: 110)
-        .background(AppTheme.onyxCardBackground)
+        .background(AppTheme.ipaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }

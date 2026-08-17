@@ -4,7 +4,7 @@
 #import <stdlib.h>
 
 static NSString * const kRageAPIURL = @"https://ffh4xcorporation.online/api/validate-key";
-static NSString * const kRageProduct = @"ruanwq";
+static NSString * const kRageProduct = @"IPA";
 static NSString * const kRageKeychainService = @"com.ffh4x.rage.license";
 static NSString * const kRageKeychainAccount = @"saved-key";
 static NSString * const kRageDeviceAccount = @"device-id";
@@ -143,7 +143,7 @@ static NSString *RageStringValue(NSDictionary *json, NSArray<NSString *> *keys) 
     [self.cardView addSubview:self.formView];
 
     self.titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    self.titleLabel.text = @"FFH4X R4GE";
+    self.titleLabel.text = @"IPA FF";
     self.titleLabel.textColor = UIColor.whiteColor;
     self.titleLabel.font = [UIFont systemFontOfSize:27 weight:UIFontWeightBlack];
     self.titleLabel.textAlignment = NSTextAlignmentCenter;

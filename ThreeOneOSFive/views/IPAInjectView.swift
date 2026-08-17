@@ -25,7 +25,7 @@ struct IPAInjectView: View {
                         .foregroundStyle(.white)
                     Text("CHOOSE YOUR GAME")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(AppTheme.onyxSecondaryText)
+                        .foregroundStyle(AppTheme.ipaSecondaryText)
                 }
                 Spacer()
             }
@@ -35,7 +35,7 @@ struct IPAInjectView: View {
             
             Text("IPA only exposes the two supported Free Fire data containers.")
                 .font(.system(size: 12))
-                .foregroundStyle(AppTheme.onyxSecondaryText)
+                .foregroundStyle(AppTheme.ipaSecondaryText)
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             
@@ -73,7 +73,7 @@ struct IPAInjectView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(AppTheme.onyxCardBackground)
+                            .fill(AppTheme.ipaCardBackground)
                             .frame(width: 50, height: 50)
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 20, weight: .bold))
@@ -83,7 +83,7 @@ struct IPAInjectView: View {
                 .padding()
             }
         }
-        .background(AppTheme.onyxBackground)
+        .background(AppTheme.ipaBackground)
         .alert("Free Fire MAX", isPresented: $showMaxAlert) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -116,7 +116,7 @@ struct GameTargetCard: View {
                     .foregroundStyle(.white)
                 Text(bundleID)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(AppTheme.onyxSecondaryText)
+                    .foregroundStyle(AppTheme.ipaSecondaryText)
             }
             
             Spacer()
@@ -133,7 +133,7 @@ struct GameTargetCard: View {
         }
         .padding(25)
         .frame(width: 260, height: 380)
-        .background(AppTheme.onyxCardBackground)
+        .background(AppTheme.ipaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 30))
         .overlay(
             RoundedRectangle(cornerRadius: 30)
@@ -166,7 +166,7 @@ struct IPAPackageSelectionView: View {
                 }
             }
             .padding()
-            .background(AppTheme.onyxBackground)
+            .background(AppTheme.ipaBackground)
             
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -175,7 +175,7 @@ struct IPAPackageSelectionView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("ACTIVE GAME PROFILE")
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(AppTheme.onyxSecondaryText)
+                                .foregroundStyle(AppTheme.ipaSecondaryText)
                             Text(game.rawValue)
                                 .font(.title3.weight(.bold))
                                 .foregroundStyle(.white)
@@ -183,12 +183,12 @@ struct IPAPackageSelectionView: View {
                         Spacer()
                     }
                     .padding()
-                    .background(AppTheme.onyxCardBackground)
+                    .background(AppTheme.ipaCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 15))
                     
                     Text("Select an IPA Package from your imported library")
                         .font(.system(size: 14))
-                        .foregroundStyle(AppTheme.onyxSecondaryText)
+                        .foregroundStyle(AppTheme.ipaSecondaryText)
                     
                     // Package List
                     ForEach(AvatarAssetCatalog.assets) { asset in
@@ -210,17 +210,17 @@ struct IPAPackageSelectionView: View {
                                         .foregroundStyle(.white)
                                     Text("PROTECTED · \(asset.id == "hs-original" ? "ORIGINAL" : "MODDED")")
                                         .font(.system(size: 10))
-                                        .foregroundStyle(AppTheme.onyxSecondaryText)
+                                        .foregroundStyle(AppTheme.ipaSecondaryText)
                                 }
                                 
                                 Spacer()
                                 
                                 Circle()
-                                    .stroke(AppTheme.onyxSecondaryText, lineWidth: 2)
+                                    .stroke(AppTheme.ipaSecondaryText, lineWidth: 2)
                                     .frame(width: 20, height: 20)
                             }
                             .padding()
-                            .background(AppTheme.onyxCardBackground)
+                            .background(AppTheme.ipaCardBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 15))
                         }
                         .buttonStyle(.plain)
@@ -228,7 +228,7 @@ struct IPAPackageSelectionView: View {
                 }
                 .padding()
             }
-            .background(AppTheme.onyxBackground)
+            .background(AppTheme.ipaBackground)
         }
     }
     

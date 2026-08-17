@@ -31,7 +31,7 @@ struct ContentView: View {
         TabView(selection: tabSelection) {
             ForEach(featureVisibility.visibleSections) { section in
                 ZStack {
-                    AppTheme.onyxBackground.ignoresSafeArea()
+                    AppTheme.ipaBackground.ignoresSafeArea()
                     sectionContent(section)
                 }
                 .tabItem {
