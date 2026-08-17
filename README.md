@@ -96,4 +96,3 @@ Do not publish logs, app containers, cookies, account databases, or patch payloa
 ## License
 
 Original portions of 3105 are distributed under the [GNU General Public License v3.0](LICENSE). Third-party components remain subject to their respective upstream copyright and license terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-Trigger commit

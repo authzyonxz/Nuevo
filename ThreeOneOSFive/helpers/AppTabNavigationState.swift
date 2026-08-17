@@ -2,8 +2,8 @@ import Foundation
 
 enum AppSection: Int, CaseIterable, Identifiable {
     case home
-    case patches
-    case files
+    case inject
+    case library
     case cleaner
     case settings
 
@@ -12,21 +12,14 @@ enum AppSection: Int, CaseIterable, Identifiable {
 
 struct FeatureVisibility: Equatable {
     static let cleanerStorageKey = "feature.cleaner.enabled"
+    static let wallpapersStorageKey = "feature.wallpapers.enabled"
 
-    let cleanerEnabled: Bool
+    let cleanerEnabled: Bool = true
+    let wallpapersEnabled: Bool = false
 
-    var visibleSections: [AppSection] {
-        AppSection.allCases.filter(isVisible)
-    }
+    var visibleSections: [AppSection] { AppSection.allCases }
 
-    func isVisible(_ section: AppSection) -> Bool {
-        switch section {
-        case .cleaner:
-            return cleanerEnabled
-        case .home, .files, .patches, .settings:
-            return true
-        }
-    }
+    func isVisible(_ section: AppSection) -> Bool { true }
 }
 
 struct AppTabNavigationState: Equatable {

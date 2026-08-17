@@ -3,7 +3,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 private enum PatchPackagePickerPolicy {
-    static let packageType = UTType(filenameExtension: "IPA") ?? .data
+    static let packageType = UTType(filenameExtension: "3105") ?? .data
     static let allowedContentTypes: [UTType] = [packageType, .data]
     static let copiesSelectedDocument = true
 }
@@ -72,8 +72,10 @@ struct PatchProjectsView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(AppTheme.pageBackground)
             }
-            .navigationTitle(language.text("patch.title"))
+            .navigationTitle("Library")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -174,22 +176,31 @@ struct PatchProjectsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "shippingbox")
-                .font(.system(size: AppTheme.emptyIconSize, weight: .light))
-                .foregroundStyle(AppTheme.accent)
-            Text(language.text("patch.empty_title"))
-                .font(.headline)
-            Text(language.text("patch.empty_message"))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button(language.text("patch.new")) { showCreate = true }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+        ZyvexCard {
+            VStack(spacing: 14) {
+                Image(systemName: "shippingbox.fill")
+                    .font(.system(size: AppTheme.emptyIconSize, weight: .bold))
+                    .foregroundStyle(AppTheme.accent)
+                Text(language.text("patch.empty_title"))
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                Text(language.text("patch.empty_message"))
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.mutedText)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 10) {
+                    Button(language.text("patch.new")) { showCreate = true }
+                        .buttonStyle(.borderedProminent)
+                        .tint(AppTheme.accent)
+                    Button(language.text("patch.import")) { showImporter = true }
+                        .buttonStyle(.bordered)
+                        .tint(AppTheme.accent)
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 64)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 22, leading: 16, bottom: 22, trailing: 16))
     }
 
     private var searchEmptyState: some View {
