@@ -161,7 +161,10 @@ struct IPAPackageSelectionView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
     @State private var selectedAssetID: String?
-    @State private var showMissingAssetAlert = false
+    @State private var showResultAlert = false
+    @State private var resultMessage = ""
+    @State private var isSuccess = false
+    @State private var isInjecting = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -176,9 +179,14 @@ struct IPAPackageSelectionView: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                 Spacer()
-                Button { } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundStyle(.white)
+                if isInjecting {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Button { } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundStyle(.white)
+                    }
                 }
             }
             .padding()
@@ -233,17 +241,24 @@ struct IPAPackageSelectionView: View {
                         }
                         
                         Button {
-                            prepareInjection()
+                            performInjection()
                         } label: {
-                            Text("PREPARAR INJEÇÃO")
-                                .font(.system(size: 14, weight: .bold))
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(selectedAssetID != nil ? AppTheme.accent : AppTheme.ipaCardBackground)
-                                .foregroundStyle(selectedAssetID != nil ? .black : AppTheme.ipaSecondaryText)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                            HStack {
+                                if isInjecting {
+                                    ProgressView()
+                                        .tint(.black)
+                                        .padding(.trailing, 8)
+                                }
+                                Text(isInjecting ? "INJETANDO..." : "INJETAR AGORA")
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(selectedAssetID != nil && !isInjecting ? AppTheme.accent : AppTheme.ipaCardBackground)
+                            .foregroundStyle(selectedAssetID != nil && !isInjecting ? .black : AppTheme.ipaSecondaryText)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(selectedAssetID == nil)
+                        .disabled(selectedAssetID == nil || isInjecting)
                         .padding(.top, 10)
                     }
                     .padding()
@@ -251,22 +266,55 @@ struct IPAPackageSelectionView: View {
             }
         }
         .background(AppTheme.ipaBackground.ignoresSafeArea())
-        .alert("Asset indisponível", isPresented: $showMissingAssetAlert) {
-            Button("OK", role: .cancel) {}
+        .alert(isSuccess ? "Sucesso" : "Erro", isPresented: $showResultAlert) {
+            Button("OK", role: .cancel) {
+                if isSuccess { dismiss() }
+            }
         } message: {
-            Text("O arquivo de avatar não foi localizado nos recursos incluídos nesta build.")
+            Text(resultMessage)
         }
     }
     
-    private func prepareInjection() {
+    private func performInjection() {
         guard let selectedAssetID,
-              let asset = AvatarAssetCatalog.assets.first(where: { $0.id == selectedAssetID }),
-              let draft = AvatarAssetCatalog.makeFreeFireDraft(selectedAssets: [asset]) else {
-            showMissingAssetAlert = true
+              let asset = AvatarAssetCatalog.assets.first(where: { $0.id == selectedAssetID }) else {
             return
         }
-        draftCoordinator.present(draft)
-        dismiss()
+        
+        isInjecting = true
+        
+        // Executa a injeção em background para não travar a UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                guard let draft = AvatarAssetCatalog.makeFreeFireDraft(selectedAssets: [asset]) else {
+                    throw PatchPackageError.invalidProject
+                }
+                
+                let project = PatchProject(
+                    name: draft.name,
+                    bundleIdentifiers: draft.bundleIdentifiers,
+                    directories: draft.directories,
+                    rules: draft.rules
+                )
+                
+                // Aplica a injeção diretamente no container do jogo
+                _ = try DevicePatchService.apply(project: project)
+                
+                DispatchQueue.main.async {
+                    self.isInjecting = false
+                    self.isSuccess = true
+                    self.resultMessage = "Asset \(asset.displayName) injetado com sucesso no Free Fire!"
+                    self.showResultAlert = true
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isInjecting = false
+                    self.isSuccess = false
+                    self.resultMessage = "Falha ao injetar asset: \(error.localizedDescription)"
+                    self.showResultAlert = true
+                }
+            }
+        }
     }
 }
 

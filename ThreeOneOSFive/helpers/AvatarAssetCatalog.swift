@@ -13,7 +13,9 @@ struct AvatarAsset: Identifiable, Hashable {
 enum AvatarAssetCatalog {
     static let freeFireBundleID = "com.dts.freefireth"
     static let freeFireMaxBundleID = "com.dts.freefiremax"
-    static let avatarDirectory = "ContentCache/compulsory/gameassetbundle/avatar"
+    
+    // Caminho padrão observado no Free Fire: Documents/ContentCache/compulsory/ios/gameassetbundles/avatar/
+    static let avatarDirectory = "Documents/ContentCache/compulsory/ios/gameassetbundles/avatar"
 
     static let assets: [AvatarAsset] = [
         AvatarAsset(
@@ -22,7 +24,7 @@ enum AvatarAssetCatalog {
             displayName: "HS PESCOÇO",
             resourceFolder: "HSNeck",
             sha256: "ac8a6db1096a03a2b67a2bff3b9a024553d4f3eb039ee18ba735c6989f41f3df",
-            targetRelativePath: "ContentCache/compulsory/gameassetbundle/avatar/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D",
+            targetRelativePath: "\(avatarDirectory)/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D",
             sourceFilename: "assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D"
         ),
         AvatarAsset(
@@ -31,8 +33,8 @@ enum AvatarAssetCatalog {
             displayName: "HS ALTO",
             resourceFolder: "HSAlto",
             sha256: "7917eb9c3e49d79ff6cbb9d0647573820fd4162759d78d01e63a90d5d4fcffad",
-            targetRelativePath: "ContentCache/compulsory/gameassetbundle/avatar/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D",
-            sourceFilename: "assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FxRcJrEp~2FMzeuqmY~3D"
+            targetRelativePath: "\(avatarDirectory)/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D",
+            sourceFilename: "assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D"
         ),
         AvatarAsset(
             id: "hs-peito",
@@ -40,7 +42,7 @@ enum AvatarAssetCatalog {
             displayName: "HS PEITO",
             resourceFolder: "HSPeito",
             sha256: "d53e7f62e68407c5a6104273829f012b1d31024b868a274530fbf02c8427f101",
-            targetRelativePath: "ContentCache/compulsory/gameassetbundle/avatar/cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D",
+            targetRelativePath: "\(avatarDirectory)/cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D",
             sourceFilename: "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
         ),
         AvatarAsset(
@@ -49,7 +51,7 @@ enum AvatarAssetCatalog {
             displayName: "HS ORIGINAL",
             resourceFolder: "HSOriginal",
             sha256: "05d235840319edb6978630d3eeadfe8459cbe4e7349f5963c2cf883d46574929",
-            targetRelativePath: "ContentCache/compulsory/gameassetbundle/avatar/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D",
+            targetRelativePath: "\(avatarDirectory)/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D",
             sourceFilename: "assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D"
         )
     ]
