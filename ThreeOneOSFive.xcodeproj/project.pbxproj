@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		972675F8C8134079A645A9DE /* OnyxHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BADC243898C34A2887C98E25 /* OnyxHomeView.swift */; };
-		5219F94E27AD4572A6281932 /* OnyxInjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A03DB890BD34EF9A2F21A54 /* OnyxInjectView.swift */; };
+		972675F8C8134079A645A9DE /* OnyxHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BADC243898C34A2887C98E25 /* IPAHomeView.swift */; };
+		5219F94E27AD4572A6281932 /* OnyxInjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A03DB890BD34EF9A2F21A54 /* IPAInjectView.swift */; };
 		29DE1BCCBB5B442B84732748 /* RageLoginView.m in Sources */ = {isa = PBXBuildFile; fileRef = 3286B3BEFDB949E4AD1B2060 /* RageLoginView.m */; };
 		188632DC6F0A4BE9B7776446 /* RageLicenseState.m in Sources */ = {isa = PBXBuildFile; fileRef = 2612DD50CF804AB0A17FA9B2 /* RageLicenseState.m */; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
@@ -73,8 +73,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		BADC243898C34A2887C98E25 /* OnyxHomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OnyxHomeView.swift; sourceTree = "<group>"; };
-		8A03DB890BD34EF9A2F21A54 /* OnyxInjectView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OnyxInjectView.swift; sourceTree = "<group>"; };
+		BADC243898C34A2887C98E25 /* IPAHomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = views/IPAHomeView.swift; sourceTree = "<group>"; };
+		8A03DB890BD34EF9A2F21A54 /* IPAInjectView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = views/IPAInjectView.swift; sourceTree = "<group>"; };
 		821CEBADFEC946C68D449ED9 /* RageLoginView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = h; path = login/RageLoginView.h; sourceTree = "<group>"; };
 		3286B3BEFDB949E4AD1B2060 /* RageLoginView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = login/RageLoginView.m; sourceTree = "<group>"; };
 		1F72AC3E49D744F18DD95D1A /* RageLicenseState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = h; path = login/RageLicenseState.h; sourceTree = "<group>"; };
@@ -238,8 +238,8 @@
 									3105F106 /* WallpaperLabView.swift */,
 					3105J101 /* FreeFireTargetSelectionView.swift */,
 
-						BADC243898C34A2887C98E25 /* OnyxHomeView.swift */,
-			8A03DB890BD34EF9A2F21A54 /* OnyxInjectView.swift */,
+						BADC243898C34A2887C98E25 /* IPAHomeView.swift */,
+			8A03DB890BD34EF9A2F21A54 /* IPAInjectView.swift */,
 );
 			path = views;
 			sourceTree = "<group>";

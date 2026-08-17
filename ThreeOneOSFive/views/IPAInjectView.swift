@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct OnyxInjectView: View {
+struct IPAInjectView: View {
     @Environment(\.appLanguage) private var language
     @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
     @State private var selectedGame: GameTarget?
@@ -33,7 +33,7 @@ struct OnyxInjectView: View {
             .padding(.top, 40)
             .padding(.bottom, 30)
             
-            Text("ONYX only exposes the two supported Free Fire data containers.")
+            Text("IPA only exposes the two supported Free Fire data containers.")
                 .font(.system(size: 12))
                 .foregroundStyle(AppTheme.onyxSecondaryText)
                 .padding(.horizontal)
@@ -54,7 +54,7 @@ struct OnyxInjectView: View {
                     GameTargetCard(
                         name: "Free Fire MAX",
                         bundleID: "com.dts.freefiremax",
-                        icon: "FreeFireLogo", // Usando o mesmo ícone por enquanto
+                        icon: "FreeFireLogo",
                         isSelected: selectedGame == .freeFireMax
                     ) {
                         showMaxAlert = true
@@ -90,60 +90,13 @@ struct OnyxInjectView: View {
             Text("O suporte ao Free Fire MAX será adicionado em breve.")
         }
         .sheet(item: $selectedGame) { game in
-            OnyxPackageSelectionView(game: game)
+            IPAPackageSelectionView(game: game)
         }
     }
 }
 
-struct GameTargetCard: View {
-    let name: String
-    let bundleID: String
-    let icon: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Image(icon)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .font(.system(size: 22, weight: .black))
-                    .foregroundStyle(.white)
-                Text(bundleID)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(AppTheme.onyxSecondaryText)
-            }
-            
-            Spacer()
-            
-            Button(action: action) {
-                Text("SELECT TARGET")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AppTheme.accent)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 15)
-                    .background(AppTheme.accent.opacity(0.1))
-                    .clipShape(Capsule())
-            }
-        }
-        .padding(25)
-        .frame(width: 260, height: 380)
-        .background(AppTheme.onyxCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 30))
-        .overlay(
-            RoundedRectangle(cornerRadius: 30)
-                .stroke(isSelected ? AppTheme.accent : Color.clear, lineWidth: 2)
-        )
-    }
-}
-
-struct OnyxPackageSelectionView: View {
-    let game: OnyxInjectView.GameTarget
+struct IPAPackageSelectionView: View {
+    let game: IPAInjectView.GameTarget
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
     
@@ -186,7 +139,7 @@ struct OnyxPackageSelectionView: View {
                     .background(AppTheme.onyxCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 15))
                     
-                    Text("Select an ONYX Package from your imported library")
+                    Text("Select an IPA Package from your imported library")
                         .font(.system(size: 14))
                         .foregroundStyle(AppTheme.onyxSecondaryText)
                     
@@ -200,15 +153,15 @@ struct OnyxPackageSelectionView: View {
                                     Circle()
                                         .fill(AppTheme.accent.opacity(0.2))
                                         .frame(width: 40, height: 40)
-                                    Image(systemName: "lock.fill")
+                                    Image(systemName: asset.id == "hs-original" ? "doc.fill" : "lock.fill")
                                         .foregroundStyle(AppTheme.accent)
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("\(asset.sourceFilename).onyx")
+                                    Text(asset.displayName)
                                         .font(.system(size: 16, weight: .bold))
                                         .foregroundStyle(.white)
-                                    Text("588 KB · PROTECTED")
+                                    Text("PROTECTED · \(asset.id == "hs-original" ? "ORIGINAL" : "MODDED")")
                                         .font(.system(size: 10))
                                         .foregroundStyle(AppTheme.onyxSecondaryText)
                                 }
@@ -238,4 +191,3 @@ struct OnyxPackageSelectionView: View {
         draftCoordinator.present(draft)
     }
 }
-

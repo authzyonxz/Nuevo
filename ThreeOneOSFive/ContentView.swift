@@ -28,19 +28,19 @@ struct ContentView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            onyxSidebar
-            
-            ZStack {
-                AppTheme.onyxBackground.ignoresSafeArea()
-                
-                sectionContent(AppSection(rawValue: tabNavigation.selectedTab) ?? .home)
-                    .id(tabNavigation.selectedTab)
-                    .transition(.opacity)
+        TabView(selection: tabSelection) {
+            ForEach(featureVisibility.visibleSections) { section in
+                ZStack {
+                    AppTheme.onyxBackground.ignoresSafeArea()
+                    sectionContent(section)
+                }
+                .tabItem {
+                    Label(language.text(section.titleKey), systemImage: section.systemImage)
+                }
+                .tag(section.rawValue)
             }
         }
         .tint(AppTheme.accent)
-        .imageScale(.small)
         .preferredColorScheme(.dark)
         .onChange(of: patchDraftCoordinator.request?.id) { requestID in
             if requestID != nil { tabNavigation.select(AppSection.patches.rawValue) }
@@ -53,52 +53,13 @@ struct ContentView: View {
         }
     }
 
-    private var onyxSidebar: some View {
-        VStack(spacing: 20) {
-            Spacer().frame(height: 20)
-            
-            ForEach(featureVisibility.visibleSections) { section in
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        tabNavigation.select(section.rawValue)
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        ZStack {
-                            if tabNavigation.selectedTab == section.rawValue {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.1))
-                                    .frame(width: 50, height: 50)
-                            }
-                            
-                            Image(systemName: section.systemImage)
-                                .font(.system(size: 22, weight: .medium))
-                                .foregroundStyle(tabNavigation.selectedTab == section.rawValue ? AppTheme.accent : .white)
-                        }
-                        
-                        Text(language.text(section.titleKey))
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(tabNavigation.selectedTab == section.rawValue ? AppTheme.accent : .gray)
-                    }
-                    .frame(width: 70)
-                }
-                .buttonStyle(.plain)
-            }
-            
-            Spacer()
-        }
-        .frame(width: 80)
-        .background(AppTheme.onyxCardBackground.opacity(0.5))
-        .ignoresSafeArea()
-    }
-
     @ViewBuilder
     private func sectionContent(_ section: AppSection) -> some View {
         switch section {
         case .home:
-            OnyxHomeView(cleanerEnabled: $cleanerEnabled)
+            IPAHomeView(cleanerEnabled: $cleanerEnabled)
         case .patches:
-            OnyxInjectView()
+            IPAInjectView()
         case .files:
             AppDataBrowserView(tabSession: filesTabSession)
         case .cleaner:
