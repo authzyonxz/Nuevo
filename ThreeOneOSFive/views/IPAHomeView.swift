@@ -121,3 +121,35 @@ struct IPAHomeView: View {
         .background(AppTheme.onyxBackground)
     }
 }
+
+struct QuickLaunchCard: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Spacer()
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundStyle(color)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.onyxSecondaryText)
+            }
+        }
+        .padding()
+        .frame(height: 110)
+        .background(AppTheme.onyxCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+}

@@ -95,6 +95,53 @@ struct IPAInjectView: View {
     }
 }
 
+struct GameTargetCard: View {
+    let name: String
+    let bundleID: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Image(icon)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.system(size: 22, weight: .black))
+                    .foregroundStyle(.white)
+                Text(bundleID)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(AppTheme.onyxSecondaryText)
+            }
+            
+            Spacer()
+            
+            Button(action: action) {
+                Text("SELECT TARGET")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(AppTheme.accent)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 15)
+                    .background(AppTheme.accent.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(25)
+        .frame(width: 260, height: 380)
+        .background(AppTheme.onyxCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(isSelected ? AppTheme.accent : Color.clear, lineWidth: 2)
+        )
+    }
+}
+
 struct IPAPackageSelectionView: View {
     let game: IPAInjectView.GameTarget
     @Environment(\.dismiss) var dismiss
