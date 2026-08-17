@@ -6,7 +6,7 @@ struct OnyxInjectView: View {
     @State private var selectedGame: GameTarget?
     @State private var showMaxAlert = false
     
-    private enum GameTarget: String, CaseIterable, Identifiable {
+    enum GameTarget: String, CaseIterable, Identifiable {
         case freeFire = "Free Fire"
         case freeFireMax = "Free Fire MAX"
         var id: String { rawValue }
