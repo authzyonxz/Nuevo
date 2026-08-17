@@ -143,9 +143,15 @@ struct AppLogo: View {
 
 extension View {
     func zyvexScreen() -> some View {
-        scrollContentBackground(.hidden)
-            .background(AppTheme.pageBackground)
-            .tint(AppTheme.accent)
-            .preferredColorScheme(.dark)
+        Group {
+            if #available(iOS 16.0, *) {
+                self.scrollContentBackground(.hidden)
+            } else {
+                self
+            }
+        }
+        .background(AppTheme.pageBackground)
+        .tint(AppTheme.accent)
+        .preferredColorScheme(.dark)
     }
 }

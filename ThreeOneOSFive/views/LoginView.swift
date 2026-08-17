@@ -11,13 +11,13 @@ struct LoginView: View {
         ZStack {
             Color.black.ignoresSafeArea()
             
-            // Background gradient effect
+            // Background gradient effect (Reduzido para evitar crash de GPU)
             VStack {
                 Circle()
-                    .fill(Color.blue.opacity(0.15))
-                    .blur(radius: 100)
-                    .frame(width: 400, height: 400)
-                    .offset(y: -200)
+                    .fill(Color.blue.opacity(0.12))
+                    .blur(radius: 50)
+                    .frame(width: 300, height: 300)
+                    .offset(y: -150)
                 Spacer()
             }
             

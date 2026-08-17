@@ -56,29 +56,46 @@ class AppState: ObservableObject {
         self.activeLicense = info
         self.isActivated = true
         
-        // Disparar exploit de kernel e escape de sandbox após ativação bem-sucedida
-        triggerKernelExploit()
+        // Disparar exploit com um pequeno atraso para garantir estabilidade da UI
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.triggerKernelExploit()
+        }
     }
     
     private func triggerKernelExploit() {
-        DispatchQueue.global(qos: .userInitiated).async {
-            log("exploit: Iniciando OPA334...")
+        // Evitar rodar se já estiver com sucesso ou não suportado
+        if case .success = exploitStatus { return }
+        
+        DispatchQueue.global(qos: .utility).async {
+            log("exploit: Preparando ambiente...")
+            
+            // OPA334 Exploit
             let result = kexploit_opa334()
             if result == 0 {
-                log("exploit: Kernel R/W estabelecido!")
+                log("exploit: Kernel R/W OK")
+                
+                // Pequena pausa entre estágios
+                Thread.sleep(forTimeInterval: 0.5)
+                
                 let selfProc = proc_self()
-                log("exploit: Escapando da Sandbox...")
                 let escapeResult = sandbox_escape(selfProc)
+                
                 if escapeResult == 0 {
-                    log("exploit: Sandbox escape concluído com sucesso!")
+                    log("exploit: Sandbox Escape OK")
                     DispatchQueue.main.async {
-                        self.exploitStatus = .success(method: "Kernel + Sandbox Escape")
+                        self.exploitStatus = .success(method: "OPA334 + SBX")
                     }
                 } else {
-                    log("exploit: Falha no sandbox escape (\(escapeResult))")
+                    log("exploit: Erro SBX (\(escapeResult))")
+                    DispatchQueue.main.async {
+                        self.exploitStatus = .failed(method: "Sandbox Escape", code: Int64(escapeResult))
+                    }
                 }
             } else {
-                log("exploit: Falha no kernel exploit (\(result))")
+                log("exploit: Erro Kernel (\(result))")
+                DispatchQueue.main.async {
+                    self.exploitStatus = .failed(method: "Kernel Exploit", code: Int64(result))
+                }
             }
         }
     }
