@@ -66,7 +66,7 @@ struct SettingsView: View {
                             Divider().overlay(AppTheme.border)
                             settingsRow(icon: "gearshape.2.fill", title: "iOS version", value: "\(AppInfo.osVersion) (\(AppInfo.osBuild))")
                             Divider().overlay(AppTheme.border)
-                            settingsRow(
+                            licenseRow(
                                 icon: appState.isSupported ? "checkmark.circle.fill" : "xmark.circle.fill",
                                 title: "Compatibility",
                                 value: appState.isSupported ? "Supported" : "Review required",
