@@ -326,15 +326,30 @@ private struct ZyvexInjectView: View {
         guard let selectedTarget, let selectedAsset else { return }
 
         let sourceFileName = selectedAsset.lastPathComponent
-        let relativePath = "Documents/Contentchache/Compulsory/ios/gameassetbundles/\(sourceFileName)"
-
+        
         do {
-            let patchData = try Data(contentsOf: selectedAsset)
+            // Tentar extrair o payload real (funciona para .onyx e arquivos brutos)
+            guard let patchData = OnyxImporterService.shared.extractPayload(from: selectedAsset) else {
+                throw NSError(domain: "Onyx", code: 2, userInfo: [NSLocalizedDescriptionKey: "Falha ao ler dados do arquivo."])
+            }
+            
+            // Se for .onyx, o nome do arquivo de destino pode ser diferente do nome do pacote
+            // Se for bruto, usamos o próprio nome do arquivo
+            var targetFileName = sourceFileName
+            if sourceFileName.hasSuffix(".onyx") || sourceFileName.hasSuffix(".3105") {
+                // Tentar ler metadados para pegar o nome real do payload (ex: cache_res)
+                if let (meta, _) = try? OnyxImporterService.shared.importOnyxFile(from: selectedAsset).get() {
+                    targetFileName = meta.payload_filename
+                }
+            }
+            
+            let relativePath = "Documents/Contentchache/Compulsory/ios/gameassetbundles/\(targetFileName)"
+
             let rule = PatchRule(
                 id: UUID(),
                 bundleID: selectedTarget.identifier,
                 relativePath: relativePath,
-                replacementFilename: sourceFileName,
+                replacementFilename: targetFileName,
                 replacementData: patchData
             )
             
