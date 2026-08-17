@@ -139,8 +139,7 @@ struct ContentView: View {
 
     private var featureVisibility: FeatureVisibility {
         FeatureVisibility(
-            cleanerEnabled: cleanerEnabled,
-            wallpapersEnabled: false
+            cleanerEnabled: cleanerEnabled
         )
     }
 }
