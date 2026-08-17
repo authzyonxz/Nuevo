@@ -80,10 +80,28 @@ struct LoginViewWrapper: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let container = UIView()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            if let window = container.window {
-                RageLoginView.present(in: window) { _ in
-                    withAnimation {
-                        isLoggedIn = true
+            guard let window = container.window else { return }
+            
+            let loginView = RageLoginView.present(in: window) { _ in
+                // Aguarda 1.5 segundos para mostrar o estado de sucesso antes de fechar
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    UIView.animate(withDuration: 0.4, animations: {
+                        // Tenta encontrar a view de login na window para animar a saída
+                        window.subviews.forEach { subview in
+                            if subview.isKind(of: RageLoginView.self) {
+                                subview.alpha = 0
+                            }
+                        }
+                    }) { _ in
+                        // Remove a view e libera a interface no SwiftUI
+                        window.subviews.forEach { subview in
+                            if subview.isKind(of: RageLoginView.self) {
+                                subview.removeFromSuperview()
+                            }
+                        }
+                        withAnimation(.easeInOut) {
+                            isLoggedIn = true
+                        }
                     }
                 }
             }
