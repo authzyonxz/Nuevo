@@ -64,11 +64,19 @@ struct FreeFireTargetSelectionView: View {
                     }
                 } else {
                     Section {
-                        ContentUnavailableView(
-                            "Em breve",
-                            systemImage: "clock.badge.exclamationmark",
-                            description: Text("O suporte ao Free Fire MAX será adicionado em uma atualização futura.")
-                        )
+                        VStack(spacing: 12) {
+                            Image(systemName: "clock.badge.exclamationmark")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.secondary)
+                            Text("Em breve")
+                                .font(.headline)
+                            Text("O suporte ao Free Fire MAX será adicionado em uma atualização futura.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.vertical, 20)
+                        .frame(maxWidth: .infinity)
                     }
                 }
             }
