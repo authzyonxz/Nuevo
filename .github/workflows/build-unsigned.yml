@@ -28,15 +28,20 @@ jobs:
         fi
         echo "Using scheme: $SCHEME_NAME"
         
-        xcodebuild -project ThreeOneOSFive.xcodeproj -scheme "$SCHEME_NAME" -configuration Release -sdk iphoneos CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO clean build
+        # Build with local derivedDataPath
+        xcodebuild -project ThreeOneOSFive.xcodeproj -scheme "$SCHEME_NAME" -configuration Release -sdk iphoneos -derivedDataPath build/DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO clean build
         
         echo "Creating Payload directory..."
         mkdir -p Payload
-        APP_PATH=$(find build/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
+        
+        # Locate the .app bundle
+        APP_PATH=$(find build/DerivedData -name "*.app" -type d | head -n 1)
         if [ -z "$APP_PATH" ]; then
-          APP_PATH=$(find . -name "*.app" | head -n 1)
+           echo "Error: .app bundle not found!"
+           exit 1
         fi
         echo "Found app at: $APP_PATH"
+        
         cp -r "$APP_PATH" Payload/
         
         echo "Zipping to IPA..."
