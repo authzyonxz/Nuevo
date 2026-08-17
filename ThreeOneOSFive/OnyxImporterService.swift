@@ -88,19 +88,32 @@ public class OnyxImporterService {
     }
     
     public func extractPayload(from onyxURL: URL) -> Data? {
-        guard let data = try? Data(contentsOf: onyxURL) else { return nil }
+        guard let data = try? Data(contentsOf: onyxURL) else { 
+            print("[Onyx] Erro: Não foi possível ler o arquivo em \(onyxURL.path)")
+            return nil 
+        }
         
+        // Verificação de cabeçalho .onyx (4 bytes de tamanho do JSON + JSON + Payload)
         if data.count > 8 {
             let lengthData = data.prefix(4)
-            let jsonLength = Int(lengthData.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+            let rawLength = lengthData.withUnsafeBytes { $0.load(as: UInt32.self) }
+            // Converter de Big Endian (usado no Python >I) para Host Endian
+            let jsonLength = Int(UInt32(bigEndian: rawLength))
+            
+            print("[Onyx] Detectado possível cabeçalho. Tamanho JSON: \(jsonLength), Tamanho Total: \(data.count)")
             
             if jsonLength > 0 && jsonLength < (data.count - 4) {
-                // Se for Onyx, pula o cabeçalho e o JSON
-                return data.subdata(in: (4 + jsonLength)..<data.count)
+                let jsonData = data.subdata(in: 4..<(4 + jsonLength))
+                if let _ = try? JSONDecoder().decode(OnyxPackageMetadata.self, from: jsonData) {
+                    let payloadData = data.subdata(in: (4 + jsonLength)..<data.count)
+                    print("[Onyx] Sucesso: Payload extraído (\(payloadData.count) bytes)")
+                    return payloadData
+                }
             }
         }
         
-        // Se for arquivo bruto, o payload é o próprio arquivo
+        // Se não for um pacote .onyx válido, assume que o arquivo já é o asset bruto (Raw)
+        print("[Onyx] Arquivo tratado como RAW (Bruto). Tamanho: \(data.count) bytes")
         return data
     }
 }
