@@ -1,0 +1,20 @@
+=== MAKEFILE DIAGNOSTIC FLAG ===
+removed from Makefile
+=== CONDITIONAL BLOCK ===
+536:#if FFH4X_DIAGNOSTIC_NO_EXPLOIT
+537:    AppendDiagnosticLog(@"DIAGNÓSTICO: clique recebido sem executar exploit/container.");
+=== HOOK STATE ===
+533:static void installHooks(void) {
+691:    NSLog(@"[Tweak] hooks desativados nesta build");
+=== HEARTBEAT ===
+136:        self.heartbeatTimer = [NSTimer scheduledTimerWithTimeInterval:300.0
+=== REPLACEMENT ===
+/home/ubuntu/FilzaJailedDS-34306-integrated/Tweak.m:659:BOOL FFH4XEnsureSandboxAccess(NSString **errorMessage) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/Tweak.m:676:    (void)FFH4XEnsureSandboxAccess(&ignoredError);
+/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:302:static NSString *FindExistingTargetFile(NSString *container, NSString *expectedHash) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:575:                sandboxOK = FFH4XEnsureSandboxAccess(&sandboxError);
+/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:603:            NSString *destination = FindExistingTargetFile(container, expectedHash);
+/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m:82:BOOL FRSReplaceFile(NSString *sourcePath,
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:32:@interface FPPatchTransaction ()
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:40:@implementation FPPatchTransaction
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:153:        if (!FRSReplaceFile(rule.sourcePath, destination, rule.expectedSHA256, &replaceError)) {

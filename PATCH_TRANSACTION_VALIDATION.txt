@@ -1,0 +1,34 @@
+=== FILES ===
+-rw-r--r-- 1 ubuntu ubuntu  936 Aug 17 01:43 /home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.h
+-rw-r--r-- 1 ubuntu ubuntu 5758 Aug 17 01:43 /home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m
+-rw-r--r-- 1 ubuntu ubuntu 3167 Aug 17 01:44 /home/ubuntu/FilzaJailedDS-34306-integrated/PATCH_TRANSACTION_THEOS_GUIDE.md
+-rw-r--r-- 1 ubuntu ubuntu 1424 Aug 17 01:43 /home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.h
+-rw-r--r-- 1 ubuntu ubuntu 8592 Aug 17 01:43 /home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m
+=== MAKEFILE ===
+11:FilzaApplySandboxExt_FILES += FileReplacementService.m PatchTransaction.m
+=== SYMBOLS ===
+/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m:42:BOOL FRSValidateRegularFile(NSString *path,
+/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m:82:BOOL FRSReplaceFile(NSString *sourcePath,
+/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m:89:    if (!FRSValidateRegularFile(sourcePath, 0, expectedSHA256, &validationError)) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m:93:    if (!FRSValidateRegularFile(destinationPath, 0, nil, &validationError)) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:32:@interface FPPatchTransaction ()
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:40:@implementation FPPatchTransaction
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:64:static NSString *FPCanonicalRelativePath(NSString *relativePath) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:96:- (BOOL)applyRules:(NSArray<FPRule *> *)rules error:(NSString **)errorMessage {
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:114:        NSString *path = FPCanonicalRelativePath(rule.relativePath);
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:117:            [self rollback:nil];
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:125:            [self rollback:nil];
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:135:            [self rollback:nil];
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:147:                [self rollback:nil];
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:153:        if (!FRSReplaceFile(rule.sourcePath, destination, rule.expectedSHA256, &replaceError)) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:155:            [self rollback:nil];
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:167:            [self rollback:nil];
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:174:- (BOOL)rollback:(NSString **)errorMessage {
+=== PREPROCESSOR BALANCE ===
+ifdef=/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.h:0
+/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m:0
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.h:0
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:0 endif=/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.h:0
+/home/ubuntu/FilzaJailedDS-34306-integrated/FileReplacementService.m:0
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.h:0
+/home/ubuntu/FilzaJailedDS-34306-integrated/PatchTransaction.m:0

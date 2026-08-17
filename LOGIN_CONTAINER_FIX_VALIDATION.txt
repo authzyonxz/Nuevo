@@ -1,0 +1,23 @@
+=== AUTO EXPLOIT MUST BE ABSENT ===
+OK: no automatic authorize observer
+=== ON-DEMAND ACCESS ===
+/home/ubuntu/FilzaJailedDS-34306-integrated/Tweak.m:632:static BOOL runExploitWithError(NSString **errorMessage) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/Tweak.m:659:BOOL FFH4XEnsureSandboxAccess(NSString **errorMessage) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/Tweak.m:667:        BOOL ok = runExploitWithError(errorMessage);
+/home/ubuntu/FilzaJailedDS-34306-integrated/Tweak.m:676:    (void)FFH4XEnsureSandboxAccess(&ignoredError);
+/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:517:            AppendDiagnosticLog(@"Solicitando acesso ao sandbox somente para esta substituição...");
+/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:518:            if (!FFH4XEnsureSandboxAccess(&sandboxError)) {
+/home/ubuntu/FilzaJailedDS-34306-integrated/FilzaInjectionPanel.m:527:            AppendDiagnosticLog(@"Acesso ao sandbox concluído; procurando container...");
+/home/ubuntu/FilzaJailedDS-34306-integrated/TweakAccess.h:8:BOOL FFH4XEnsureSandboxAccess(NSString **errorMessage);
+=== LOGIN RECOVERY ===
+980:        [[FFH4XSession sharedSession] restoreSavedKeyWithCompletion:^(BOOL success,
+992:                r7x_KeychainDeleteLicenseKey();
+994:                NSLog(@"[FFH4X] saved-key restore rejected: %@", errorMessage ?: errorCode);
+=== HEARTBEAT ===
+136:        self.heartbeatTimer = [NSTimer scheduledTimerWithTimeInterval:300.0
+=== HOOK CALLS MUST BE ABSENT ===
+OK: hooks not installed
+=== ASSETS ===
+ac8a6db1096a03a2b67a2bff3b9a024553d4f3eb039ee18ba735c6989f41f3df  /home/ubuntu/FilzaJailedDS-34306-integrated/HSNeck.bundle/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D
+7917eb9c3e49d79ff6cbb9d0647573820fd4162759d78d01e63a90d5d4fcffad  /home/ubuntu/FilzaJailedDS-34306-integrated/HSAlto.bundle/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D
+05d235840319edb6978630d3eeadfe8459cbe4e7349f5963c2cf883d46574929  /home/ubuntu/FilzaJailedDS-34306-integrated/HSOriginal.bundle/assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D
