@@ -65,26 +65,35 @@ enum ContainerStore {
         
         // 1. Tentar via MCM (Método rápido e oficial via exploit)
         var lookupError: NSString?
-        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
-           isApplicationContainerPath(path) {
-            log("patch: MHA-C2 resolved \(bundleID)")
-            return path
+        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {
+            log("patch: MHA-C2 returned path for \(bundleID): \(path)")
+            if isApplicationContainerPath(path) {
+                log("patch: MHA-C2 resolved and validated \(bundleID)")
+                return path
+            }
         }
         
-        // 2. Fallback: Varredura manual de containers (Caso o MCM falhe por permissão ou cache)
-        log("patch: MCM failed for \(bundleID), trying manual scan...")
-        let apps = installedAppsFromAPI() // Ou installedAppsFromMCM()
-        if let found = apps.first(where: { $0.bundleID == bundleID }), !found.containerPath.isEmpty {
-            log("patch: Manual scan resolved \(bundleID) at \(found.containerPath)")
-            return found.containerPath
-        }
+        // 2. Fallback: Varredura profunda do sistema de arquivos
+        log("patch: MCM failed or restricted for \(bundleID), performing deep scan...")
         
-        // 3. Fallback agressivo: Procurar por metadados no sistema
-        let identifiers = dynamicAppIdentifiers()
-        for id in identifiers {
-            if id == bundleID {
-                if let path = MCMActivateContainerPath(2, id, false, nil), isApplicationContainerPath(path) {
-                    return path
+        // Buscar em todos os containers de dados conhecidos
+        let filesystemApps = containersFromFilesystem()
+        log("patch: Filesystem scan found \(filesystemApps.count) potential containers")
+        
+        // Tentar identificar o app pelos metadados ou arquivos internos
+        for app in filesystemApps {
+            let metadata = readContainerMetadata(containerPath: app.containerPath)
+            if metadata?.bundleID == bundleID {
+                log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
+                return app.containerPath
+            }
+            
+            // Fallback heurístico: procurar pasta do jogo se o bundleID bater parcialmente ou via Library/Preferences
+            let libPath = (app.containerPath as NSString).appendingPathComponent("Library/Preferences")
+            if let prefs = try? FileManager.default.contentsOfDirectory(atPath: libPath) {
+                if prefs.contains(where: { $0.contains(bundleID) }) {
+                    log("patch: Heuristic match for \(bundleID) via preferences at \(app.containerPath)")
+                    return app.containerPath
                 }
             }
         }
