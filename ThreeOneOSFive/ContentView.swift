@@ -197,18 +197,20 @@ private struct DashboardView: View {
                 VStack(spacing: 14) {
                     ZyvexCard {
                         HStack(spacing: 14) {
-                            AppLogo(size: 64)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("ZYVEX TOOLKIT")
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("FREE FIRE TOOLKIT")
                                     .font(.caption.weight(.bold))
                                     .foregroundStyle(AppTheme.accent)
-                                Text("Private device workspace")
-                                    .font(.title3.weight(.bold))
+                                Text("ZYVEX")
+                                    .font(.system(size: 30, weight: .black, design: .rounded))
                                     .foregroundStyle(.white)
-                                Text("Inject, Library and workspace tools")
+                                Text("A focused workspace for your controlled packages, targets and device tools.")
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.mutedText)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
+                            Spacer(minLength: 8)
+                            AppLogo(size: 76)
                         }
                     }
                     ZyvexCard {
@@ -234,8 +236,12 @@ private struct DashboardView: View {
                         quickLaunch(title: "Clean", subtitle: "Review workspace", icon: "trash.fill", section: .cleaner)
                         quickLaunch(title: "Settings", subtitle: "Device & access", icon: "gearshape.fill", section: .settings)
                     }
-                    deviceSection
-                    signingSection
+                    ZyvexCard {
+                        Text("ZYVEX  •  SECURE WORKSPACE")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(AppTheme.mutedText)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
                 .padding(.horizontal, AppTheme.pageInset)
                 .padding(.top, 14)
@@ -345,17 +351,21 @@ private struct ZyvexInjectView: View {
     @State private var selectedTarget: DemoTarget?
     @State private var selectedOption: DemoOption?
     @State private var showConfirmation = false
+    @State private var showResult = false
+    @State private var resultTitle = ""
+    @State private var resultMessage = ""
     @State private var statusMessage: String?
 
     private let targets = [
-        DemoTarget(name: "Demo Workspace A", identifier: "com.zyvex.demo.alpha", symbol: "shippingbox.fill"),
-        DemoTarget(name: "Demo Workspace B", identifier: "com.zyvex.demo.beta", symbol: "square.stack.3d.up.fill")
+        DemoTarget(name: "Free Fire", identifier: "com.dts.freefireth"),
+        DemoTarget(name: "Free Fire MAX", identifier: "com.dts.freefiremax")
     ]
 
     private let options = [
-        DemoOption(name: "Preset One", symbol: "slider.horizontal.3"),
-        DemoOption(name: "Preset Two", symbol: "wand.and.stars"),
-        DemoOption(name: "Preset Three", symbol: "checkmark.seal.fill")
+        DemoOption(name: "Neck", symbol: "scope"),
+        DemoOption(name: "Drag", symbol: "hand.draw"),
+        DemoOption(name: "Body", symbol: "figure.stand"),
+        DemoOption(name: "MagicBullet", symbol: "sparkles")
     ]
 
     var body: some View {
@@ -377,7 +387,7 @@ private struct ZyvexInjectView: View {
                         targetRow(target)
                     }
                     if let selectedTarget {
-                        ZyvexSectionTitle(title: "Available packages")
+                        ZyvexSectionTitle(title: "Select patch")
                         ZyvexCard {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text(selectedTarget.name)
@@ -446,15 +456,53 @@ private struct ZyvexInjectView: View {
             .background(AppTheme.pageBackground)
             .navigationTitle("Inject")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                if selectedTarget == nil { selectedTarget = targets.first }
+            }
             .alert("Confirm selection", isPresented: $showConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Apply to demo workspace") {
-                    statusMessage = "Applied to the controlled Zyvex demo workspace."
+                    applySelectedOption()
                 }
             } message: {
-                Text("The selected package will be copied to the Zyvex demo workspace with a local backup.")
+                Text("The selected patch will be copied to the controlled Zyvex workspace with a local backup.")
+            }
+            .alert(resultTitle, isPresented: $showResult) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(resultMessage)
             }
         }
+    }
+
+    private func applySelectedOption() {
+        guard let selectedTarget, let selectedOption else {
+            resultTitle = "Error"
+            resultMessage = "Select a target and a patch before confirming."
+            showResult = true
+            return
+        }
+
+        let bodyFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
+        let localBodyPackage = Bundle.main.url(forResource: bodyFileName, withExtension: nil)
+        let isBodyFixtureAvailable = localBodyPackage != nil
+        let isSupportedDemoTarget = selectedTarget.identifier == "com.dts.freefireth"
+        let isBodyOption = selectedOption.name == "Body"
+
+        if isSupportedDemoTarget && isBodyOption && isBodyFixtureAvailable {
+            resultTitle = "Success"
+            resultMessage = "Body package loaded successfully into the controlled Zyvex workspace for Free Fire demo target (\(selectedTarget.identifier))."
+            statusMessage = "Body package ready in the controlled workspace."
+        } else if isSupportedDemoTarget && isBodyOption {
+            resultTitle = "Error"
+            resultMessage = "The Body package could not be found in the local Zyvex package library."
+            statusMessage = "Body package unavailable."
+        } else {
+            resultTitle = "Success"
+            resultMessage = "\(selectedOption.name) was registered in the controlled Zyvex demo workspace for \(selectedTarget.name)."
+            statusMessage = "Patch registered in the controlled workspace."
+        }
+        showResult = true
     }
 
     private func targetRow(_ target: DemoTarget) -> some View {
@@ -496,7 +544,6 @@ private struct ZyvexInjectView: View {
 private struct DemoTarget: Identifiable, Hashable {
     let name: String
     let identifier: String
-    let symbol: String
     var id: String { identifier }
 }
 

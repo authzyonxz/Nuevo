@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -8,93 +9,100 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    HStack(spacing: 14) {
-                        AppLogo()
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Zyvex").font(.headline)
-                            Text(language.text("common.version", appVersion))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    ZyvexSectionTitle(title: "Device & Access")
+                    ZyvexCard {
+                        HStack(spacing: 14) {
+                            AppLogo(size: 64)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Zyvex")
+                                    .font(.title3.weight(.black))
+                                    .foregroundStyle(.white)
+                                Text("Private device workspace")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(AppTheme.mutedText)
+                            }
+                            Spacer()
                         }
                     }
-                    .padding(.vertical, 4)
-                }
 
-                Section(language.text("settings.language")) {
-                    Picker(language.text("settings.language"), selection: $languageCode) {
-                        ForEach(AppLanguage.allCases) { option in
-                            Text(option.displayName).tag(option.rawValue)
+                    ZyvexCard {
+                        VStack(spacing: 0) {
+                            settingsRow(icon: "checkmark.shield.fill", title: "Product", value: "Zyvex")
+                            Divider().overlay(AppTheme.border)
+                            settingsRow(icon: "info.circle.fill", title: "Version", value: appVersion)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
 
-                Section(language.text("common.device")) {
-                    LabeledContent(language.text("dashboard.hardware_model"), value: AppInfo.displayMachineName)
-                    LabeledContent(language.text("settings.ios_version"), value: "\(AppInfo.osVersion) (\(AppInfo.osBuild))")
-                }
-
-                Section {
-                    HStack {
-                        Text(language.text("settings.current_version"))
-                        Spacer()
-                        Label(
-                            language.text(appState.isSupported ? "settings.supported" : "settings.unsupported"),
-                            systemImage: appState.isSupported ? "checkmark.circle.fill" : "xmark.circle.fill"
-                        )
-                        .foregroundStyle(appState.isSupported ? Color.green : Color.red)
-                    }
-                    LabeledContent("iOS 26", value: ExploitSupportPolicy.verifiedIOS26Range)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("iOS 27.0")
-                            .font(.body)
-                        ForEach(ExploitSupportPolicy.verifiedIOS27Builds, id: \.build) { version in
-                            Text(versionLabel(version))
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
+                    ZyvexSectionTitle(title: "License")
+                    ZyvexCard {
+                        VStack(spacing: 0) {
+                            licenseRow(icon: "checkmark.seal.fill", title: "Status", value: "Activated", valueColor: AppTheme.success)
+                            Divider().overlay(AppTheme.border)
+                            licenseRow(icon: "calendar.badge.clock", title: "Expiry", value: "18 Aug 2026 at 10:03 AM")
+                            Divider().overlay(AppTheme.border)
+                            licenseRow(icon: "person.2.fill", title: "Distributor", value: "Zyvex")
+                            Divider().overlay(AppTheme.border)
+                            licenseRow(icon: "key.fill", title: "Installation ID", value: installationID, monospaced: true)
+                            HStack(spacing: 10) {
+                                Button("Change License") { }
+                                    .frame(maxWidth: .infinity)
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(AppTheme.accent)
+                                Button("Deactivate", role: .destructive) { }
+                                    .frame(maxWidth: .infinity)
+                                    .buttonStyle(.bordered)
+                                    .tint(AppTheme.destructive)
+                            }
+                            .padding(.top, 16)
                         }
                     }
-                    .padding(.vertical, 2)
-                } header: {
-                    Text(language.text("settings.verified_versions"))
-                } footer: {
-                    Text(language.text("settings.supported_versions_footer"))
-                }
 
-                Section(language.text("settings.credits")) {
-                    creditsRow(
-                        name: "YangJiii",
-                        role: language.text("credit.yangjiii"),
-                        url: "https://x.com/duongduong0908"
-                    )
-                    creditsRow(
-                        name: "0xjohnnydev",
-                        role: language.text("credit.filzaslop"),
-                        url: "https://github.com/0xjohnnydev/FilzaSlop"
-                    )
-                    creditsRow(
-                        name: "LeminLimez",
-                        role: language.text("credit.pocket_poster"),
-                        url: "https://github.com/leminlimez/Pocket-Poster"
-                    )
-                    creditsRow(
-                        name: "CrazyMind90",
-                        role: language.text("credit.sandbox_escape"),
-                        url: "https://github.com/CrazyMind90"
-                    )
-                    creditsRow(
-                        name: "forcequitOS",
-                        role: language.text("credit.forcequit"),
-                        url: "https://github.com/forcequitOS"
-                    )
+                    ZyvexSectionTitle(title: "Device Information")
+                    ZyvexCard {
+                        VStack(spacing: 0) {
+                            settingsRow(icon: "iphone", title: "Device model", value: AppInfo.displayMachineName)
+                            Divider().overlay(AppTheme.border)
+                            settingsRow(icon: "gearshape.2.fill", title: "iOS version", value: "\(AppInfo.osVersion) (\(AppInfo.osBuild))")
+                            Divider().overlay(AppTheme.border)
+                            settingsRow(
+                                icon: appState.isSupported ? "checkmark.circle.fill" : "xmark.circle.fill",
+                                title: "Compatibility",
+                                value: appState.isSupported ? "Supported" : "Review required",
+                                valueColor: appState.isSupported ? AppTheme.success : AppTheme.destructive
+                            )
+                        }
+                    }
+
+                    ZyvexSectionTitle(title: "Language")
+                    ZyvexCard {
+                        Picker("Language", selection: $languageCode) {
+                            ForEach(AppLanguage.allCases) { option in
+                                Text(option.displayName).tag(option.rawValue)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    ZyvexCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Zyvex workspace")
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(.white)
+                            Text("Use Clean to restore files managed by this app. Original third-party application bundles are not modified by the safe workspace flow.")
+                                .font(.footnote)
+                                .foregroundStyle(AppTheme.mutedText)
+                        }
+                    }
                 }
+                .padding(.horizontal, AppTheme.pageInset)
+                .padding(.top, 16)
+                .padding(.bottom, 110)
             }
-            .tint(AppTheme.accent)
-            .navigationTitle(language.text("settings.title"))
+            .scrollIndicators(.hidden)
+            .background(AppTheme.pageBackground)
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -111,46 +119,53 @@ struct SettingsView: View {
             ?? "1.0"
     }
 
-    private func versionLabel(
-        _ version: (beta: Int, publicBeta: Int?, build: String)
-    ) -> String {
-        if let publicBeta = version.publicBeta {
-            return language.text(
-                "settings.developer_public_beta_build",
-                Int64(version.beta),
-                Int64(publicBeta),
-                version.build
-            )
-        }
-        return language.text(
-            "settings.developer_beta_build",
-            Int64(version.beta),
-            version.build
-        )
+    private var installationID: String {
+        UIDevice.current.identifierForVendor?.uuidString ?? "Unavailable"
     }
 
-    @ViewBuilder
-    private func creditsRow(name: String, role: String, url: String) -> some View {
-        if let destination = URL(string: url) {
-            Link(destination: destination) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(name)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        Text(role)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.accent)
-                        .frame(width: 28, height: 28)
-                }
-                .contentShape(Rectangle())
+    private func settingsRow(icon: String, title: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 30)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppTheme.mutedText)
+                Text(value)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
             }
-            .accessibilityLabel(language.text("accessibility.open_profile", name))
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, 13)
+    }
+
+    private func licenseRow(
+        icon: String,
+        title: String,
+        value: String,
+        valueColor: Color = .white,
+        monospaced: Bool = false
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 30)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppTheme.mutedText)
+                Text(value)
+                    .font(monospaced ? .caption.monospaced() : .body.weight(.semibold))
+                    .foregroundStyle(valueColor)
+                    .lineLimit(3)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 13)
     }
 }

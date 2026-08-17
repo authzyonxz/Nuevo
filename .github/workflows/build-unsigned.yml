@@ -28,13 +28,11 @@ jobs:
         fi
         echo "Using scheme: $SCHEME_NAME"
         
-        # Build with local derivedDataPath
         xcodebuild -project ThreeOneOSFive.xcodeproj -scheme "$SCHEME_NAME" -configuration Release -sdk iphoneos -derivedDataPath build/DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO clean build
         
         echo "Creating Payload directory..."
         mkdir -p Payload
         
-        # Locate the .app bundle
         APP_PATH=$(find build/DerivedData -name "*.app" -type d | head -n 1)
         if [ -z "$APP_PATH" ]; then
            echo "Error: .app bundle not found!"
