@@ -4,3 +4,5 @@
 #import "kexploit/sandbox_escape.h"
 #import "kexploit/kutils.h"
 #import "helpers/AppIconHelper.h"
+#import "login/RageLoginView.h"
+#import "login/RageLicenseState.h"

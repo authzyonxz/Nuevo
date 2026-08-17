@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		29DE1BCCBB5B442B84732748 /* RageLoginView.m in Sources */ = {isa = PBXBuildFile; fileRef = 3286B3BEFDB949E4AD1B2060 /* RageLoginView.m */; };
+		188632DC6F0A4BE9B7776446 /* RageLicenseState.m in Sources */ = {isa = PBXBuildFile; fileRef = 2612DD50CF804AB0A17FA9B2 /* RageLicenseState.m */; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
@@ -69,6 +71,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		821CEBADFEC946C68D449ED9 /* RageLoginView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = h; path = login/RageLoginView.h; sourceTree = "<group>"; };
+		3286B3BEFDB949E4AD1B2060 /* RageLoginView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = login/RageLoginView.m; sourceTree = "<group>"; };
+		1F72AC3E49D744F18DD95D1A /* RageLicenseState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = h; path = login/RageLicenseState.h; sourceTree = "<group>"; };
+		2612DD50CF804AB0A17FA9B2 /* RageLicenseState.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = login/RageLicenseState.m; sourceTree = "<group>"; };
 		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -360,6 +366,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			29DE1BCCBB5B442B84732748 /* RageLoginView.m in Sources */,
+			188632DC6F0A4BE9B7776446 /* RageLicenseState.m in Sources */,
 				3105A200, 3105A201, 3105A203, 3105A204,
 				3105A205, 3105A206, 3105A207, 3105A209,
 				3105A210, 3105A220, 3105A221, 3105A222, 3105A223,

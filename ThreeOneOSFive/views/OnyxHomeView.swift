@@ -15,7 +15,7 @@ struct OnyxHomeView: View {
                             .fill(AppTheme.accent)
                             .frame(width: 60, height: 60)
                         
-                        Image(systemName: "cat.fill") // Placeholder para o logo da foto
+                        Image(systemName: "cat.fill")
                             .font(.system(size: 35))
                             .foregroundStyle(.white)
                     }
@@ -31,6 +31,14 @@ struct OnyxHomeView: View {
                     }
                     
                     Spacer()
+                    
+                    Button {
+                        r7x_Invalidate_8x()
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .foregroundStyle(.red)
+                            .font(.system(size: 20))
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.top, 30)
@@ -41,20 +49,40 @@ struct OnyxHomeView: View {
                     .padding(.horizontal)
                 
                 // Status Bar
-                HStack {
-                    Circle()
-                        .fill(appState.isSupported ? .green : .red)
-                        .frame(width: 8, height: 8)
+                VStack(spacing: 12) {
+                    HStack {
+                        Circle()
+                            .fill(appState.isSupported ? .green : .red)
+                            .frame(width: 8, height: 8)
+                        
+                        Text("Access layer ready")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white)
+                        
+                        Spacer()
+                        
+                        Text(r7x_Time_5j())
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.accent)
+                    }
                     
-                    Text("Access layer ready")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
+                    Divider().background(Color.white.opacity(0.1))
                     
-                    Spacer()
-                    
-                    Text("Workspace ready")
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppTheme.onyxSecondaryText)
+                    HStack {
+                        Image(systemName: "key.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.onyxSecondaryText)
+                        
+                        Text(r7x_Mask_3h())
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(AppTheme.onyxSecondaryText)
+                        
+                        Spacer()
+                        
+                        Text("Workspace ready")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.onyxSecondaryText)
+                    }
                 }
                 .padding()
                 .background(AppTheme.onyxCardBackground)

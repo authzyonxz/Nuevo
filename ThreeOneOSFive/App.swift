@@ -13,18 +13,27 @@ struct ThreeOneOSFiveApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(appState)
-                .environmentObject(patchDraftCoordinator)
-                .environmentObject(fileOperationCoordinator)
-                .environment(\.appLanguage, language)
-                .environment(\.locale, language.locale)
-                .onAppear {
-                    appState.detectSupport()
+            ZStack {
+                if appState.isLoggedIn {
+                    ContentView()
+                        .transition(.opacity)
+                } else {
+                    LoginViewWrapper(isLoggedIn: $appState.isLoggedIn)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
                 }
-                .onOpenURL { url in
-                    patchDraftCoordinator.presentImport(url)
-                }
+            }
+            .environmentObject(appState)
+            .environmentObject(patchDraftCoordinator)
+            .environmentObject(fileOperationCoordinator)
+            .environment(\.appLanguage, language)
+            .environment(\.locale, language.locale)
+            .onAppear {
+                appState.detectSupport()
+            }
+            .onOpenURL { url in
+                patchDraftCoordinator.presentImport(url)
+            }
         }
     }
 }
@@ -32,8 +41,17 @@ struct ThreeOneOSFiveApp: App {
 class AppState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
     @Published var unsupportedMessage: String?
+    @Published var isLoggedIn: Bool = r7x_IsValid_2v()
 
     var isSupported: Bool { unsupportedMessage == nil }
+
+    init() {
+        NotificationCenter.default.addObserver(forName: NSNotification.Name(r7x_Notify_92), object: nil, queue: .main) { [weak self] _ in
+            withAnimation {
+                self?.isLoggedIn = false
+            }
+        }
+    }
 
     func detectSupport() {
         let v = AppInfo.versionTuple
@@ -54,4 +72,24 @@ class AppState: ObservableObject {
             exploitStatus = .unsupported(unsupportedMessage)
         }
     }
+}
+
+struct LoginViewWrapper: UIViewRepresentable {
+    @Binding var isLoggedIn: Bool
+
+    func makeUIView(context: Context) -> UIView {
+        let container = UIView()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let window = container.window {
+                RageLoginView.present(in: window) { _ in
+                    withAnimation {
+                        isLoggedIn = true
+                    }
+                }
+            }
+        }
+        return container
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
