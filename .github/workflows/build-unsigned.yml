@@ -11,10 +11,10 @@ jobs:
     runs-on: macos-14
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        persist-credentials: false
+    - name: Clone Repository Locally
+      run: |
+        git clone https://github.com/${{ github.repository }}.git .
+        git checkout ${{ github.sha }}
 
     - name: Set up Xcode
       uses: maxim-lobanov/setup-xcode@v1
