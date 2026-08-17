@@ -40,21 +40,22 @@ struct SettingsView: View {
                         VStack(spacing: 0) {
                             licenseRow(icon: "checkmark.seal.fill", title: "Status", value: "Activated", valueColor: AppTheme.success)
                             Divider().overlay(AppTheme.border)
-                            licenseRow(icon: "calendar.badge.clock", title: "Expiry", value: "18 Aug 2026 at 10:03 AM")
+                            licenseRow(icon: "calendar.badge.clock", title: "Expiry", value: appState.activeLicense?.expiresAt ?? "N/A")
                             Divider().overlay(AppTheme.border)
-                            licenseRow(icon: "person.2.fill", title: "Distributor", value: "Zyvex")
+                            licenseRow(icon: "person.2.fill", title: "Product", value: appState.activeLicense?.productName ?? "Painel iPA")
                             Divider().overlay(AppTheme.border)
-                            licenseRow(icon: "key.fill", title: "Installation ID", value: installationID, monospaced: true)
-                            HStack(spacing: 10) {
-                                Button("Change License") { }
-                                    .frame(maxWidth: .infinity)
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(AppTheme.accent)
-                                Button("Deactivate", role: .destructive) { }
-                                    .frame(maxWidth: .infinity)
-                                    .buttonStyle(.bordered)
-                                    .tint(AppTheme.destructive)
+                            licenseRow(icon: "key.fill", title: "Active Key", value: appState.activeLicense?.key ?? "N/A", monospaced: true)
+                            
+                            Button("Deactivate", role: .destructive) {
+                                LicenseService.shared.logout()
+                                withAnimation {
+                                    appState.isActivated = false
+                                    appState.activeLicense = nil
+                                }
                             }
+                            .frame(maxWidth: .infinity)
+                            .buttonStyle(.bordered)
+                            .tint(AppTheme.destructive)
                             .padding(.top, 16)
                         }
                     }

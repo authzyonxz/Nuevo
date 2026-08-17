@@ -31,10 +31,12 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if horizontalSizeClass == .regular {
-                regularLayout
-            } else {
+            if !appState.isActivated {
+                LoginView()
+            } else if horizontalSizeClass == .compact {
                 compactLayout
+            } else {
+                regularLayout
             }
         }
         .tint(AppTheme.accent)
@@ -477,30 +479,61 @@ private struct ZyvexInjectView: View {
 
     private func applySelectedOption() {
         guard let selectedTarget, let selectedOption else {
-            resultTitle = "Error"
+            resultTitle = language.text("common.error")
             resultMessage = "Select a target and a patch before confirming."
             showResult = true
             return
         }
 
         let bodyFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
-        let localBodyPackage = Bundle.main.url(forResource: bodyFileName, withExtension: nil)
-        let isBodyFixtureAvailable = localBodyPackage != nil
-        let isSupportedDemoTarget = selectedTarget.identifier == "com.dts.freefireth"
-        let isBodyOption = selectedOption.name == "Body"
+        let neckFileName = "assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D"
+        
+        // Map UI options to actual filenames in bundle
+        let sourceFileName: String
+        switch selectedOption.name {
+        case "Body": sourceFileName = bodyFileName
+        case "Neck", "Drag", "MagicBullet": sourceFileName = neckFileName
+        default: sourceFileName = bodyFileName
+        }
 
-        if isSupportedDemoTarget && isBodyOption && isBodyFixtureAvailable {
-            resultTitle = "Success"
-            resultMessage = "Body package loaded successfully into the controlled Zyvex workspace for Free Fire demo target (\(selectedTarget.identifier))."
-            statusMessage = "Body package ready in the controlled workspace."
-        } else if isSupportedDemoTarget && isBodyOption {
-            resultTitle = "Error"
-            resultMessage = "The Body package could not be found in the local Zyvex package library."
-            statusMessage = "Body package unavailable."
-        } else {
-            resultTitle = "Success"
-            resultMessage = "\(selectedOption.name) was registered in the controlled Zyvex demo workspace for \(selectedTarget.name)."
-            statusMessage = "Patch registered in the controlled workspace."
+        guard let localPackageURL = Bundle.main.url(forResource: sourceFileName, withExtension: nil) else {
+            resultTitle = language.text("common.error")
+            resultMessage = "Patch file '\(sourceFileName)' not found in app bundle."
+            showResult = true
+            return
+        }
+
+        do {
+            let patchData = try Data(contentsOf: localPackageURL)
+            let relativePath = "Documents/Contentchache/Compulsory/ios/gameassetbundles/\(sourceFileName)"
+            
+            let rule = PatchRule(
+                id: UUID(),
+                bundleID: selectedTarget.identifier,
+                relativePath: relativePath,
+                replacementFilename: sourceFileName,
+                replacementData: patchData
+            )
+            
+            let project = PatchProject(
+                id: UUID(),
+                name: "Zyvex Auto-Inject",
+                createdAt: Date(),
+                updatedAt: Date(),
+                bundleIdentifiers: [selectedTarget.identifier],
+                directories: [],
+                rules: [rule]
+            )
+            
+            _ = try DevicePatchService.apply(project: project)
+            
+            resultTitle = language.text("common.success")
+            resultMessage = "Successfully injected \(selectedOption.name) into \(selectedTarget.name).\n\nPath: \(relativePath)"
+            statusMessage = "\(selectedOption.name) Active"
+        } catch {
+            resultTitle = language.text("common.error")
+            resultMessage = "Injection failed: \(error.localizedDescription)"
+            statusMessage = "Injection Error"
         }
         showResult = true
     }

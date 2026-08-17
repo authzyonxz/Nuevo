@@ -22,6 +22,7 @@ struct ThreeOneOSFiveApp: App {
                 .environment(\.locale, language.locale)
                 .onAppear {
                     appState.detectSupport()
+                    appState.checkInitialActivation()
                 }
                 .onOpenURL { url in
                     patchDraftCoordinator.presentImport(url)
@@ -33,8 +34,28 @@ struct ThreeOneOSFiveApp: App {
 class AppState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
     @Published var unsupportedMessage: String?
+    @Published var isActivated: Bool = false
+    @Published var activeLicense: LicenseInfo? = nil
 
     var isSupported: Bool { unsupportedMessage == nil }
+
+    func checkInitialActivation() {
+        if let savedKey = LicenseService.shared.getSavedKey() {
+            // Tentativa de validação automática em background
+            LicenseService.shared.validateKey(savedKey) { result in
+                DispatchQueue.main.async {
+                    if case .success(let info) = result {
+                        self.activate(with: info)
+                    }
+                }
+            }
+        }
+    }
+
+    func activate(with info: LicenseInfo) {
+        self.activeLicense = info
+        self.isActivated = true
+    }
 
     func detectSupport() {
         let v = AppInfo.versionTuple
