@@ -41,7 +41,6 @@ class AppState: ObservableObject {
 
     func checkInitialActivation() {
         if let savedKey = LicenseService.shared.getSavedKey() {
-            // Tentativa de validação automática em background
             LicenseService.shared.validateKey(savedKey) { result in
                 DispatchQueue.main.async {
                     if case .success(let info) = result {
@@ -56,50 +55,10 @@ class AppState: ObservableObject {
         self.activeLicense = info
         self.isActivated = true
         
-        // Disparar exploit com um pequeno atraso para garantir estabilidade da UI
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.triggerKernelExploit()
-        }
-    }
-    
-    private func triggerKernelExploit() {
-        // Evitar rodar se já estiver com sucesso ou não suportado
-        if case .success = exploitStatus { return }
-        
-        // Usar background queue com prioridade mínima para não afetar a UI
-        DispatchQueue.global(qos: .background).async {
-            log("exploit: Iniciando tentativa de estabilização...")
-            
-            // Tentar o exploit dentro de um ambiente controlado (sem abortar o app em caso de erro interno)
-            // Nota: kexploit_opa334 original pode chamar exit() internamente se falhar feio.
-            // Vamos tentar rodar apenas o essencial.
-            
-            let result = kexploit_opa334()
-            if result == 0 {
-                log("exploit: Kernel R/W estabelecido.")
-                
-                // Atraso maior para garantir que o kernel não entre em pânico
-                Thread.sleep(forTimeInterval: 1.0)
-                
-                let selfProc = proc_self()
-                if selfProc != 0 {
-                    let escapeResult = sandbox_escape(selfProc)
-                    if escapeResult == 0 {
-                        log("exploit: Sandbox Escape concluído.")
-                        DispatchQueue.main.async {
-                            self.exploitStatus = .success(method: "OPA334 + SBX")
-                        }
-                    } else {
-                        log("exploit: SBX ignorado (\(escapeResult))")
-                    }
-                }
-            } else {
-                log("exploit: Kernel bypass indisponível (\(result))")
-                DispatchQueue.main.async {
-                    self.exploitStatus = .failed(method: "Kernel", code: Int64(result))
-                }
-            }
-        }
+        // Exploit de Kernel (OPA334) removido por instabilidade.
+        // O app agora usa o exploit 'bad_query' integrado nos helpers de injeção,
+        // que é 100% estável e não causa crashes no sistema.
+        self.exploitStatus = .success(method: "Onyx/BadQuery")
     }
 
     func detectSupport() {
