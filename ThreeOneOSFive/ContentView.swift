@@ -369,15 +369,8 @@ private struct ZyvexInjectView: View {
                 }
             }
             
-            // Lógica inteligente de caminho: cache_res costuma ir na raiz de bundles ou em subpastas específicas
-            var relativePath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)"
-            
-            // Se o arquivo for o cache_res ou aimneck, tentamos injetar no local mais provável
-            if targetFileName.lowercased().contains("cache_res") || targetFileName.lowercased().contains("aimneck") {
-                // Algumas versões usam a subpasta /avatar/ para esses assets
-                // O exploit bad_query criará a pasta se ela não existir
-                relativePath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)"
-            }
+            // Caminho de injeção definitivo na raiz de gameassetbundles/
+            let relativePath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)"
 
             let rule = PatchRule(
                 id: UUID(),
