@@ -1,6 +1,12 @@
 import UIKit
 import SwiftUI
 
+private struct DemoTarget: Identifiable {
+    let id = UUID()
+    let name: String
+    let identifier: String
+}
+
 struct ContentView: View {
     @Environment(\.appLanguage) private var language
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
