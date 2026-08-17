@@ -9,7 +9,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    LabeledContent(language.text("settings.app_version"), value: "\(AppInfo.version) (\(AppInfo.build))")
+                    LabeledContent(language.text("settings.app_version"), value: "1.0.1 (5)")
                     LabeledContent("iOS", value: "\(AppInfo.osVersion) (\(AppInfo.osBuild))")
                 } header: {
                     Text(language.text("settings.device_info"))
