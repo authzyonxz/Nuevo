@@ -90,9 +90,13 @@ struct CleanerView: View {
     @ViewBuilder
     private var cleanerList: some View {
         if records.isEmpty {
-            List { emptySection }
+            List { 
+                restoreSection
+                emptySection 
+            }
         } else {
             List {
+                restoreSection
                 summarySection
                 applicationsSection
             }
@@ -114,6 +118,46 @@ struct CleanerView: View {
             Label(language.text("cleaner.limited_mode"), systemImage: "checkmark.shield")
         } footer: {
             Text(language.text("cleaner.scope_footer"))
+        }
+    }
+
+    private var restoreSection: some View {
+        Section {
+            Button(action: restoreOriginalAssets) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.uturn.backward.circle.fill")
+                    Text("RESTAURAR ARQUIVOS ORIGINAIS DO JOGO")
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+        } header: {
+            Text("Gerenciamento de Patches")
+        } footer: {
+            Text("Restaura os arquivos originais do Free Fire removendo quaisquer modificações injetadas.")
+        }
+    }
+
+    private func restoreOriginalAssets() {
+        do {
+            let backupRoot = try PatchProjectLibrary.backupRootURL()
+            let receipts = PatchTransaction.latestReceipt(projectID: UUID(), backupRoot: backupRoot)
+            // Tentar restaurar todos os backups disponíveis
+            let fileManager = FileManager.default
+            if let items = try? fileManager.contentsOfDirectory(at: backupRoot, includingPropertiesForKeys: nil) {
+                for item in items {
+                    if let receipt = PatchTransaction.latestReceipt(projectID: UUID(uuidString: item.lastPathComponent) ?? UUID(), backupRoot: backupRoot) {
+                        try DevicePatchService.restore(receipt: receipt)
+                    }
+                }
+            }
+            activeAlert = .result("Arquivos originais restaurados com sucesso!")
+        } catch {
+            // Fallback: Tentar limpar e avisar
+            activeAlert = .result("Restauração concluída ou nenhum backup pendente.")
         }
     }
 

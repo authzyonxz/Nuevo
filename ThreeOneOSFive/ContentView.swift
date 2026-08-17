@@ -308,14 +308,26 @@ private struct ZyvexInjectView: View {
                     }
 
                     if selectedTarget != nil && selectedAsset != nil {
-                        Button(action: applyPatch) {
-                            Text("INJETAR AGORA")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 54)
-                                .background(Color.blue)
-                                .cornerRadius(14)
+                        VStack(spacing: 12) {
+                            Button(action: applyPatch) {
+                                Text("INJETAR AGORA")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 54)
+                                    .background(Color.blue)
+                                    .cornerRadius(14)
+                            }
+                            
+                            Button(action: restoreOriginal) {
+                                Text("RESTAURAR ORIGINAL")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.red.opacity(0.8))
+                                    .cornerRadius(14)
+                            }
                         }
                         .padding(.top, 10)
                     }
