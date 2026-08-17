@@ -61,12 +61,11 @@ enum DevicePatchService {
             }
             
             let handle = ContainerStore.grantContainerAccess(path)
-            guard handle >= 0 else {
-                log("patch: traversal grant failed for \(bundleID), result=\(handle)")
-                throw NSError(domain: "Patch", code: 401, userInfo: [NSLocalizedDescriptionKey: "Permissão negada pelo Kernel para acessar a pasta do jogo. O exploit pode não estar ativo."])
+            if handle >= 0 {
+                handles.append(handle)
+            } else {
+                log("patch: traversal grant returned \(handle), proceeding in standard mode")
             }
-            
-            handles.append(handle)
             roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
         }
         return try operation(roots)
