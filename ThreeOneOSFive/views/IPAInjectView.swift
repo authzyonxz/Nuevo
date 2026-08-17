@@ -160,6 +160,8 @@ struct IPAPackageSelectionView: View {
     let game: IPAInjectView.GameTarget
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
+    @State private var selectedAssetID: String?
+    @State private var showMissingAssetAlert = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -182,86 +184,131 @@ struct IPAPackageSelectionView: View {
             .padding()
             .background(AppTheme.ipaBackground)
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Game Profile Header
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("ACTIVE GAME PROFILE")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(AppTheme.ipaSecondaryText)
-                            Text(game.rawValue)
-                                .font(.title3.weight(.bold))
-                                .foregroundStyle(.white)
-                        }
-                        Spacer()
-                    }
-                    .padding(20)
-                    .background(AppTheme.ipaCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    
-                    // Available Asset Packages
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("AVAILABLE AVATAR PACKAGES")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(AppTheme.ipaSecondaryText)
-                        
-                        ForEach(AvatarAssetCatalog.assets) { asset in
-                            AvatarAssetRow(asset: asset)
-                        }
-                    }
+            if game == .freeFireMax {
+                VStack(spacing: 12) {
+                    Spacer()
+                    Image(systemName: "clock.badge.exclamationmark")
+                        .font(.system(size: 50))
+                        .foregroundStyle(.orange)
+                    Text("Em breve")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                    Text("O suporte ao Free Fire MAX será adicionado em breve.")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.ipaSecondaryText)
+                        .multilineTextAlignment(.center)
+                    Spacer()
                 }
                 .padding()
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Game Profile Header
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("ACTIVE GAME PROFILE")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(AppTheme.ipaSecondaryText)
+                                Text(game.rawValue)
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(.white)
+                            }
+                            Spacer()
+                        }
+                        .padding(20)
+                        .background(AppTheme.ipaCardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        
+                        // Available Asset Packages
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("AVAILABLE AVATAR PACKAGES")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(AppTheme.ipaSecondaryText)
+                            
+                            ForEach(AvatarAssetCatalog.assets) { asset in
+                                AvatarAssetRow(asset: asset, isSelected: selectedAssetID == asset.id) {
+                                    selectedAssetID = asset.id
+                                }
+                            }
+                        }
+                        
+                        Button {
+                            prepareInjection()
+                        } label: {
+                            Text("PREPARAR INJEÇÃO")
+                                .font(.system(size: 14, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(selectedAssetID != nil ? AppTheme.accent : AppTheme.ipaCardBackground)
+                                .foregroundStyle(selectedAssetID != nil ? .black : AppTheme.ipaSecondaryText)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        .disabled(selectedAssetID == nil)
+                        .padding(.top, 10)
+                    }
+                    .padding()
+                }
             }
         }
         .background(AppTheme.ipaBackground.ignoresSafeArea())
+        .alert("Asset indisponível", isPresented: $showMissingAssetAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("O arquivo de avatar não foi localizado nos recursos incluídos nesta build.")
+        }
+    }
+    
+    private func prepareInjection() {
+        guard let selectedAssetID,
+              let asset = AvatarAssetCatalog.assets.first(where: { $0.id == selectedAssetID }),
+              let draft = AvatarAssetCatalog.makeFreeFireDraft(selectedAssets: [asset]) else {
+            showMissingAssetAlert = true
+            return
+        }
+        draftCoordinator.present(draft)
+        dismiss()
     }
 }
 
 struct AvatarAssetRow: View {
     let asset: AvatarAsset
-    @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
-    @State private var isApplying = false
-    
-    var isSelected: Bool {
-        draftCoordinator.selectedAssets.contains(asset)
-    }
+    let isSelected: Bool
+    let action: () -> Void
     
     var body: some View {
-        HStack(spacing: 15) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(AppTheme.ipaCardBackground)
-                    .frame(width: 50, height: 50)
-                Image(systemName: "cube.box.fill")
-                    .foregroundStyle(AppTheme.accent)
+        Button(action: action) {
+            HStack(spacing: 15) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(AppTheme.ipaCardBackground)
+                        .frame(width: 50, height: 50)
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "cube.box.fill")
+                        .foregroundStyle(isSelected ? AppTheme.accent : .white)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(asset.displayName)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("avatar/\(asset.sourceFilename)")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(AppTheme.ipaSecondaryText)
+                }
+                
+                Spacer()
+                
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundStyle(isSelected ? AppTheme.accent : AppTheme.ipaSecondaryText)
             }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(asset.displayName)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                Text(asset.resourceFolder)
-                    .font(.system(size: 12))
-                    .foregroundStyle(AppTheme.ipaSecondaryText)
-            }
-            
-            Spacer()
-            
-            Button {
-                draftCoordinator.toggleAsset(asset)
-            } label: {
-                Text(isSelected ? "ATIVADO" : "SELECIONAR")
-                    .font(.system(size: 12, weight: .bold))
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 16)
-                    .background(isSelected ? AppTheme.accent : AppTheme.ipaCardBackground)
-                    .foregroundStyle(isSelected ? .black : .white)
-                    .clipShape(Capsule())
-            }
+            .padding(16)
+            .background(AppTheme.ipaCardBackground.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(isSelected ? AppTheme.accent : Color.clear, lineWidth: 1.5)
+            )
         }
-        .padding(16)
-        .background(AppTheme.ipaCardBackground.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .buttonStyle(.plain)
     }
 }
