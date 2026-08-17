@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C21117E776224C8FA4E17F38 /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D388A0EAA41B89EF93B11; };
-		3105M002 /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M001; };
-		3105M004 /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M003; };
+		585802E2AB9A4348A4991625 /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6100E1F503C049A7A5FEB84F; };
+		0C4F87CCC123464BAB13ED1F /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C6F4CDA1EC4487BA3137C7; };
+		AE7268E4CF0E4DC7A4818F98 /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7EAEE3F3F449E6BE50E5D1; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
@@ -71,9 +71,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		521D388A0EAA41B89EF93B11 /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
-		3105M001 /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
-		3105M003 /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
+		6100E1F503C049A7A5FEB84F /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
+		60C6F4CDA1EC4487BA3137C7 /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
+		BF7EAEE3F3F449E6BE50E5D1 /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
 		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
