@@ -192,7 +192,11 @@
 									3105A031 /* Assets.xcassets */,
 					3105J102 /* AvatarAssets */,
 
-			);
+						821CEBADFEC946C68D449ED9 /* RageLoginView.h */,
+			3286B3BEFDB949E4AD1B2060 /* RageLoginView.m */,
+			1F72AC3E49D744F18DD95D1A /* RageLicenseState.h */,
+			2612DD50CF804AB0A17FA9B2 /* RageLicenseState.m */,
+);
 			path = ThreeOneOSFive;
 			sourceTree = "<group>";
 		};
@@ -234,7 +238,9 @@
 									3105F106 /* WallpaperLabView.swift */,
 					3105J101 /* FreeFireTargetSelectionView.swift */,
 
-			);
+						BADC243898C34A2887C98E25 /* OnyxHomeView.swift */,
+			8A03DB890BD34EF9A2F21A54 /* OnyxInjectView.swift */,
+);
 			path = views;
 			sourceTree = "<group>";
 		};
