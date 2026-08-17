@@ -4,6 +4,7 @@ import UIKit
 struct ContentView: View {
     @Environment(\.appLanguage) private var language
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var patchDraftCoordinator: PatchDraftCoordinator
     @State private var tabNavigation: AppTabNavigationState
     @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
