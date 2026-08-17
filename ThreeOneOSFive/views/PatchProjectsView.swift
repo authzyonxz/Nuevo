@@ -1,13 +1,15 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct PatchProjectsView: View {
+public struct PatchProjectsView: View {
     @Environment(\.appLanguage) private var language
     @State private var importedAssets: [URL] = OnyxImporterService.shared.getImportedAssets()
     @State private var showImporter = false
     @State private var statusMessage: String?
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         NavigationStack {
             List {
                 Section(header: Text("Arquivos .onyx Importados")) {
