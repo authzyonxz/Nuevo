@@ -4,7 +4,7 @@
 #import <stdlib.h>
 
 static NSString * const kRageAPIURL = @"https://ffh4xcorporation.online/api/validate-key";
-static NSString * const kRageProduct = @"IPA";
+static NSString * const kRageProduct = @"ruanwq";
 static NSString * const kRageKeychainService = @"com.ffh4x.rage.license";
 static NSString * const kRageKeychainAccount = @"saved-key";
 static NSString * const kRageDeviceAccount = @"device-id";
