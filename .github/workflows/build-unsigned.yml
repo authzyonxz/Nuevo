@@ -21,15 +21,28 @@ jobs:
       with:
         xcode-version: '15.2'
 
-    - name: Build Project Unsigned IPA
+    - name: List Schemes & Build
       run: |
         set -e
-        echo "Cleaning and building..."
-        xcodebuild -project ThreeOneOSFive.xcodeproj -scheme ThreeOneOSFive -configuration Release -sdk iphoneos CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO clean build
+        echo "Listing available schemes..."
+        xcodebuild -project ThreeOneOSFive.xcodeproj -list
+        
+        SCHEME_NAME=$(xcodebuild -project ThreeOneOSFive.xcodeproj -list | grep -A 1 "Schemes:" | tail -n 1 | tr -d '[:space:]')
+        if [ -z "$SCHEME_NAME" ]; then
+          SCHEME_NAME="ThreeOneOSFive"
+        fi
+        echo "Using scheme: $SCHEME_NAME"
+        
+        xcodebuild -project ThreeOneOSFive.xcodeproj -scheme "$SCHEME_NAME" -configuration Release -sdk iphoneos CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO clean build
         
         echo "Creating Payload directory..."
         mkdir -p Payload
-        cp -r build/DerivedData/Build/Products/Release-iphoneos/3105.app Payload/
+        APP_PATH=$(find build/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
+        if [ -z "$APP_PATH" ]; then
+          APP_PATH=$(find . -name "*.app" | head -n 1)
+        fi
+        echo "Found app at: $APP_PATH"
+        cp -r "$APP_PATH" Payload/
         
         echo "Zipping to IPA..."
         zip -r 3105-unsigned.ipa Payload
