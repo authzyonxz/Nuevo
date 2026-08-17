@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D2DD80E4DB41474885093472 /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAEAA99EB1254066B14AAC01; };
-		3BC9651615E94AA28413B527 /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3881CDF0BB4C4783FBAAD5; };
-		3DB01CAA1FD24265AD25B582 /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 714D58150CD44798B6E2319C; };
+		66A6E493B8AF4D688C5A4A1E /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB144680C9D54FA3913B6561; };
+		82E791EC8FDA49169CAB27B2 /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8591301342B84864BA77B146; };
+		D63875FB70744D19A32E4B38 /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47674AC3B2B545108F137352; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
@@ -71,9 +71,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		BAEAA99EB1254066B14AAC01 /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = helpers/OnyxImporterService.swift; sourceTree = "<group>"; };
-		1C3881CDF0BB4C4783FBAAD5 /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = views/DocumentPickerView.swift; sourceTree = "<group>"; };
-		714D58150CD44798B6E2319C /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = views/PatchProjectsView.swift; sourceTree = "<group>"; };
+		FB144680C9D54FA3913B6561 /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = helpers/OnyxImporterService.swift; sourceTree = "<group>"; };
+		8591301342B84864BA77B146 /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = views/DocumentPickerView.swift; sourceTree = "<group>"; };
+		47674AC3B2B545108F137352 /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = views/PatchProjectsView.swift; sourceTree = "<group>"; };
 		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -176,9 +176,10 @@
 				3105A050 /* ThreeOneOSFive-Bridging-Header.h */,
 				3105A060 /* Info.plist */,
 				3105A020 /* App.swift */,
-		BAEAA99EB1254066B14AAC01 /* OnyxImporterService.swift */,
-		1C3881CDF0BB4C4783FBAAD5 /* DocumentPickerView.swift */,
-		714D58150CD44798B6E2319C /* PatchProjectsView.swift */,
+		FB144680C9D54FA3913B6561 /* OnyxImporterService.swift */,
+		8591301342B84864BA77B146 /* DocumentPickerView.swift */,
+		47674AC3B2B545108F137352 /* PatchProjectsView.swift */,
+
 
 				3105A021 /* ContentView.swift */,
 				3105A403 /* exploit */,
