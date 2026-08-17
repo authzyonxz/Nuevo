@@ -373,8 +373,19 @@ enum ContainerStore {
     static func isApplicationContainerPath(_ path: String) -> Bool {
         let canonicalRoot = ContainerDiscoveryMerger.canonicalPath(appDataRoot)
         let canonicalPath = ContainerDiscoveryMerger.canonicalPath(path)
-        guard canonicalPath.hasPrefix(canonicalRoot + "/") else { return false }
-        return UUID(uuidString: (canonicalPath as NSString).lastPathComponent) != nil
+        
+        // Se o caminho já contém o prefixo correto, aceitamos (mesmo que não termine em UUID, 
+        // pois alguns sistemas de side-load ou jailbreak podem ter caminhos diferentes)
+        if canonicalPath.hasPrefix(canonicalRoot) {
+            return true
+        }
+        
+        // Se for um caminho de container do sistema mas que sabemos ser de app
+        if canonicalPath.contains("/Containers/Data/Application/") {
+            return true
+        }
+
+        return false
     }
 
     // MARK: Filesystem discovery
@@ -444,8 +455,21 @@ enum ContainerStore {
 
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
+        
+        // Tentar grant com o caminho original
         var pathC = clean.utf8CString.map { Int8($0) }
-        return bad_query(&pathC, true, nil, false)
+        let handle = bad_query(&pathC, true, nil, false)
+        
+        if handle < 0 {
+            // Se falhar, tentar com o caminho canônico (adicionando /private se necessário)
+            let canonical = ContainerDiscoveryMerger.canonicalPath(clean)
+            if canonical != clean {
+                var canonicalC = canonical.utf8CString.map { Int8($0) }
+                return bad_query(&canonicalC, true, nil, false)
+            }
+        }
+        
+        return handle
     }
 
     static func containersFromFilesystem() -> [InstalledApp] {

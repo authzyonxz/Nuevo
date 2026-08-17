@@ -50,15 +50,22 @@ enum DevicePatchService {
         defer { handles.forEach(bad_query_release) }
 
         for bundleID in bundleIDs {
-            guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
-                  ContainerStore.isApplicationContainerPath(path) else {
-                throw PatchPackageError.targetAppUnavailable(bundleID)
+            guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID) else {
+                log("patch: could not resolve path for \(bundleID)")
+                throw NSError(domain: "Patch", code: 404, userInfo: [NSLocalizedDescriptionKey: "Não foi possível localizar a pasta do jogo \(bundleID). Certifique-se que o jogo está instalado."])
             }
+            
+            guard ContainerStore.isApplicationContainerPath(path) else {
+                log("patch: invalid container path for \(bundleID): \(path)")
+                throw NSError(domain: "Patch", code: 403, userInfo: [NSLocalizedDescriptionKey: "Caminho do jogo inválido ou restrito: \(path)"])
+            }
+            
             let handle = ContainerStore.grantContainerAccess(path)
             guard handle >= 0 else {
                 log("patch: traversal grant failed for \(bundleID), result=\(handle)")
-                throw PatchPackageError.targetAppUnavailable(bundleID)
+                throw NSError(domain: "Patch", code: 401, userInfo: [NSLocalizedDescriptionKey: "Permissão negada pelo Kernel para acessar a pasta do jogo. O exploit pode não estar ativo."])
             }
+            
             handles.append(handle)
             roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
         }
