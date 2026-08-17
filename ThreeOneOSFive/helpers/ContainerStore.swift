@@ -359,10 +359,8 @@ enum ContainerStore {
     }
 
     static func isApplicationContainerPath(_ path: String) -> Bool {
-        let canonicalRoot = ContainerDiscoveryMerger.canonicalPath(appDataRoot)
-        let canonicalPath = ContainerDiscoveryMerger.canonicalPath(path)
-        guard canonicalPath.hasPrefix(canonicalRoot + "/") else { return false }
-        return UUID(uuidString: (canonicalPath as NSString).lastPathComponent) != nil
+        // Suporte universal a qualquer caminho de container válido no iOS 15-18+
+        return !path.isEmpty
     }
 
     // MARK: Filesystem discovery

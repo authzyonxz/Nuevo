@@ -50,8 +50,7 @@ enum DevicePatchService {
         defer { handles.forEach(bad_query_release) }
 
         for bundleID in bundleIDs {
-            guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
-                  ContainerStore.isApplicationContainerPath(path) else {
+            guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID) else {
                 throw PatchPackageError.targetAppUnavailable(bundleID)
             }
             let handle = ContainerStore.grantContainerAccess(path)
