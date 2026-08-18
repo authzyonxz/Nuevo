@@ -13,6 +13,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BUILD_C8E1997F0E954DD3 /* VIPPackageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SWIFT_E0DF89CAEE914C4E /* VIPPackageService.swift */; };
 		VIP_magic_bull_BU /* magic_bullet_max_cacheres in Resources */ = {isa = PBXBuildFile; fileRef = VIP_magic_bull_ID /* magic_bullet_max_cacheres */; };
 		VIP_hs_pescoco_BU /* hs_pescoco_antena_assetindexer in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */; };
 		VIP_hs_peito_c_BU /* hs_peito_cacheres in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_peito_c_ID /* hs_peito_cacheres */; };
@@ -85,6 +86,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		SWIFT_E0DF89CAEE914C4E /* VIPPackageService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VIPPackageService.swift; sourceTree = "<group>"; };
 		VIP_magic_bull_ID /* magic_bullet_max_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/magic_bullet_max_cacheres"; sourceTree = "SOURCE_ROOT"; };
 		VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_pescoco_antena_assetindexer"; sourceTree = "SOURCE_ROOT"; };
 		VIP_hs_peito_c_ID /* hs_peito_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_peito_cacheres"; sourceTree = "SOURCE_ROOT"; };
@@ -286,6 +288,7 @@
 			3105A405 /* helpers */ = {
 				isa = PBXGroup;
 				children = (
+				SWIFT_E0DF89CAEE914C4E /* VIPPackageService.swift */,
 							3105L001 /* LicenseService.swift */,
 						880401FA /* AssetMetadataService.swift */,
 						880501FA /* SparseRestoreService.swift */,
@@ -422,6 +425,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BUILD_C8E1997F0E954DD3 /* VIPPackageService.swift in Sources */,
 				990402FC2B10B10100000001 /* apfs_own.m in Sources */,
 				990402FC2B10B10100000001 /* apfs_own.m in Sources */,
 						3105L002 /* LicenseService.swift in Sources */,
