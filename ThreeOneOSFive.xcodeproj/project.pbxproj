@@ -13,13 +13,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BUILD_C8E1997F0E954DD3 /* VIPPackageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SWIFT_E0DF89CAEE914C4E /* VIPPackageService.swift */; };
-		VIP_magic_bull_BU /* magic_bullet_max_cacheres in Resources */ = {isa = PBXBuildFile; fileRef = VIP_magic_bull_ID /* magic_bullet_max_cacheres */; };
-		VIP_hs_pescoco_BU /* hs_pescoco_antena_assetindexer in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */; };
-		VIP_hs_peito_c_BU /* hs_peito_cacheres in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_peito_c_ID /* hs_peito_cacheres */; };
-		VIP_hs_alto_as_BU /* hs_alto_assetindexer in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_alto_as_ID /* hs_alto_assetindexer */; };
-		990402FC2B10B10100000001 /* apfs_own.m in Sources */ = {isa = PBXBuildFile; fileRef = 990402FB2B10B10100000001 /* apfs_own.m */; };
-		990402FC2B10B10100000001 /* apfs_own.m in Sources */ = {isa = PBXBuildFile; fileRef = 990402FB2B10B10100000001 /* apfs_own.m */; };
 		880102FB /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880101FA /* OnyxImporterService.swift */; };
 		880202FB /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880201FA /* PatchProjectsView.swift */; };
 			880302FB /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880301FA /* DocumentPickerView.swift */; };
@@ -81,26 +74,15 @@
 		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
 		3105J200 /* cache_res Body fixture in Resources */ = {isa = PBXBuildFile; fileRef = 3105J100; };
 		3105L002 /* LicenseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L001; };
-			3105L004 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L003; };
-			880502FB /* SparseRestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880501FA /* SparseRestoreService.swift */; };
+		3105L004 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L003; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		SWIFT_E0DF89CAEE914C4E /* VIPPackageService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VIPPackageService.swift; sourceTree = "<group>"; };
-		VIP_magic_bull_ID /* magic_bullet_max_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/magic_bullet_max_cacheres"; sourceTree = "SOURCE_ROOT"; };
-		VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_pescoco_antena_assetindexer"; sourceTree = "SOURCE_ROOT"; };
-		VIP_hs_peito_c_ID /* hs_peito_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_peito_cacheres"; sourceTree = "SOURCE_ROOT"; };
-		VIP_hs_alto_as_ID /* hs_alto_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_alto_assetindexer"; sourceTree = "SOURCE_ROOT"; };
-		990402FD2B10B10100000001 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
-		990402FB2B10B10100000001 /* apfs_own.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apfs_own.m; sourceTree = "<group>"; };
-		990402FD2B10B10100000001 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
-		990402FB2B10B10100000001 /* apfs_own.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apfs_own.m; sourceTree = "<group>"; };
 		880101FA /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
 		880201FA /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
 			880301FA /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
-				880401FA /* AssetMetadataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetMetadataService.swift; sourceTree = "<group>"; };
-				880501FA /* SparseRestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparseRestoreService.swift; sourceTree = "<group>"; };
-			3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+			880401FA /* AssetMetadataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetMetadataService.swift; sourceTree = "<group>"; };
+		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3105A023 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -288,10 +270,8 @@
 			3105A405 /* helpers */ = {
 				isa = PBXGroup;
 				children = (
-				SWIFT_E0DF89CAEE914C4E /* VIPPackageService.swift */,
-							3105L001 /* LicenseService.swift */,
-						880401FA /* AssetMetadataService.swift */,
-						880501FA /* SparseRestoreService.swift */,
+						3105L001 /* LicenseService.swift */,
+					880401FA /* AssetMetadataService.swift */,
 					3105A099 /* Localization.swift */,
 				3105A104 /* ContainerStore.swift */,
 				3105A108 /* ContainerIdentityResolver.swift */,
@@ -331,10 +311,6 @@
 		3105A406 /* kexploit */ = {
 			isa = PBXGroup;
 			children = (
-				990402FD2B10B10100000001 /* apfs_own.h */,
-				990402FB2B10B10100000001 /* apfs_own.m */,
-				990402FD2B10B10100000001 /* apfs_own.h */,
-				990402FB2B10B10100000001 /* apfs_own.m */,
 				3105A080 /* kexploit_opa334.m */,
 				3105A090 /* kexploit_opa334.h */,
 				3105A081 /* offsets.m */,
@@ -408,10 +384,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				VIP_magic_bull_BU /* magic_bullet_max_cacheres in Resources */,
-				VIP_hs_pescoco_BU /* hs_pescoco_antena_assetindexer in Resources */,
-				VIP_hs_peito_c_BU /* hs_peito_cacheres in Resources */,
-				VIP_hs_alto_as_BU /* hs_alto_assetindexer in Resources */,
 				3105A211,
 				3105A228,
 				3105J200,
@@ -425,12 +397,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BUILD_C8E1997F0E954DD3 /* VIPPackageService.swift in Sources */,
-				990402FC2B10B10100000001 /* apfs_own.m in Sources */,
-				990402FC2B10B10100000001 /* apfs_own.m in Sources */,
-						3105L002 /* LicenseService.swift in Sources */,
-						3105L004 /* LoginView.swift in Sources */,
-						880502FB /* SparseRestoreService.swift in Sources */,
+					3105L002 /* LicenseService.swift in Sources */,
+					3105L004 /* LoginView.swift in Sources */,
 				3105A200, 3105A201, 3105A203, 3105A204,
 				3105A205, 3105A206, 3105A207, 3105A209,
 				3105A210, 3105A220, 3105A221, 3105A222, 3105A223,

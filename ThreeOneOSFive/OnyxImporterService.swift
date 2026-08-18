@@ -36,30 +36,51 @@ public class OnyxImporterService {
     }
     
     private func sanitizeFilename(_ filename: String) -> String {
-        // Se o arquivo for um cache_res puro ou assetindexer puro, mantemos o nome original exato
-        let lower = filename.lowercased()
-        if lower.contains("cache_res") || lower.contains("assetindexer") {
-            // Remove apenas sufixos de cópia como (1), (2), _1 mas preserva a estrutura exata
-            var cleaned = filename
-            let patterns = [
-                "\\s?\\(\\d+\\)", 
-                "\\s\\d+(?=\\.\\w+$)", 
-                "_\\d+(?=\\.\\w+$)"
-            ]
-            for pattern in patterns {
-                if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                    cleaned = regex.stringByReplacingMatches(in: cleaned, options: [], range: NSRange(location: 0, length: cleaned.utf16.count), withTemplate: "")
-                }
+        var result = filename
+        // Padrões comuns de cópia: " (1)", "(1)", " 1", "_1"
+        let patterns = [
+            "\\s?\\(\\d+\\)$", // Ex: "file (2)" ou "file(2)"
+            "\\s\\d+$",       // Ex: "file 2"
+            "_\\d+$"          // Ex: "file_2"
+        ]
+        
+        // 1. Tentar limpar o nome completo (caso o sufixo esteja após a extensão)
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                result = regex.stringByReplacingMatches(in: result, options: [], range: NSRange(location: 0, length: result.utf16.count), withTemplate: "")
             }
-            return cleaned.trimmingCharacters(in: .whitespaces)
         }
-        return filename
+        
+        // 2. Tentar limpar o nome base (caso o sufixo esteja antes da extensão, ex: "file 2.ext")
+        let url = URL(fileURLWithPath: result)
+        let ext = url.pathExtension
+        var base = url.deletingPathExtension().lastPathComponent
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                base = regex.stringByReplacingMatches(in: base, options: [], range: NSRange(location: 0, length: base.utf16.count), withTemplate: "")
+            }
+        }
+        
+        base = base.trimmingCharacters(in: .whitespaces)
+        
+        if ext.isEmpty {
+            return base
+        } else {
+            return base + "." + ext
+        }
     }
-
+    
     public func validateUnityHeader(data: Data) -> Bool {
         guard data.count >= 7 else { return false }
         let header = String(data: data.prefix(7), encoding: .ascii) ?? ""
         return header == "UnityFS" || header == "UnityWe" // UnityWeb
+    }
+    
+    public func isAllowedCacheFilename(_ filename: String) -> Bool {
+        // Nome exato exigido pelo usuário
+        let required = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
+        return filename == required
     }
 
     public func importOnyxFile(from sourceURL: URL) -> Result<(OnyxPackageMetadata, URL), Error> {

@@ -219,12 +219,10 @@ private struct DashboardView: View {
 
 private struct ZyvexInjectView: View {
     @Environment(\.appLanguage) private var language
-    @EnvironmentObject private var appState: AppState
     let onOpenLibrary: () -> Void
     @State private var selectedTarget: DemoTarget?
     @State private var importedAssets: [URL] = OnyxImporterService.shared.getImportedAssets()
     @State private var selectedAsset: URL?
-    @State private var selectedVIPPackage: VIPPackage?
     @State private var showResult = false
     @State private var resultTitle = ""
     @State private var resultMessage = ""
@@ -232,10 +230,8 @@ private struct ZyvexInjectView: View {
     @State private var detectedTargets: [DemoTarget] = []
     
     private let targetTemplates = [
-        DemoTarget(name: "Free Fire (Global/TH)", identifier: "com.dts.freefireth"),
-        DemoTarget(name: "Free Fire MAX", identifier: "com.dts.freefiremax"),
-        DemoTarget(name: "Free Fire (Vietnam)", identifier: "com.garena.game.fcm"),
-        DemoTarget(name: "Free Fire (Taiwan)", identifier: "com.garena.game.kgtw")
+        DemoTarget(name: "Free Fire", identifier: "com.dts.freefireth"),
+        DemoTarget(name: "Free Fire MAX", identifier: "com.dts.freefiremax")
     ]
 
     var body: some View {
@@ -255,7 +251,13 @@ private struct ZyvexInjectView: View {
                         Button {
                             selectedTarget = target
                         } label: {
-                            HStack {
+                            HStack(spacing: 16) {
+                                Image("FreeFireLogo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 44, height: 44)
+                                    .cornerRadius(8)
+                                
                                 VStack(alignment: .leading) {
                                     Text(target.name)
                                         .font(.headline)
@@ -277,74 +279,22 @@ private struct ZyvexInjectView: View {
                         .buttonStyle(.plain)
                     }
 
-                    ZyvexSectionTitle(title: "2. Selecionar Pacote de Mod")
-                    
-                    // Seção de Pacotes VIP filtrados pelo jogo selecionado
-                    Text("PACOTES VIP (PRÉ-INSTALADOS)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.yellow.opacity(0.8))
-                        .padding(.horizontal, 4)
-                    
-                    let currentVIPs = VIPPackageService.shared.getPackages(for: selectedTarget?.identifier ?? "com.dts.freefireth")
-                    
-                    if currentVIPs.isEmpty {
-                        Text("Nenhum pacote VIP disponível para este jogo.")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 4)
-                    } else {
-                        ForEach(currentVIPs) { pkg in
-                            Button {
-                                selectedVIPPackage = pkg
-                                selectedAsset = nil
-                            } label: {
-                                HStack {
-                                    Text(pkg.icon)
-                                        .font(.system(size: 22))
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(pkg.name)
-                                            .font(.subheadline.weight(.bold))
-                                            .foregroundColor(pkg.hasAntenna ? .yellow : .white)
-                                        Text(pkg.description)
-                                            .font(.system(size: 9))
-                                            .foregroundColor(.gray)
-                                            .lineLimit(1)
-                                        // Nome original do arquivo logo abaixo
-                                        Text("Original: \(pkg.filename)")
-                                            .font(.system(size: 8, weight: .medium, design: .monospaced))
-                                            .foregroundColor(.blue.opacity(0.8))
-                                    }
-                                    Spacer()
-                                    if selectedVIPPackage?.id == pkg.id {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.green)
-                                    }
-                                }
-                                .padding()
-                                .background(Color(white: 0.1))
-                                .cornerRadius(12)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    
-                    Divider().padding(.vertical, 8)
-                    
-                    Text("ARQUIVOS IMPORTADOS (IPA / RAW)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.blue.opacity(0.8))
-                        .padding(.horizontal, 4)
-                    
+                    ZyvexSectionTitle(title: "2. Selecionar Arquivo IPA")
                     if importedAssets.isEmpty {
-                        Text("Nenhum arquivo importado na Library.")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 4)
+                        ZyvexCard {
+                            VStack(spacing: 12) {
+                                Text("Nenhum arquivo IPA encontrado na Library.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                                Button("Ir para Library", action: onOpenLibrary)
+                                    .buttonStyle(.borderedProminent)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
                     } else {
                         ForEach(importedAssets, id: \.self) { url in
                             Button {
                                 selectedAsset = url
-                                selectedVIPPackage = nil
                             } label: {
                                 HStack {
                                     Image(systemName: "doc.fill")
@@ -371,7 +321,7 @@ private struct ZyvexInjectView: View {
                         }
                     }
 
-                    if selectedTarget != nil {
+                    if selectedTarget != nil && selectedAsset != nil {
                         VStack(spacing: 12) {
                             Button(action: applyPatch) {
                                 Text("INJETAR AGORA")
@@ -403,9 +353,6 @@ private struct ZyvexInjectView: View {
             .navigationTitle("Inject")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                // Garantir ativação do exploit (FilzaJailed para iOS < 26)
-                appState.runExploitIfNeeded()
-                
                 importedAssets = OnyxImporterService.shared.getImportedAssets()
                 
                 // Tentar detectar qual jogo está instalado
@@ -428,12 +375,7 @@ private struct ZyvexInjectView: View {
     }
 
     private func applyPatch() {
-        guard selectedTarget != nil && (selectedAsset != nil || selectedVIPPackage != nil) else {
-            resultTitle = "Atenção"
-            resultMessage = "Selecione um jogo alvo e um pacote/arquivo para injetar."
-            showResult = true
-            return
-        }
+        guard selectedTarget != nil, selectedAsset != nil else { return }
         Task { @MainActor in
             await applyPatchAuthorized()
         }
@@ -441,105 +383,62 @@ private struct ZyvexInjectView: View {
 
     @MainActor
     private func applyPatchAuthorized() async {
-        guard let selectedTarget else { return }
-        
-        let patchData: Data
-        let targetFileName: String
-        
+        guard let selectedTarget, let selectedAsset else { return }
+        let sourceFileName = selectedAsset.lastPathComponent
+
         do {
-            if let pkg = selectedVIPPackage {
-                guard let data = VIPPackageService.shared.getPayload(for: pkg) else {
-                    throw NSError(domain: "VIP", code: 1, userInfo: [NSLocalizedDescriptionKey: "Falha ao carregar pacote VIP embutido."])
-                }
-                patchData = data
-                targetFileName = pkg.filename
-            } else if let assetURL = selectedAsset {
-                guard let data = OnyxImporterService.shared.extractPayload(from: assetURL) else {
-                    throw NSError(domain: "Onyx", code: 2, userInfo: [NSLocalizedDescriptionKey: "Falha ao ler dados do arquivo."])
-                }
-                patchData = data
-                
-                let sourceFileName = assetURL.lastPathComponent
-                var derivedName = sourceFileName
-                if sourceFileName.hasSuffix(".onyx") || sourceFileName.hasSuffix(".3105") {
-                    if let (meta, _) = try? OnyxImporterService.shared.importOnyxFile(from: assetURL).get() {
-                        derivedName = meta.payload_filename
-                    }
-                }
-                targetFileName = derivedName
-            } else {
-                return
+            guard let patchData = OnyxImporterService.shared.extractPayload(from: selectedAsset) else {
+                throw NSError(domain: "IPA", code: 2, userInfo: [NSLocalizedDescriptionKey: "Falha ao ler dados do arquivo."])
             }
 
+            var targetFileName = sourceFileName
+            if sourceFileName.hasSuffix(".onyx") || sourceFileName.hasSuffix(".3105") {
+                if let (meta, _) = try? OnyxImporterService.shared.importOnyxFile(from: selectedAsset).get() {
+                    targetFileName = meta.payload_filename
+                }
+            }
+            
+            // VALIDAÇÃO RÍGIDA DE NOME
+            if !OnyxImporterService.shared.isAllowedCacheFilename(targetFileName) {
+                throw NSError(domain: "Validation", code: 1, userInfo: [NSLocalizedDescriptionKey: "Bloqueado: O arquivo deve se chamar 'cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D'."])
+            }
+            
             // VALIDAÇÃO DE INTEGRIDADE (UnityFS / UnityWeb)
             if !OnyxImporterService.shared.validateUnityHeader(data: patchData) {
-                log("patch: AVISO - O arquivo '\(targetFileName)' não possui um cabeçalho Unity válido (UnityFS/UnityWeb).")
+                throw NSError(domain: "Validation", code: 2, userInfo: [NSLocalizedDescriptionKey: "Bloqueado: O arquivo não é um UnityFS válido."])
             }
 
-            // ESTRATÉGIA DE INJEÇÃO INTELIGENTE (SMART INJECT)
-            let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier)
+            guard let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier) else {
+                throw NSError(domain: "Patch", code: 404, userInfo: [NSLocalizedDescriptionKey: "Não foi possível localizar a pasta do jogo."])
+            }
+
+            log("patch: iniciando varredura por '\(targetFileName)' em \(selectedTarget.identifier)")
+            let foundPaths = ContainerStore.findFilesRecursively(at: containerPath, filename: targetFileName)
             var rules: [PatchRule] = []
 
-            // 1. Tentar injeção via varredura (Caminhos Reais encontrados no dispositivo)
-            if let validPath = containerPath {
-                log("patch: container localizado em \(validPath). Iniciando varredura profunda...")
-                _ = ContainerStore.grantContainerAccess(validPath)
-                let foundPaths = ContainerStore.findFilesRecursively(at: validPath, filename: targetFileName)
-                
-                for fullPath in foundPaths {
-                    let relPath = String(fullPath.dropFirst(validPath.count + (validPath.hasSuffix("/") ? 0 : 1)))
-                    rules.append(PatchRule(
-                        id: UUID(),
-                        bundleID: selectedTarget.identifier,
-                        relativePath: relPath,
-                        replacementFilename: targetFileName,
-                        replacementData: patchData
-                    ))
-                }
-                log("patch: encontrados \(foundPaths.count) locais reais.")
-            }
-
-            // 2. SEMPRE adicionar caminhos padrão baseados no TIPO de arquivo
-            var bruteForcePaths: [String] = []
-            
-            if targetFileName.lowercased().contains("cache_res") {
-                log("patch: detectado tipo CACHE. Adicionando caminhos de cache...")
-                bruteForcePaths = [
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/config/\(targetFileName)",
-                    "Library/Application Support/Compulsory/ios/gameassetbundles/\(targetFileName)"
-                ]
-            } else if targetFileName.lowercased().contains("avatar") || targetFileName.lowercased().contains("assetindexer") {
-                log("patch: detectado tipo AVATAR. Adicionando caminhos de avatar...")
-                bruteForcePaths = [
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
-                    "Library/Caches/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)", // Fallback para raiz
-                    "Library/Application Support/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)"
-                ]
+            if foundPaths.isEmpty {
+                log("patch: arquivo não encontrado na varredura; usando caminho padrão")
+                let defaultRelPath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)"
+                rules = [PatchRule(
+                    id: UUID(),
+                    bundleID: selectedTarget.identifier,
+                    relativePath: defaultRelPath,
+                    replacementFilename: targetFileName,
+                    replacementData: patchData
+                )]
             } else {
-                log("patch: tipo genérico. Usando caminhos padrão...")
-                bruteForcePaths = [
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
-                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)"
-                ]
-            }
-            
-            for relPath in bruteForcePaths {
-                // Evita duplicatas se a varredura já encontrou o caminho
-                if !rules.contains(where: { $0.relativePath == relPath }) {
-                    rules.append(PatchRule(
+                log("patch: encontrados \(foundPaths.count) locais para substituição")
+                rules = foundPaths.map { fullPath in
+                    let relPath = String(fullPath.dropFirst(containerPath.count + (containerPath.hasSuffix("/") ? 0 : 1)))
+                    return PatchRule(
                         id: UUID(),
                         bundleID: selectedTarget.identifier,
                         relativePath: relPath,
                         replacementFilename: targetFileName,
                         replacementData: patchData
-                    ))
+                    )
                 }
             }
-            log("patch: total de \(rules.count) alvos configurados para injeção em massa.")
 
             let project = PatchProject(
                 id: UUID(),
@@ -550,13 +449,10 @@ private struct ZyvexInjectView: View {
                 directories: [],
                 rules: rules
             )
-            // Sempre tentamos o DevicePatchService pois ele contém a lógica de Kernel RW
-            // que funciona em todas as versões se as offsets estiverem corretas.
-            log("patch: aplicando projeto de injeção via Kernel RW...")
             _ = try await DevicePatchService.apply(project: project)
-            
-            resultTitle = "Injetado com Sucesso!"
-            resultMessage = "O arquivo foi substituído em \(rules.count) local(is). Se o jogo não mudar, tente reiniciar o iPhone."
+
+            resultTitle = "Sucesso!"
+            resultMessage = "Substituição autorizada e concluída em \(rules.count) local(is)."
             showResult = true
         } catch {
             resultTitle = "Erro"

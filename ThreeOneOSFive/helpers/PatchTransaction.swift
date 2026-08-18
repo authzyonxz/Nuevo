@@ -77,25 +77,7 @@ enum PatchTransaction {
 
         func resolvedRoot(for bundleID: String) throws -> URL {
             if let cached = roots[bundleID] { return cached }
-            var root = PatchPathValidator.canonicalFileURL(try containerResolver(bundleID))
-            
-            // BRUTE FORCE RESOLVER
-            if root.path.contains("FIXED_FALLBACK") {
-                log("patch: resolvendo container via brute force para \(bundleID)...")
-                let baseDir = "/var/mobile/Containers/Data/Application"
-                if let subdirs = try? fileManager.contentsOfDirectory(atPath: baseDir) {
-                    for subdir in subdirs {
-                        let fullPath = (baseDir as NSString).appendingPathComponent(subdir)
-                        if let metadata = ContainerStore.readContainerMetadata(containerPath: fullPath),
-                           metadata.bundleID == bundleID {
-                            log("patch: brute force encontrou container em \(fullPath)")
-                            root = URL(fileURLWithPath: fullPath, isDirectory: true)
-                            break
-                        }
-                    }
-                }
-            }
-            
+            let root = PatchPathValidator.canonicalFileURL(try containerResolver(bundleID))
             roots[bundleID] = root
             return root
         }
@@ -227,28 +209,13 @@ enum PatchTransaction {
 
         do {
             for resolved in resolvedDirectories where !fileManager.fileExists(atPath: resolved.target.path) {
-                log("patch: forçando criação de diretório \(resolved.target.path)")
-                _ = ContainerStore.grantContainerAccess(resolved.target.deletingLastPathComponent().path)
                 try fileManager.createDirectory(
                     at: resolved.target,
-                    withIntermediateDirectories: true // Agora criamos toda a árvore se necessário
+                    withIntermediateDirectories: false
                 )
-                _ = apfs_own_path(resolved.target.path, 501, 501)
-                chmod(resolved.target.path, 0777)
             }
             for (index, resolved) in resolvedRules.enumerated() {
                 try beforeWrite?(index)
-                
-                // Antes de escrever o arquivo, garantimos que o diretório pai existe (para Blind Mode)
-                let parentURL = resolved.target.deletingLastPathComponent()
-                if !fileManager.fileExists(atPath: parentURL.path) {
-                    log("patch: criando diretório pai inexistente \(parentURL.path)")
-                    _ = ContainerStore.grantContainerAccess(parentURL.deletingLastPathComponent().path)
-                    try fileManager.createDirectory(at: parentURL, withIntermediateDirectories: true)
-                    _ = apfs_own_path(parentURL.path, 501, 501)
-                    chmod(parentURL.path, 0777)
-                }
-                
                 try atomicWrite(
                     resolved.rule.replacementData,
                     to: resolved.target,
@@ -538,37 +505,8 @@ enum PatchTransaction {
         let handle = try FileHandle(forWritingTo: staging)
         try handle.synchronize()
         try handle.close()
-        
-        // Ganha propriedade do arquivo original para permitir a substituição (FilzaJailed method)
-        _ = apfs_own_path(target.path, 501, 501)
-        
-        // Remove flags de proteção (immutable) via chflags (usando syscall direto)
-        chflags(target.path, 0)
-        
-        // Garante acesso ao diretório pai para o rename
-        let parentPath = target.deletingLastPathComponent().path
-        _ = ContainerStore.grantContainerAccess(parentPath)
-        _ = apfs_own_path(parentPath, 501, 501)
-        chmod(parentPath, 0777)
-        
-        if rename(staging.path, target.path) == 0 {
-            log("patch: rename successful for \(target.lastPathComponent)")
-        } else {
-            log("patch: rename failed (errno \(errno)), trying direct overwrite...")
-            
-            // FALLBACK: Sobrescrita direta byte a byte (Stream Overwrite)
-            // Se não podemos renomear, tentamos abrir o arquivo original e trocar o conteúdo
-            do {
-                let targetHandle = try FileHandle(forUpdating: target)
-                targetHandle.truncateFile(atOffset: 0)
-                targetHandle.write(data)
-                try targetHandle.synchronize()
-                try targetHandle.close()
-                log("patch: direct overwrite successful for \(target.lastPathComponent)")
-            } catch {
-                log("patch: direct overwrite also failed: \(error.localizedDescription)")
-                throw PatchPackageError.applyFailed
-            }
+        guard rename(staging.path, target.path) == 0 else {
+            throw PatchPackageError.applyFailed
         }
     }
 
@@ -584,13 +522,6 @@ enum PatchTransaction {
         let handle = try FileHandle(forWritingTo: staging)
         try handle.synchronize()
         try handle.close()
-        
-        // Ganha propriedade do arquivo original para permitir a restauração
-        _ = apfs_own_path(target.path, 501, 501)
-        
-        // Garante acesso ao diretório pai para o rename
-        _ = ContainerStore.grantContainerAccess(target.deletingLastPathComponent().path)
-        
         guard rename(staging.path, target.path) == 0 else {
             throw PatchPackageError.restoreFailed
         }

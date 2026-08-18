@@ -59,38 +59,22 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
-        log("diag: Resolvendo container para \(bundleID)")
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
-            log("diag: Erro: BundleID inválido")
             return nil
         }
         
         // 1. Tentar via MCM (Método rápido e oficial via exploit)
         var lookupError: NSString?
         if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {
-            log("diag: MCM retornou caminho: \(path)")
+            log("patch: MHA-C2 returned path for \(bundleID): \(path)")
             if isApplicationContainerPath(path) {
-                log("diag: Caminho validado via MCM")
-                return path
-            } else {
-                log("diag: Caminho MCM falhou na validação isApplicationContainerPath")
-            }
-        } else {
-            log("diag: MCM falhou. Erro: \(lookupError ?? "sem erro")")
-        }
-        
-        // 2. Fallback: LaunchServices Store (Técnica do FilzaJailed/FilzaSlop)
-        log("diag: Tentando descoberta via LaunchServices...")
-        let lsIdentifiers = launchServicesStoreIdentifiers()
-        if lsIdentifiers.contains(bundleID) {
-            if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {
-                log("patch: LS match resolved via MCM for \(bundleID): \(path)")
+                log("patch: MHA-C2 resolved and validated \(bundleID)")
                 return path
             }
         }
         
-        // 3. Fallback: Varredura profunda do sistema de arquivos com inferência
-        log("patch: LS discovery failed for \(bundleID), performing deep scan...")
+        // 2. Fallback: Varredura profunda do sistema de arquivos
+        log("patch: MCM failed or restricted for \(bundleID), performing deep scan...")
         
         // Buscar em todos os containers de dados conhecidos
         let filesystemApps = containersFromFilesystem()
@@ -98,40 +82,22 @@ enum ContainerStore {
         
         // Tentar identificar o app pelos metadados ou arquivos internos
         for app in filesystemApps {
-            // Tentar ler metadados diretamente
-            if let metadata = readContainerMetadata(containerPath: app.containerPath), 
-               (metadata.bundleID == bundleID || (bundleID.contains("freefire") && metadata.bundleID.lowercased().contains("freefire"))) {
+            let metadata = readContainerMetadata(containerPath: app.containerPath)
+            if metadata?.bundleID == bundleID {
                 log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
                 return app.containerPath
             }
             
-            // Tentar inferir a identidade (como o FilzaJailed faz)
-            if let inferred = inferredApp(for: app, knownAppsByBundleID: [:], launchServicesIdentifiers: Set(lsIdentifiers)),
-               (inferred.bundleID == bundleID || (bundleID.contains("freefire") && inferred.bundleID.lowercased().contains("freefire"))) {
-                log("patch: Inferred identity matched \(bundleID) at \(app.containerPath)")
-                return app.containerPath
-            }
-            
-            // Fallback heurístico: procurar pasta do jogo via Library/Preferences ou Documents
-            let searchPaths = ["Library/Preferences", "Documents", "Library/Caches"]
-            for subPath in searchPaths {
-                let fullPath = (app.containerPath as NSString).appendingPathComponent(subPath)
-                let handle = grantContainerAccess(fullPath)
-                if handle >= 0 {
-                    if let contents = try? FileManager.default.contentsOfDirectory(atPath: fullPath) {
-                        // Procura por qualquer arquivo que mencione Free Fire ou o bundleID
-                        if contents.contains(where: { $0.lowercased().contains("freefire") || $0.contains(bundleID) }) {
-                            log("patch: Heuristic match for \(bundleID) via \(subPath) at \(app.containerPath)")
-                            bad_query_release(handle)
-                            return app.containerPath
-                        }
-                    }
-                    bad_query_release(handle)
+            // Fallback heurístico: procurar pasta do jogo se o bundleID bater parcialmente ou via Library/Preferences
+            let libPath = (app.containerPath as NSString).appendingPathComponent("Library/Preferences")
+            if let prefs = try? FileManager.default.contentsOfDirectory(atPath: libPath) {
+                if prefs.contains(where: { $0.contains(bundleID) }) {
+                    log("patch: Heuristic match for \(bundleID) via preferences at \(app.containerPath)")
+                    return app.containerPath
                 }
             }
         }
 
-        // 4. Último recurso: Tentar UUIDs conhecidos se houver cache
         log("patch: Failed to resolve container for \(bundleID)")
         return nil
     }
@@ -461,10 +427,6 @@ enum ContainerStore {
     static func readContainerMetadata(containerPath: String) -> ContainerMetadata? {
         let metadataPath = metadataPath(for: containerPath)
 
-        // Concede acesso ao arquivo de metadados via exploit
-        let handle = grantContainerAccess(metadataPath)
-        defer { if handle >= 0 { bad_query_release(handle) } }
-
         var data: Data?
         if let fd = fopen(metadataPath, "r") {
             var buffer = [UInt8](repeating: 0, count: 65536)
@@ -477,11 +439,7 @@ enum ContainerStore {
             fclose(fd)
             if !bytes.isEmpty { data = Data(bytes) }
         }
-        
-        if data == nil {
-            // Tenta ler via FileManager se fopen falhar
-            data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath))
-        }
+        if data == nil { data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath)) }
 
         guard let validData = data,
               let plist = try? PropertyListSerialization.propertyList(from: validData, options: [], format: nil) as? [String: Any] else {
