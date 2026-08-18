@@ -120,13 +120,30 @@ class AppState: ObservableObject {
                 log("app: Running modern exploit for iOS \(v.major)")
                 result = kexploit_opa334()
                 method = "Modern Kernel RW"
+                
+                if result == 0 {
+                    let selfProc = proc_self()
+                    if selfProc != 0 {
+                        _ = sandbox_escape(selfProc)
+                        _ = sandbox_elevate_to_root(selfProc)
+                    }
+                }
             } else {
                 // iOS 17/18 (< 26): Usa a lógica do FilzaJailed
                 log("app: Running FilzaJailed exploit for iOS \(v.major)")
-                result = kexploit_opa334() // Mesma base, mas o mestre quer a lógica do FilzaJailed integrada
-                _ = sandbox_escape(0) // Tenta escapar do sandbox imediatamente
-                _ = sandbox_elevate_to_root(0) // Tenta elevar privilégios
+                result = kexploit_opa334()
                 method = "FilzaJailed Escape"
+                
+                if result == 0 {
+                    let selfProc = proc_self()
+                    if selfProc != 0 {
+                        log("app: Escaping sandbox for proc \(String(format: "0x%llx", selfProc))")
+                        _ = sandbox_escape(selfProc)
+                        _ = sandbox_elevate_to_root(selfProc)
+                    } else {
+                        log("app: Failed to get self_proc")
+                    }
+                }
             }
             
             DispatchQueue.main.async {
@@ -134,8 +151,8 @@ class AppState: ObservableObject {
                     self.exploitStatus = .success(method: method)
                     log("app: Exploit successful via \(method)")
                 } else {
-                    self.exploitStatus = .failed("Exploit failed (code \(result))")
-                    log("app: Exploit failed")
+                    self.exploitStatus = .failed(method: method, code: Int64(result))
+                    log("app: Exploit failed via \(method) with code \(result)")
                 }
             }
         }

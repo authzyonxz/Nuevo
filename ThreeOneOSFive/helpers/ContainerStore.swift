@@ -93,33 +93,39 @@ enum ContainerStore {
         // Tentar identificar o app pelos metadados ou arquivos internos
         for app in filesystemApps {
             // Tentar ler metadados diretamente
-            if let metadata = readContainerMetadata(containerPath: app.containerPath), metadata.bundleID == bundleID {
+            if let metadata = readContainerMetadata(containerPath: app.containerPath), 
+               (metadata.bundleID == bundleID || (bundleID.contains("freefire") && metadata.bundleID.lowercased().contains("freefire"))) {
                 log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
                 return app.containerPath
             }
             
             // Tentar inferir a identidade (como o FilzaJailed faz)
             if let inferred = inferredApp(for: app, knownAppsByBundleID: [:], launchServicesIdentifiers: Set(lsIdentifiers)),
-               inferred.bundleID == bundleID {
+               (inferred.bundleID == bundleID || (bundleID.contains("freefire") && inferred.bundleID.lowercased().contains("freefire"))) {
                 log("patch: Inferred identity matched \(bundleID) at \(app.containerPath)")
                 return app.containerPath
             }
             
-            // Fallback heurístico: procurar pasta do jogo via Library/Preferences
-            let libPath = (app.containerPath as NSString).appendingPathComponent("Library/Preferences")
-            let prefHandle = grantContainerAccess(libPath)
-            if prefHandle >= 0 {
-                if let prefs = try? FileManager.default.contentsOfDirectory(atPath: libPath) {
-                    if prefs.contains(where: { $0.contains(bundleID) }) {
-                        log("patch: Heuristic match for \(bundleID) via preferences at \(app.containerPath)")
-                        bad_query_release(prefHandle)
-                        return app.containerPath
+            // Fallback heurístico: procurar pasta do jogo via Library/Preferences ou Documents
+            let searchPaths = ["Library/Preferences", "Documents", "Library/Caches"]
+            for subPath in searchPaths {
+                let fullPath = (app.containerPath as NSString).appendingPathComponent(subPath)
+                let handle = grantContainerAccess(fullPath)
+                if handle >= 0 {
+                    if let contents = try? FileManager.default.contentsOfDirectory(atPath: fullPath) {
+                        // Procura por qualquer arquivo que mencione Free Fire ou o bundleID
+                        if contents.contains(where: { $0.lowercased().contains("freefire") || $0.contains(bundleID) }) {
+                            log("patch: Heuristic match for \(bundleID) via \(subPath) at \(app.containerPath)")
+                            bad_query_release(handle)
+                            return app.containerPath
+                        }
                     }
+                    bad_query_release(handle)
                 }
-                bad_query_release(prefHandle)
             }
         }
 
+        // 4. Último recurso: Tentar UUIDs conhecidos se houver cache
         log("patch: Failed to resolve container for \(bundleID)")
         return nil
     }
@@ -449,6 +455,10 @@ enum ContainerStore {
     static func readContainerMetadata(containerPath: String) -> ContainerMetadata? {
         let metadataPath = metadataPath(for: containerPath)
 
+        // Concede acesso ao arquivo de metadados via exploit
+        let handle = grantContainerAccess(metadataPath)
+        defer { if handle >= 0 { bad_query_release(handle) } }
+
         var data: Data?
         if let fd = fopen(metadataPath, "r") {
             var buffer = [UInt8](repeating: 0, count: 65536)
@@ -461,7 +471,11 @@ enum ContainerStore {
             fclose(fd)
             if !bytes.isEmpty { data = Data(bytes) }
         }
-        if data == nil { data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath)) }
+        
+        if data == nil {
+            // Tenta ler via FileManager se fopen falhar
+            data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath))
+        }
 
         guard let validData = data,
               let plist = try? PropertyListSerialization.propertyList(from: validData, options: [], format: nil) as? [String: Any] else {
@@ -484,6 +498,12 @@ enum ContainerStore {
 
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
+        
+        // Ativa o exploit de sandbox para o processo atual se ainda não estiver
+        let selfProc = proc_self()
+        if selfProc != 0 {
+            _ = sandbox_escape(selfProc)
+        }
         
         // Tentar grant com o caminho original
         var pathC = clean.utf8CString.map { Int8($0) }

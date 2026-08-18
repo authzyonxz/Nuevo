@@ -219,6 +219,7 @@ private struct DashboardView: View {
 
 private struct ZyvexInjectView: View {
     @Environment(\.appLanguage) private var language
+    @EnvironmentObject private var appState: AppState
     let onOpenLibrary: () -> Void
     @State private var selectedTarget: DemoTarget?
     @State private var importedAssets: [URL] = OnyxImporterService.shared.getImportedAssets()

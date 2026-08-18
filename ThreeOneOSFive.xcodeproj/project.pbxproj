@@ -13,6 +13,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		990402FC2B10B10100000001 /* apfs_own.m in Sources */ = {isa = PBXBuildFile; fileRef = 990402FB2B10B10100000001 /* apfs_own.m */; };
 		880102FB /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880101FA /* OnyxImporterService.swift */; };
 		880202FB /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880201FA /* PatchProjectsView.swift */; };
 			880302FB /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880301FA /* DocumentPickerView.swift */; };
@@ -79,6 +80,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		990402FD2B10B10100000001 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
+		990402FB2B10B10100000001 /* apfs_own.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apfs_own.m; sourceTree = "<group>"; };
 		880101FA /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
 		880201FA /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
 			880301FA /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
@@ -314,6 +317,8 @@
 		3105A406 /* kexploit */ = {
 			isa = PBXGroup;
 			children = (
+				990402FD2B10B10100000001 /* apfs_own.h */,
+				990402FB2B10B10100000001 /* apfs_own.m */,
 				3105A080 /* kexploit_opa334.m */,
 				3105A090 /* kexploit_opa334.h */,
 				3105A081 /* offsets.m */,
@@ -400,6 +405,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				990402FC2B10B10100000001 /* apfs_own.m in Sources */,
 						3105L002 /* LicenseService.swift in Sources */,
 						3105L004 /* LoginView.swift in Sources */,
 						880502FB /* SparseRestoreService.swift in Sources */,
