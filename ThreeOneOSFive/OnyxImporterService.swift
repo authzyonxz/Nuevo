@@ -36,36 +36,24 @@ public class OnyxImporterService {
     }
     
     private func sanitizeFilename(_ filename: String) -> String {
-        var result = filename
-        
-        // 1. Lógica agressiva para remover parênteses e números de cópia (ex: "file (1)", "file 2", "file_3")
-        // Padrões: " (1)", "(1)", " 1", "_1"
-        let patterns = [
-            "\\s?\\(\\d+\\)", // Remove parênteses com ou sem espaço: " (1)" ou "(1)"
-            "\\s\\d+",       // Remove espaço seguido de número: " 2"
-            "_\\d+"          // Remove sublinhado seguido de número: "_3"
-        ]
-        
-        // Primeiro, tentamos limpar preservando a extensão se ela existir
-        let url = URL(fileURLWithPath: filename)
-        let ext = url.pathExtension
-        var base = url.deletingPathExtension().lastPathComponent
-        
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                base = regex.stringByReplacingMatches(in: base, options: [], range: NSRange(location: 0, length: base.utf16.count), withTemplate: "")
+        // Se o arquivo for um cache_res puro ou assetindexer puro, mantemos o nome original exato
+        let lower = filename.lowercased()
+        if lower.contains("cache_res") || lower.contains("assetindexer") {
+            // Remove apenas sufixos de cópia como (1), (2), _1 mas preserva a estrutura exata
+            var cleaned = filename
+            let patterns = [
+                "\\s?\\(\\d+\\)", 
+                "\\s\\d+(?=\\.\\w+$)", 
+                "_\\d+(?=\\.\\w+$)"
+            ]
+            for pattern in patterns {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                    cleaned = regex.stringByReplacingMatches(in: cleaned, options: [], range: NSRange(location: 0, length: cleaned.utf16.count), withTemplate: "")
+                }
             }
+            return cleaned.trimmingCharacters(in: .whitespaces)
         }
-        
-        base = base.trimmingCharacters(in: .whitespaces)
-        
-        if ext.isEmpty {
-            result = base
-        } else {
-            result = base + "." + ext
-        }
-        
-        return result
+        return filename
     }
 
     public func validateUnityHeader(data: Data) -> Bool {
