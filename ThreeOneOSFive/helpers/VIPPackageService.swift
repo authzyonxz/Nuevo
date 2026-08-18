@@ -48,7 +48,11 @@ public class VIPPackageService {
     ]
     
     public func getURL(for package: VIPPackage) -> URL? {
-        return Bundle.main.url(forResource: package.resourceName, withExtension: nil, subdirectory: "PackageFixtures/VIP")
+        // Tenta primeiro no subdiretório, depois na raiz
+        if let url = Bundle.main.url(forResource: package.resourceName, withExtension: nil, subdirectory: "PackageFixtures/VIP") {
+            return url
+        }
+        return Bundle.main.url(forResource: package.resourceName, withExtension: nil)
     }
     
     public func getPayload(for package: VIPPackage) -> Data? {
