@@ -51,13 +51,13 @@ public struct PatchProjectsView: View {
                     }
                 }
                 
-                Section(header: Text("Arquivos .onyx Importados")) {
+                Section(header: Text("Arquivos IPA Importados")) {
                     if importedAssets.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "tray.fill")
                                 .font(.system(size: 40))
                                 .foregroundColor(.gray)
-                            Text("Nenhum arquivo .onyx importado")
+                            Text("Nenhum arquivo IPA importado")
                                 .font(.headline)
                                 .foregroundColor(.white)
                             Text("Toque no botão abaixo para importar seus arquivos de patch do app Arquivos ou Filza.")
@@ -113,7 +113,7 @@ public struct PatchProjectsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(AppTheme.pageBackground)
-            .navigationTitle("Library (.onyx)")
+            .navigationTitle("Library (IPA)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

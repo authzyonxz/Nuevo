@@ -192,7 +192,7 @@ private struct DashboardView: View {
                                 Text("IPA FF")
                                     .font(.system(size: 30, weight: .black, design: .rounded))
                                     .foregroundStyle(.white)
-                                Text("Importe seus arquivos .onyx na Library e realize injeções atômicas no Free Fire.")
+                                Text("Importe seus arquivos IPA na Library e realize injeções atômicas no Free Fire.")
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.mutedText)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -317,7 +317,7 @@ private struct ZyvexInjectView: View {
                     
                     Divider().padding(.vertical, 8)
                     
-                    Text("ARQUIVOS IMPORTADOS (.ONYX / RAW)")
+                    Text("ARQUIVOS IMPORTADOS (IPA / RAW)")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.blue.opacity(0.8))
                         .padding(.horizontal, 4)
