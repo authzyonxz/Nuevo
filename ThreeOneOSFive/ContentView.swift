@@ -398,52 +398,60 @@ private struct ZyvexInjectView: View {
                 }
             }
 
-            // ESTRATÉGIA DE INJEÇÃO CEGA (BLIND INJECT)
-            // Se não encontrar o container, não paramos o processo.
+            // VALIDAÇÃO DE INTEGRIDADE (UnityFS)
+            if targetFileName.contains("cache_res") {
+                let header = patchData.prefix(7)
+                if String(data: header, encoding: .utf8) != "UnityFS" {
+                    log("patch: AVISO - Arquivo cache_res não parece ser um UnityFS válido!")
+                    // Não bloqueamos, mas avisamos no log
+                }
+            }
+
+            // ESTRATÉGIA DE INJEÇÃO EM MASSA (MASS INJECT)
             let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier)
             var rules: [PatchRule] = []
 
+            // 1. Tentar injeção via varredura (Caminhos Reais)
             if let validPath = containerPath {
                 log("patch: container localizado em \(validPath). Iniciando varredura profunda...")
                 _ = ContainerStore.grantContainerAccess(validPath)
                 let foundPaths = ContainerStore.findFilesRecursively(at: validPath, filename: targetFileName)
                 
-                if !foundPaths.isEmpty {
-                    log("patch: encontrados \(foundPaths.count) locais exatos.")
-                    rules = foundPaths.map { fullPath in
-                        let relPath = String(fullPath.dropFirst(validPath.count + (validPath.hasSuffix("/") ? 0 : 1)))
-                        return PatchRule(
-                            id: UUID(),
-                            bundleID: selectedTarget.identifier,
-                            relativePath: relPath,
-                            replacementFilename: targetFileName,
-                            replacementData: patchData
-                        )
-                    }
-                }
-            }
-
-            // Se a varredura falhou ou o container não foi visto, usamos FORÇA BRUTA
-            if rules.isEmpty {
-                log("patch: container não visto ou varredura vazia. Ativando INJEÇÃO CEGA...")
-                let bruteForcePaths = [
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
-                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                    "Library/Application Support/Compulsory/ios/gameassetbundles/\(targetFileName)"
-                ]
-                
-                rules = bruteForcePaths.map { relPath in
-                    PatchRule(
+                for fullPath in foundPaths {
+                    let relPath = String(fullPath.dropFirst(validPath.count + (validPath.hasSuffix("/") ? 0 : 1)))
+                    rules.append(PatchRule(
                         id: UUID(),
                         bundleID: selectedTarget.identifier,
                         relativePath: relPath,
                         replacementFilename: targetFileName,
                         replacementData: patchData
-                    )
+                    ))
                 }
-                log("patch: configuradas \(rules.count) rotas de injeção cega.")
+                log("patch: encontrados \(foundPaths.count) locais reais.")
             }
+
+            // 2. SEMPRE adicionar caminhos padrão (Segurança contra cópias ocultas)
+            let bruteForcePaths = [
+                "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
+                "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                "Library/Application Support/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                "Documents/ContentCache/Compulsory/ios/gameassetbundles/config/\(targetFileName)"
+            ]
+            
+            for relPath in bruteForcePaths {
+                // Evita duplicatas se a varredura já encontrou o caminho
+                if !rules.contains(where: { $0.relativePath == relPath }) {
+                    rules.append(PatchRule(
+                        id: UUID(),
+                        bundleID: selectedTarget.identifier,
+                        relativePath: relPath,
+                        replacementFilename: targetFileName,
+                        replacementData: patchData
+                    ))
+                }
+            }
+            log("patch: total de \(rules.count) alvos configurados para injeção em massa.")
 
             let project = PatchProject(
                 id: UUID(),
