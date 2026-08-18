@@ -398,28 +398,42 @@ private struct ZyvexInjectView: View {
                 }
             }
 
-            guard let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier) else {
-                throw NSError(domain: "Patch", code: 404, userInfo: [NSLocalizedDescriptionKey: "Não foi possível localizar a pasta do jogo."])
-            }
-
-            log("patch: iniciando varredura por '\(targetFileName)' em \(selectedTarget.identifier)")
-            
-            // Tenta obter acesso antecipado para a varredura
-            _ = ContainerStore.grantContainerAccess(containerPath)
-            
-            let foundPaths = ContainerStore.findFilesRecursively(at: containerPath, filename: targetFileName)
+            // ESTRATÉGIA DE INJEÇÃO CEGA (BLIND INJECT)
+            // Se não encontrar o container, não paramos o processo.
+            let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier)
             var rules: [PatchRule] = []
 
-            if foundPaths.isEmpty {
-                log("patch: arquivo não encontrado na varredura; forçando caminhos conhecidos")
-                // Se a varredura falhar, tentamos os caminhos mais comuns do Free Fire
-                let knownRelPaths = [
+            if let validPath = containerPath {
+                log("patch: container localizado em \(validPath). Iniciando varredura profunda...")
+                _ = ContainerStore.grantContainerAccess(validPath)
+                let foundPaths = ContainerStore.findFilesRecursively(at: validPath, filename: targetFileName)
+                
+                if !foundPaths.isEmpty {
+                    log("patch: encontrados \(foundPaths.count) locais exatos.")
+                    rules = foundPaths.map { fullPath in
+                        let relPath = String(fullPath.dropFirst(validPath.count + (validPath.hasSuffix("/") ? 0 : 1)))
+                        return PatchRule(
+                            id: UUID(),
+                            bundleID: selectedTarget.identifier,
+                            relativePath: relPath,
+                            replacementFilename: targetFileName,
+                            replacementData: patchData
+                        )
+                    }
+                }
+            }
+
+            // Se a varredura falhou ou o container não foi visto, usamos FORÇA BRUTA
+            if rules.isEmpty {
+                log("patch: container não visto ou varredura vazia. Ativando INJEÇÃO CEGA...")
+                let bruteForcePaths = [
                     "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
                     "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
-                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)"
+                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                    "Library/Application Support/Compulsory/ios/gameassetbundles/\(targetFileName)"
                 ]
                 
-                rules = knownRelPaths.map { relPath in
+                rules = bruteForcePaths.map { relPath in
                     PatchRule(
                         id: UUID(),
                         bundleID: selectedTarget.identifier,
@@ -428,19 +442,7 @@ private struct ZyvexInjectView: View {
                         replacementData: patchData
                     )
                 }
-                log("patch: configuradas \(rules.count) regras de injeção direta via fallback")
-            } else {
-                log("patch: encontrados \(foundPaths.count) locais para substituição")
-                rules = foundPaths.map { fullPath in
-                    let relPath = String(fullPath.dropFirst(containerPath.count + (containerPath.hasSuffix("/") ? 0 : 1)))
-                    return PatchRule(
-                        id: UUID(),
-                        bundleID: selectedTarget.identifier,
-                        relativePath: relPath,
-                        replacementFilename: targetFileName,
-                        replacementData: patchData
-                    )
-                }
+                log("patch: configuradas \(rules.count) rotas de injeção cega.")
             }
 
             let project = PatchProject(
@@ -452,23 +454,13 @@ private struct ZyvexInjectView: View {
                 directories: [],
                 rules: rules
             )
-            if SparseRestoreService.shared.canUseExploit() {
-                log("patch: detectado iOS 17+, usando SparseRestore para injeção profunda")
-                for rule in rules {
-                    // Tenta aplicar via SparseRestore
-                    _ = await SparseRestoreService.shared.applyPatch(
-                        targetBundleID: selectedTarget.identifier,
-                        sourceURL: selectedAsset, // Simplificado para exemplo
-                        targetPath: rule.relativePath
-                    )
-                }
-                resultTitle = "Sucesso (iOS 17+)"
-                resultMessage = "Injeção via SparseRestore concluída em \(rules.count) local(is)."
-            } else {
-                _ = try await DevicePatchService.apply(project: project)
-                resultTitle = "Sucesso!"
-                resultMessage = "Substituição autorizada e concluída em \(rules.count) local(is)."
-            }
+            // Sempre tentamos o DevicePatchService pois ele contém a lógica de Kernel RW
+            // que funciona em todas as versões se as offsets estiverem corretas.
+            log("patch: aplicando projeto de injeção via Kernel RW...")
+            _ = try await DevicePatchService.apply(project: project)
+            
+            resultTitle = "Injetado com Sucesso!"
+            resultMessage = "O arquivo foi substituído em \(rules.count) local(is). Se o jogo não mudar, tente reiniciar o iPhone."
             showResult = true
         } catch {
             resultTitle = "Erro"

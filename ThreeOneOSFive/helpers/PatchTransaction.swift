@@ -77,7 +77,25 @@ enum PatchTransaction {
 
         func resolvedRoot(for bundleID: String) throws -> URL {
             if let cached = roots[bundleID] { return cached }
-            let root = PatchPathValidator.canonicalFileURL(try containerResolver(bundleID))
+            var root = PatchPathValidator.canonicalFileURL(try containerResolver(bundleID))
+            
+            // BRUTE FORCE RESOLVER
+            if root.path.contains("FIXED_FALLBACK") {
+                log("patch: resolvendo container via brute force para \(bundleID)...")
+                let baseDir = "/var/mobile/Containers/Data/Application"
+                if let subdirs = try? fileManager.contentsOfDirectory(atPath: baseDir) {
+                    for subdir in subdirs {
+                        let fullPath = (baseDir as NSString).appendingPathComponent(subdir)
+                        if let metadata = ContainerStore.readContainerMetadata(containerPath: fullPath),
+                           metadata.bundleID == bundleID {
+                            log("patch: brute force encontrou container em \(fullPath)")
+                            root = URL(fileURLWithPath: fullPath, isDirectory: true)
+                            break
+                        }
+                    }
+                }
+            }
+            
             roots[bundleID] = root
             return root
         }
@@ -509,6 +527,9 @@ enum PatchTransaction {
         // Ganha propriedade do arquivo original para permitir a substituição (FilzaJailed method)
         _ = apfs_own_path(target.path, 501, 501)
         
+        // Garante acesso ao diretório pai para o rename
+        _ = ContainerStore.grantContainerAccess(target.deletingLastPathComponent().path)
+        
         guard rename(staging.path, target.path) == 0 else {
             // Tenta forçar via shell se o rename falhar (como último recurso)
             log("patch: rename failed, trying forced copy")
@@ -531,6 +552,9 @@ enum PatchTransaction {
         
         // Ganha propriedade do arquivo original para permitir a restauração
         _ = apfs_own_path(target.path, 501, 501)
+        
+        // Garante acesso ao diretório pai para o rename
+        _ = ContainerStore.grantContainerAccess(target.deletingLastPathComponent().path)
         
         guard rename(staging.path, target.path) == 0 else {
             throw PatchPackageError.restoreFailed
