@@ -74,15 +74,17 @@
 		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
 		3105J200 /* cache_res Body fixture in Resources */ = {isa = PBXBuildFile; fileRef = 3105J100; };
 		3105L002 /* LicenseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L001; };
-		3105L004 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L003; };
+			3105L004 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L003; };
+			880502FB /* SparseRestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880501FA /* SparseRestoreService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		880101FA /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
 		880201FA /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
 			880301FA /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
-			880401FA /* AssetMetadataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetMetadataService.swift; sourceTree = "<group>"; };
-		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+				880401FA /* AssetMetadataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetMetadataService.swift; sourceTree = "<group>"; };
+				880501FA /* SparseRestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparseRestoreService.swift; sourceTree = "<group>"; };
+			3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3105A023 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -270,8 +272,9 @@
 			3105A405 /* helpers */ = {
 				isa = PBXGroup;
 				children = (
-						3105L001 /* LicenseService.swift */,
-					880401FA /* AssetMetadataService.swift */,
+							3105L001 /* LicenseService.swift */,
+						880401FA /* AssetMetadataService.swift */,
+						880501FA /* SparseRestoreService.swift */,
 					3105A099 /* Localization.swift */,
 				3105A104 /* ContainerStore.swift */,
 				3105A108 /* ContainerIdentityResolver.swift */,
@@ -397,8 +400,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-					3105L002 /* LicenseService.swift in Sources */,
-					3105L004 /* LoginView.swift in Sources */,
+						3105L002 /* LicenseService.swift in Sources */,
+						3105L004 /* LoginView.swift in Sources */,
+						880502FB /* SparseRestoreService.swift in Sources */,
 				3105A200, 3105A201, 3105A203, 3105A204,
 				3105A205, 3105A206, 3105A207, 3105A209,
 				3105A210, 3105A220, 3105A221, 3105A222, 3105A223,

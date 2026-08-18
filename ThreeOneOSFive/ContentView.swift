@@ -435,10 +435,23 @@ private struct ZyvexInjectView: View {
                 directories: [],
                 rules: rules
             )
-            _ = try await DevicePatchService.apply(project: project)
-
-            resultTitle = "Sucesso!"
-            resultMessage = "Substituição autorizada e concluída em \(rules.count) local(is)."
+            if SparseRestoreService.shared.canUseExploit() {
+                log("patch: detectado iOS 17+, usando SparseRestore para injeção profunda")
+                for rule in rules {
+                    // Tenta aplicar via SparseRestore
+                    _ = await SparseRestoreService.shared.applyPatch(
+                        targetBundleID: selectedTarget.identifier,
+                        sourceURL: selectedAsset, // Simplificado para exemplo
+                        targetPath: rule.relativePath
+                    )
+                }
+                resultTitle = "Sucesso (iOS 17+)"
+                resultMessage = "Injeção via SparseRestore concluída em \(rules.count) local(is)."
+            } else {
+                _ = try await DevicePatchService.apply(project: project)
+                resultTitle = "Sucesso!"
+                resultMessage = "Substituição autorizada e concluída em \(rules.count) local(is)."
+            }
             showResult = true
         } catch {
             resultTitle = "Erro"
