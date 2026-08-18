@@ -37,22 +37,17 @@ public class OnyxImporterService {
     
     private func sanitizeFilename(_ filename: String) -> String {
         var result = filename
-        // Padrões comuns de cópia: " (1)", "(1)", " 1", "_1"
+        
+        // 1. Lógica agressiva para remover parênteses e números de cópia (ex: "file (1)", "file 2", "file_3")
+        // Padrões: " (1)", "(1)", " 1", "_1"
         let patterns = [
-            "\\s?\\(\\d+\\)$", // Ex: "file (2)" ou "file(2)"
-            "\\s\\d+$",       // Ex: "file 2"
-            "_\\d+$"          // Ex: "file_2"
+            "\\s?\\(\\d+\\)", // Remove parênteses com ou sem espaço: " (1)" ou "(1)"
+            "\\s\\d+",       // Remove espaço seguido de número: " 2"
+            "_\\d+"          // Remove sublinhado seguido de número: "_3"
         ]
         
-        // 1. Tentar limpar o nome completo (caso o sufixo esteja após a extensão)
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                result = regex.stringByReplacingMatches(in: result, options: [], range: NSRange(location: 0, length: result.utf16.count), withTemplate: "")
-            }
-        }
-        
-        // 2. Tentar limpar o nome base (caso o sufixo esteja antes da extensão, ex: "file 2.ext")
-        let url = URL(fileURLWithPath: result)
+        // Primeiro, tentamos limpar preservando a extensão se ela existir
+        let url = URL(fileURLWithPath: filename)
         let ext = url.pathExtension
         var base = url.deletingPathExtension().lastPathComponent
         
@@ -65,10 +60,18 @@ public class OnyxImporterService {
         base = base.trimmingCharacters(in: .whitespaces)
         
         if ext.isEmpty {
-            return base
+            result = base
         } else {
-            return base + "." + ext
+            result = base + "." + ext
         }
+        
+        return result
+    }
+
+    public func validateUnityHeader(data: Data) -> Bool {
+        guard data.count >= 7 else { return false }
+        let header = String(data: data.prefix(7), encoding: .ascii) ?? ""
+        return header == "UnityFS" || header == "UnityWe" // UnityWeb
     }
 
     public func importOnyxFile(from sourceURL: URL) -> Result<(OnyxPackageMetadata, URL), Error> {

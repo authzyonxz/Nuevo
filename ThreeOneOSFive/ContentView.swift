@@ -398,20 +398,16 @@ private struct ZyvexInjectView: View {
                 }
             }
 
-            // VALIDAÇÃO DE INTEGRIDADE (UnityFS)
-            if targetFileName.contains("cache_res") {
-                let header = patchData.prefix(7)
-                if String(data: header, encoding: .utf8) != "UnityFS" {
-                    log("patch: AVISO - Arquivo cache_res não parece ser um UnityFS válido!")
-                    // Não bloqueamos, mas avisamos no log
-                }
+            // VALIDAÇÃO DE INTEGRIDADE (UnityFS / UnityWeb)
+            if !OnyxImporterService.shared.validateUnityHeader(data: patchData) {
+                log("patch: AVISO - O arquivo '\(targetFileName)' não possui um cabeçalho Unity válido (UnityFS/UnityWeb).")
             }
 
-            // ESTRATÉGIA DE INJEÇÃO EM MASSA (MASS INJECT)
+            // ESTRATÉGIA DE INJEÇÃO INTELIGENTE (SMART INJECT)
             let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier)
             var rules: [PatchRule] = []
 
-            // 1. Tentar injeção via varredura (Caminhos Reais)
+            // 1. Tentar injeção via varredura (Caminhos Reais encontrados no dispositivo)
             if let validPath = containerPath {
                 log("patch: container localizado em \(validPath). Iniciando varredura profunda...")
                 _ = ContainerStore.grantContainerAccess(validPath)
@@ -430,14 +426,33 @@ private struct ZyvexInjectView: View {
                 log("patch: encontrados \(foundPaths.count) locais reais.")
             }
 
-            // 2. SEMPRE adicionar caminhos padrão (Segurança contra cópias ocultas)
-            let bruteForcePaths = [
-                "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
-                "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                "Library/Application Support/Compulsory/ios/gameassetbundles/\(targetFileName)",
-                "Documents/ContentCache/Compulsory/ios/gameassetbundles/config/\(targetFileName)"
-            ]
+            // 2. SEMPRE adicionar caminhos padrão baseados no TIPO de arquivo
+            var bruteForcePaths: [String] = []
+            
+            if targetFileName.lowercased().contains("cache_res") {
+                log("patch: detectado tipo CACHE. Adicionando caminhos de cache...")
+                bruteForcePaths = [
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/config/\(targetFileName)",
+                    "Library/Application Support/Compulsory/ios/gameassetbundles/\(targetFileName)"
+                ]
+            } else if targetFileName.lowercased().contains("avatar") || targetFileName.lowercased().contains("assetindexer") {
+                log("patch: detectado tipo AVATAR. Adicionando caminhos de avatar...")
+                bruteForcePaths = [
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
+                    "Library/Caches/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)", // Fallback para raiz
+                    "Library/Application Support/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)"
+                ]
+            } else {
+                log("patch: tipo genérico. Usando caminhos padrão...")
+                bruteForcePaths = [
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
+                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)"
+                ]
+            }
             
             for relPath in bruteForcePaths {
                 // Evita duplicatas se a varredura já encontrou o caminho
