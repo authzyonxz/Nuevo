@@ -27,6 +27,9 @@ class SparseRestoreService {
     }
     
     func applyPatch(targetBundleID: String, sourceURL: URL, targetPath: String) async -> Result<Bool, Error> {
+        guard !targetPath.isEmpty else {
+            return .failure(NSError(domain: "SparseRestore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Caminho de destino vazio"]))
+        }
         let version = ProcessInfo.processInfo.operatingSystemVersion
         
         if version.majorVersion == 18 && version.minorVersion >= 2 {

@@ -499,12 +499,6 @@ enum ContainerStore {
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
         
-        // Ativa o exploit de sandbox para o processo atual se ainda não estiver
-        let selfProc = proc_self()
-        if selfProc != 0 {
-            _ = sandbox_escape(selfProc)
-        }
-        
         // Tentar grant com o caminho original
         var pathC = clean.utf8CString.map { Int8($0) }
         let handle = bad_query(&pathC, true, nil, false)
