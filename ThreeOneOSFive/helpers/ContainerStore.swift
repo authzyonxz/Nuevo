@@ -446,7 +446,7 @@ enum ContainerStore {
         return names.map { (path as NSString).appendingPathComponent($0) }
     }
 
-    static func readContainerMetadata(containerPath: String) -> ContainerMetadata? {
+    static func readContainerMetadata(containerPath: String) -> ContainerIdentityResolver.ContainerMetadata? {
         let metadataPath = metadataPath(for: containerPath)
 
         var data: Data?
@@ -473,7 +473,7 @@ enum ContainerStore {
         if let info = plist["MCMMetadataInfo"] as? [String: Any] {
             displayName = (info["CFBundleDisplayName"] as? String) ?? (info["CFBundleName"] as? String) ?? ""
         }
-        return ContainerMetadata(bundleID: bundleID, displayName: displayName)
+        return ContainerIdentityResolver.ContainerMetadata(bundleID: bundleID, displayName: displayName)
     }
 
     static func metadataPath(for containerPath: String) -> String {
