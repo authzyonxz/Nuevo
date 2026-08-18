@@ -14,6 +14,12 @@ public struct PatchProjectsView: View {
 
     public init() {}
 
+    private func deleteAsset(_ url: URL) {
+        AssetMetadataService.shared.deleteMetadata(for: url)
+        try? FileManager.default.removeItem(at: url)
+        importedAssets = OnyxImporterService.shared.getImportedAssets()
+    }
+
     public var body: some View {
         NavigationStack {
             List {
@@ -50,6 +56,21 @@ public struct PatchProjectsView: View {
                                 Spacer()
                             }
                             .padding(.vertical, 4)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    deleteAsset(url)
+                                } label: {
+                                    Label("Excluir", systemImage: "trash")
+                                }
+                                
+                                Button {
+                                    pendingAssetURL = url
+                                    customNameInput = AssetMetadataService.shared.getDisplayName(for: url)
+                                    showNamePrompt = true
+                                } label: {
+                                    Label("Renomear Identificador", systemImage: "pencil")
+                                }
+                            }
                         }
                         .onDelete { indexSet in
                             for index in indexSet {

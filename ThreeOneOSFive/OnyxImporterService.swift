@@ -35,6 +35,28 @@ public class OnyxImporterService {
         return url
     }
     
+    private func sanitizeFilename(_ filename: String) -> String {
+        // Regex para remover sufixos como " (1)", " (2)", "(1)", "(2)", etc.
+        // E também espaços extras
+        let pattern = "\\s?\\(\\d+\\)$"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+            let range = NSRange(location: 0, length: filename.utf16.count)
+            // Se for um arquivo com extensão, precisamos tratar o nome base
+            let url = URL(fileURLWithPath: filename)
+            let ext = url.pathExtension
+            let base = url.deletingPathExtension().lastPathComponent
+            
+            let sanitizedBase = regex.stringByReplacingMatches(in: base, options: [], range: NSRange(location: 0, length: base.utf16.count), withTemplate: "")
+            
+            if ext.isEmpty {
+                return sanitizedBase.trimmingCharacters(in: .whitespaces)
+            } else {
+                return sanitizedBase.trimmingCharacters(in: .whitespaces) + "." + ext
+            }
+        }
+        return filename
+    }
+
     public func importOnyxFile(from sourceURL: URL) -> Result<(OnyxPackageMetadata, URL), Error> {
         do {
             // Acesso seguro (se necessário, embora o picker com asCopy: true já resolva)
@@ -42,7 +64,8 @@ public class OnyxImporterService {
             defer { if accessing { sourceURL.stopAccessingSecurityScopedResource() } }
             
             let data = try Data(contentsOf: sourceURL)
-            let destinationURL = importedPackagesDirectory.appendingPathComponent(sourceURL.lastPathComponent)
+            let sanitizedName = sanitizeFilename(sourceURL.lastPathComponent)
+            let destinationURL = importedPackagesDirectory.appendingPathComponent(sanitizedName)
             
             // Tentar detectar se é um pacote .onyx legítimo (4 bytes length + JSON)
             if data.count > 8 {
