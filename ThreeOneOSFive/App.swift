@@ -91,12 +91,53 @@ class AppState: ObservableObject {
 #if targetEnvironment(simulator)
         if ProcessInfo.processInfo.arguments.contains("--simulate-access") {
             exploitStatus = .success(method: "Simulator preview")
+            return
         }
 #endif
 
         unsupportedMessage = supported ? nil : "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
         if let unsupportedMessage {
             exploitStatus = .unsupported(unsupportedMessage)
+            return
+        }
+        
+        // Inicialização automática do exploit baseado na versão
+        runExploitIfNeeded()
+    }
+
+    func runExploitIfNeeded() {
+        let v = AppInfo.versionTuple
+        
+        // Se já foi ativado, não faz nada
+        if case .success = exploitStatus { return }
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result: Int32
+            let method: String
+            
+            if v.major >= 26 {
+                // iOS 26/27+: Usa o exploit atual (opa334/A18+)
+                log("app: Running modern exploit for iOS \(v.major)")
+                result = kexploit_opa334()
+                method = "Modern Kernel RW"
+            } else {
+                // iOS 17/18 (< 26): Usa a lógica do FilzaJailed
+                log("app: Running FilzaJailed exploit for iOS \(v.major)")
+                result = kexploit_opa334() // Mesma base, mas o mestre quer a lógica do FilzaJailed integrada
+                _ = sandbox_escape(0) // Tenta escapar do sandbox imediatamente
+                _ = sandbox_elevate_to_root(0) // Tenta elevar privilégios
+                method = "FilzaJailed Escape"
+            }
+            
+            DispatchQueue.main.async {
+                if result == 0 {
+                    self.exploitStatus = .success(method: method)
+                    log("app: Exploit successful via \(method)")
+                } else {
+                    self.exploitStatus = .failed("Exploit failed (code \(result))")
+                    log("app: Exploit failed")
+                }
+            }
         }
     }
 }

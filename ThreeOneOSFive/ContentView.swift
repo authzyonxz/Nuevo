@@ -349,6 +349,9 @@ private struct ZyvexInjectView: View {
             .navigationTitle("Inject")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
+                // Garantir ativação do exploit (FilzaJailed para iOS < 26)
+                appState.runExploitIfNeeded()
+                
                 importedAssets = OnyxImporterService.shared.getImportedAssets()
                 
                 // Tentar detectar qual jogo está instalado

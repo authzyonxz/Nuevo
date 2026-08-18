@@ -73,8 +73,18 @@ enum ContainerStore {
             }
         }
         
-        // 2. Fallback: Varredura profunda do sistema de arquivos
-        log("patch: MCM failed or restricted for \(bundleID), performing deep scan...")
+        // 2. Fallback: LaunchServices Store (Técnica do FilzaJailed/FilzaSlop)
+        log("patch: MCM failed for \(bundleID), trying LaunchServices discovery...")
+        let lsIdentifiers = launchServicesStoreIdentifiers()
+        if lsIdentifiers.contains(bundleID) {
+            if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {
+                log("patch: LS match resolved via MCM for \(bundleID): \(path)")
+                return path
+            }
+        }
+        
+        // 3. Fallback: Varredura profunda do sistema de arquivos com inferência
+        log("patch: LS discovery failed for \(bundleID), performing deep scan...")
         
         // Buscar em todos os containers de dados conhecidos
         let filesystemApps = containersFromFilesystem()
@@ -82,19 +92,31 @@ enum ContainerStore {
         
         // Tentar identificar o app pelos metadados ou arquivos internos
         for app in filesystemApps {
-            let metadata = readContainerMetadata(containerPath: app.containerPath)
-            if metadata?.bundleID == bundleID {
+            // Tentar ler metadados diretamente
+            if let metadata = readContainerMetadata(containerPath: app.containerPath), metadata.bundleID == bundleID {
                 log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
                 return app.containerPath
             }
             
-            // Fallback heurístico: procurar pasta do jogo se o bundleID bater parcialmente ou via Library/Preferences
+            // Tentar inferir a identidade (como o FilzaJailed faz)
+            if let inferred = inferredApp(for: app, knownAppsByBundleID: [:], launchServicesIdentifiers: Set(lsIdentifiers)),
+               inferred.bundleID == bundleID {
+                log("patch: Inferred identity matched \(bundleID) at \(app.containerPath)")
+                return app.containerPath
+            }
+            
+            // Fallback heurístico: procurar pasta do jogo via Library/Preferences
             let libPath = (app.containerPath as NSString).appendingPathComponent("Library/Preferences")
-            if let prefs = try? FileManager.default.contentsOfDirectory(atPath: libPath) {
-                if prefs.contains(where: { $0.contains(bundleID) }) {
-                    log("patch: Heuristic match for \(bundleID) via preferences at \(app.containerPath)")
-                    return app.containerPath
+            let prefHandle = grantContainerAccess(libPath)
+            if prefHandle >= 0 {
+                if let prefs = try? FileManager.default.contentsOfDirectory(atPath: libPath) {
+                    if prefs.contains(where: { $0.contains(bundleID) }) {
+                        log("patch: Heuristic match for \(bundleID) via preferences at \(app.containerPath)")
+                        bad_query_release(prefHandle)
+                        return app.containerPath
+                    }
                 }
+                bad_query_release(prefHandle)
             }
         }
 
