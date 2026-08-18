@@ -224,6 +224,7 @@ private struct ZyvexInjectView: View {
     @State private var selectedTarget: DemoTarget?
     @State private var importedAssets: [URL] = OnyxImporterService.shared.getImportedAssets()
     @State private var selectedAsset: URL?
+    @State private var selectedVIPPackage: VIPPackage?
     @State private var showResult = false
     @State private var resultTitle = ""
     @State private var resultMessage = ""
@@ -276,22 +277,61 @@ private struct ZyvexInjectView: View {
                         .buttonStyle(.plain)
                     }
 
-                    ZyvexSectionTitle(title: "2. Selecionar Arquivo .onyx")
-                    if importedAssets.isEmpty {
-                        ZyvexCard {
-                            VStack(spacing: 12) {
-                                Text("Nenhum arquivo .onyx encontrado na Library.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                Button("Ir para Library", action: onOpenLibrary)
-                                    .buttonStyle(.borderedProminent)
+                    ZyvexSectionTitle(title: "2. Selecionar Pacote de Mod")
+                    
+                    // Seção de Pacotes VIP
+                    Text("PACOTES VIP (PRÉ-INSTALADOS)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.yellow.opacity(0.8))
+                        .padding(.horizontal, 4)
+                    
+                    ForEach(VIPPackageService.shared.packages) { pkg in
+                        Button {
+                            selectedVIPPackage = pkg
+                            selectedAsset = nil
+                        } label: {
+                            HStack {
+                                Text(pkg.icon)
+                                    .font(.system(size: 22))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(pkg.name)
+                                        .font(.subheadline.weight(.bold))
+                                        .foregroundColor(pkg.hasAntenna ? .yellow : .white)
+                                    Text(pkg.description)
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.gray)
+                                        .lineLimit(1)
+                                }
+                                Spacer()
+                                if selectedVIPPackage?.id == pkg.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                }
                             }
-                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(white: 0.1))
+                            .cornerRadius(12)
                         }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    Divider().padding(.vertical, 8)
+                    
+                    Text("ARQUIVOS IMPORTADOS (.ONYX / RAW)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.blue.opacity(0.8))
+                        .padding(.horizontal, 4)
+                    
+                    if importedAssets.isEmpty {
+                        Text("Nenhum arquivo importado na Library.")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 4)
                     } else {
                         ForEach(importedAssets, id: \.self) { url in
                             Button {
                                 selectedAsset = url
+                                selectedVIPPackage = nil
                             } label: {
                                 HStack {
                                     Image(systemName: "doc.fill")
@@ -318,7 +358,7 @@ private struct ZyvexInjectView: View {
                         }
                     }
 
-                    if selectedTarget != nil && selectedAsset != nil {
+                    if selectedTarget != nil && (selectedAsset != nil || selectedVIPPackage != nil) {
                         VStack(spacing: 12) {
                             Button(action: applyPatch) {
                                 Text("INJETAR AGORA")
@@ -383,19 +423,34 @@ private struct ZyvexInjectView: View {
 
     @MainActor
     private func applyPatchAuthorized() async {
-        guard let selectedTarget, let selectedAsset else { return }
-        let sourceFileName = selectedAsset.lastPathComponent
-
+        guard let selectedTarget else { return }
+        
+        let patchData: Data
+        let targetFileName: String
+        
         do {
-            guard let patchData = OnyxImporterService.shared.extractPayload(from: selectedAsset) else {
-                throw NSError(domain: "Onyx", code: 2, userInfo: [NSLocalizedDescriptionKey: "Falha ao ler dados do arquivo."])
-            }
-
-            var targetFileName = sourceFileName
-            if sourceFileName.hasSuffix(".onyx") || sourceFileName.hasSuffix(".3105") {
-                if let (meta, _) = try? OnyxImporterService.shared.importOnyxFile(from: selectedAsset).get() {
-                    targetFileName = meta.payload_filename
+            if let pkg = selectedVIPPackage {
+                guard let data = VIPPackageService.shared.getPayload(for: pkg) else {
+                    throw NSError(domain: "VIP", code: 1, userInfo: [NSLocalizedDescriptionKey: "Falha ao carregar pacote VIP embutido."])
                 }
+                patchData = data
+                targetFileName = pkg.filename
+            } else if let assetURL = selectedAsset {
+                guard let data = OnyxImporterService.shared.extractPayload(from: assetURL) else {
+                    throw NSError(domain: "Onyx", code: 2, userInfo: [NSLocalizedDescriptionKey: "Falha ao ler dados do arquivo."])
+                }
+                patchData = data
+                
+                let sourceFileName = assetURL.lastPathComponent
+                var derivedName = sourceFileName
+                if sourceFileName.hasSuffix(".onyx") || sourceFileName.hasSuffix(".3105") {
+                    if let (meta, _) = try? OnyxImporterService.shared.importOnyxFile(from: assetURL).get() {
+                        derivedName = meta.payload_filename
+                    }
+                }
+                targetFileName = derivedName
+            } else {
+                return
             }
 
             // VALIDAÇÃO DE INTEGRIDADE (UnityFS / UnityWeb)

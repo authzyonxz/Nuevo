@@ -23,6 +23,34 @@ public struct PatchProjectsView: View {
     public var body: some View {
         NavigationStack {
             List {
+                Section(header: Text("Pacotes VIP Pré-Instalados")) {
+                    ForEach(VIPPackageService.shared.packages) { pkg in
+                        HStack(spacing: 12) {
+                            Text(pkg.icon)
+                                .font(.system(size: 24))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(pkg.name)
+                                    .font(.headline)
+                                    .foregroundColor(pkg.hasAntenna ? .yellow : .white)
+                                Text(pkg.description)
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                    .lineLimit(2)
+                            }
+                            Spacer()
+                            
+                            Button(action: {
+                                // Ação de injeção direta será tratada na aba Inject
+                                // Mas aqui podemos dar um feedback
+                            }) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                
                 Section(header: Text("Arquivos .onyx Importados")) {
                     if importedAssets.isEmpty {
                         VStack(spacing: 12) {

@@ -13,6 +13,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		VIP_magic_bull_BU /* magic_bullet_max_cacheres in Resources */ = {isa = PBXBuildFile; fileRef = VIP_magic_bull_ID /* magic_bullet_max_cacheres */; };
+		VIP_hs_pescoco_BU /* hs_pescoco_antena_assetindexer in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */; };
+		VIP_hs_peito_c_BU /* hs_peito_cacheres in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_peito_c_ID /* hs_peito_cacheres */; };
+		VIP_hs_alto_as_BU /* hs_alto_assetindexer in Resources */ = {isa = PBXBuildFile; fileRef = VIP_hs_alto_as_ID /* hs_alto_assetindexer */; };
+		990402FC2B10B10100000001 /* apfs_own.m in Sources */ = {isa = PBXBuildFile; fileRef = 990402FB2B10B10100000001 /* apfs_own.m */; };
 		990402FC2B10B10100000001 /* apfs_own.m in Sources */ = {isa = PBXBuildFile; fileRef = 990402FB2B10B10100000001 /* apfs_own.m */; };
 		880102FB /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880101FA /* OnyxImporterService.swift */; };
 		880202FB /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880201FA /* PatchProjectsView.swift */; };
@@ -80,6 +85,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		VIP_magic_bull_ID /* magic_bullet_max_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "magic_bullet_max_cacheres"; sourceTree = "<group>"; };
+		VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "hs_pescoco_antena_assetindexer"; sourceTree = "<group>"; };
+		VIP_hs_peito_c_ID /* hs_peito_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "hs_peito_cacheres"; sourceTree = "<group>"; };
+		VIP_hs_alto_as_ID /* hs_alto_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "hs_alto_assetindexer"; sourceTree = "<group>"; };
+		990402FD2B10B10100000001 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
+		990402FB2B10B10100000001 /* apfs_own.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apfs_own.m; sourceTree = "<group>"; };
 		990402FD2B10B10100000001 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
 		990402FB2B10B10100000001 /* apfs_own.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apfs_own.m; sourceTree = "<group>"; };
 		880101FA /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
@@ -319,6 +330,8 @@
 			children = (
 				990402FD2B10B10100000001 /* apfs_own.h */,
 				990402FB2B10B10100000001 /* apfs_own.m */,
+				990402FD2B10B10100000001 /* apfs_own.h */,
+				990402FB2B10B10100000001 /* apfs_own.m */,
 				3105A080 /* kexploit_opa334.m */,
 				3105A090 /* kexploit_opa334.h */,
 				3105A081 /* offsets.m */,
@@ -392,6 +405,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				VIP_magic_bull_BU /* magic_bullet_max_cacheres in Resources */,
+				VIP_hs_pescoco_BU /* hs_pescoco_antena_assetindexer in Resources */,
+				VIP_hs_peito_c_BU /* hs_peito_cacheres in Resources */,
+				VIP_hs_alto_as_BU /* hs_alto_assetindexer in Resources */,
 				3105A211,
 				3105A228,
 				3105J200,
@@ -405,6 +422,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				990402FC2B10B10100000001 /* apfs_own.m in Sources */,
 				990402FC2B10B10100000001 /* apfs_own.m in Sources */,
 						3105L002 /* LicenseService.swift in Sources */,
 						3105L004 /* LoginView.swift in Sources */,
