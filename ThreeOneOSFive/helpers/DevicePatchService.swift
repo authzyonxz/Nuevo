@@ -6,7 +6,7 @@ enum DevicePatchService {
         let ticket = try await requestAuthorization(
             operation: "apply_patch:\(bundleIDs.sorted().joined(separator: ","))"
         )
-        try LicenseService.shared.consume(ticket)
+        try LicenseService.shared.consume(ticket, for: "apply_patch:\(bundleIDs.sorted().joined(separator: ","))")
 
         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
             try PatchTransaction.apply(
@@ -27,7 +27,7 @@ enum DevicePatchService {
         let ticket = try await requestAuthorization(
             operation: "restore_patch:\(bundleIDs.sorted().joined(separator: ","))"
         )
-        try LicenseService.shared.consume(ticket)
+        try LicenseService.shared.consume(ticket, for: "restore_patch:\(bundleIDs.sorted().joined(separator: ","))")
 
         try withResolvedContainers(bundleIDs: bundleIDs) { roots in
             try PatchTransaction.restore(

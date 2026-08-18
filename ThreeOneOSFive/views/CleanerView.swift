@@ -78,7 +78,7 @@ struct CleanerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
             .toolbar { toolbarContent }
-            .alert(item: $activeAlert, content: alert(for:))
+            .alert(item: $activeAlert, content: { item in makeAlert(for: item) })
             .onAppear {
                 guard !hasLoaded else { return }
                 hasLoaded = true
@@ -153,9 +153,9 @@ struct CleanerView: View {
                         }
                     }
                 }
-                activeAlert = .result("Arquivos originais restaurados com autorização do servidor.")
+                activeAlert = CleanerAlert.result("Arquivos originais restaurados com autorização do servidor.")
             } catch {
-                activeAlert = .result("Restauração não autorizada ou nenhum backup pendente.")
+                activeAlert = CleanerAlert.result("Restauração não autorizada ou nenhum backup pendente.")
             }
         }
     }
@@ -327,7 +327,7 @@ struct CleanerView: View {
 
     private var cleanAction: some View {
         Button {
-            activeAlert = .confirmation
+            activeAlert = CleanerAlert.confirmation
         } label: {
             HStack(spacing: 8) {
                 if isCleaning {
@@ -395,8 +395,8 @@ enum CleanerAlert: Identifiable {
 }
 
 extension CleanerView {
-    private func alert(for alert: CleanerAlert) -> Alert {
-        switch alert {
+    private func makeAlert(for alertItem: CleanerAlert) -> Alert {
+        switch alertItem {
         case .confirmation:
             return Alert(
                 title: Text(language.text("cleaner.confirm_title")),
@@ -663,7 +663,7 @@ extension CleanerView {
                 }
                 selectedBundleIDs.removeAll()
                 isCleaning = false
-                activeAlert = .result(resultMessage)
+                activeAlert = CleanerAlert.result(resultMessage)
             }
         }
     }
@@ -680,14 +680,4 @@ private struct CleanerAppRecord: Identifiable {
     var id: String { app.bundleID }
 }
 
-    private enum CleanerAlert: Identifiable {
-        case confirmation
-        case result(String)
 
-        var id: String {
-            switch self {
-            case .confirmation: return "confirmation"
-            case .result(let message): return "result-\(message)"
-            }
-        }
-    }
