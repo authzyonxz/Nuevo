@@ -93,7 +93,7 @@ enum ContainerStore {
         // Tentar identificar o app pelos metadados ou arquivos internos
         for app in filesystemApps {
             // Tentar ler metadados diretamente
-            if let metadata = readContainerMetadata(containerPath: app.containerPath), metadata.bundleID == bundleID {
+            if let metadata: ContainerIdentityResolver.ContainerMetadata = readContainerMetadata(containerPath: app.containerPath), metadata.bundleID == bundleID {
                 log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
                 return app.containerPath
             }
