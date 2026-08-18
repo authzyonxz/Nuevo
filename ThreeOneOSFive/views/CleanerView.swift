@@ -380,18 +380,21 @@ struct CleanerView: View {
         }
     }
 
-    private enum CleanerAlert: Identifiable {
-        case confirmation
-        case result(String)
+}
 
-        var id: Int {
-            switch self {
-            case .confirmation: return 1
-            case .result: return 2
-            }
+enum CleanerAlert: Identifiable {
+    case confirmation
+    case result(String)
+
+    var id: String {
+        switch self {
+        case .confirmation: return "confirmation"
+        case .result(let message): return "result-\(message)"
         }
     }
+}
 
+extension CleanerView {
     private func alert(for alert: CleanerAlert) -> Alert {
         switch alert {
         case .confirmation:

@@ -90,7 +90,7 @@ struct ContentView: View {
             }
             .scrollContentBackground(.hidden)
             .background(AppTheme.pageBackground)
-            .navigationTitle("IPA")
+            .navigationTitle("IPA FF")
             .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 300)
         } detail: {
             sectionContent(AppSection(rawValue: tabNavigation.selectedTab) ?? .home)
@@ -189,7 +189,7 @@ private struct DashboardView: View {
                                 Text("FREE FIRE TOOLKIT")
                                     .font(.caption.weight(.bold))
                                     .foregroundStyle(AppTheme.accent)
-                                Text("IPA")
+                                Text("IPA FF")
                                     .font(.system(size: 30, weight: .black, design: .rounded))
                                     .foregroundStyle(.white)
                                 Text("Importe seus arquivos .onyx na Library e realize injeções atômicas no Free Fire.")

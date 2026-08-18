@@ -31,7 +31,7 @@ struct LoginView: View {
                     }
                     .shadow(color: Color.blue.opacity(0.5), radius: 20)
                     
-                    Text("Menager iPA FF")
+                    Text("IPA FF")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(Color.blue.opacity(0.8))
                         .tracking(1.5)
