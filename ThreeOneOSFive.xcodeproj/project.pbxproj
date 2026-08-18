@@ -85,10 +85,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		VIP_magic_bull_ID /* magic_bullet_max_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "magic_bullet_max_cacheres"; sourceTree = "<group>"; };
-		VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "hs_pescoco_antena_assetindexer"; sourceTree = "<group>"; };
-		VIP_hs_peito_c_ID /* hs_peito_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "hs_peito_cacheres"; sourceTree = "<group>"; };
-		VIP_hs_alto_as_ID /* hs_alto_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "hs_alto_assetindexer"; sourceTree = "<group>"; };
+		VIP_magic_bull_ID /* magic_bullet_max_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/magic_bullet_max_cacheres"; sourceTree = "SOURCE_ROOT"; };
+		VIP_hs_pescoco_ID /* hs_pescoco_antena_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_pescoco_antena_assetindexer"; sourceTree = "SOURCE_ROOT"; };
+		VIP_hs_peito_c_ID /* hs_peito_cacheres */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_peito_cacheres"; sourceTree = "SOURCE_ROOT"; };
+		VIP_hs_alto_as_ID /* hs_alto_assetindexer */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/PackageFixtures/VIP/hs_alto_assetindexer"; sourceTree = "SOURCE_ROOT"; };
 		990402FD2B10B10100000001 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
 		990402FB2B10B10100000001 /* apfs_own.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apfs_own.m; sourceTree = "<group>"; };
 		990402FD2B10B10100000001 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
