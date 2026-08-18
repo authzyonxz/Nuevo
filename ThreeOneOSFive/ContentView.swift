@@ -279,40 +279,53 @@ private struct ZyvexInjectView: View {
 
                     ZyvexSectionTitle(title: "2. Selecionar Pacote de Mod")
                     
-                    // Seção de Pacotes VIP
+                    // Seção de Pacotes VIP filtrados pelo jogo selecionado
                     Text("PACOTES VIP (PRÉ-INSTALADOS)")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.yellow.opacity(0.8))
                         .padding(.horizontal, 4)
                     
-                    ForEach(VIPPackageService.shared.packages) { pkg in
-                        Button {
-                            selectedVIPPackage = pkg
-                            selectedAsset = nil
-                        } label: {
-                            HStack {
-                                Text(pkg.icon)
-                                    .font(.system(size: 22))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(pkg.name)
-                                        .font(.subheadline.weight(.bold))
-                                        .foregroundColor(pkg.hasAntenna ? .yellow : .white)
-                                    Text(pkg.description)
-                                        .font(.system(size: 9))
-                                        .foregroundColor(.gray)
-                                        .lineLimit(1)
+                    let currentVIPs = VIPPackageService.shared.getPackages(for: selectedTarget?.identifier ?? "com.dts.freefireth")
+                    
+                    if currentVIPs.isEmpty {
+                        Text("Nenhum pacote VIP disponível para este jogo.")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 4)
+                    } else {
+                        ForEach(currentVIPs) { pkg in
+                            Button {
+                                selectedVIPPackage = pkg
+                                selectedAsset = nil
+                            } label: {
+                                HStack {
+                                    Text(pkg.icon)
+                                        .font(.system(size: 22))
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(pkg.name)
+                                            .font(.subheadline.weight(.bold))
+                                            .foregroundColor(pkg.hasAntenna ? .yellow : .white)
+                                        Text(pkg.description)
+                                            .font(.system(size: 9))
+                                            .foregroundColor(.gray)
+                                            .lineLimit(1)
+                                        // Nome original do arquivo logo abaixo
+                                        Text("Original: \(pkg.filename)")
+                                            .font(.system(size: 8, weight: .medium, design: .monospaced))
+                                            .foregroundColor(.blue.opacity(0.8))
+                                    }
+                                    Spacer()
+                                    if selectedVIPPackage?.id == pkg.id {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                    }
                                 }
-                                Spacer()
-                                if selectedVIPPackage?.id == pkg.id {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
-                                }
+                                .padding()
+                                .background(Color(white: 0.1))
+                                .cornerRadius(12)
                             }
-                            .padding()
-                            .background(Color(white: 0.1))
-                            .cornerRadius(12)
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                     
                     Divider().padding(.vertical, 8)
@@ -358,7 +371,7 @@ private struct ZyvexInjectView: View {
                         }
                     }
 
-                    if selectedTarget != nil && (selectedAsset != nil || selectedVIPPackage != nil) {
+                    if selectedTarget != nil {
                         VStack(spacing: 12) {
                             Button(action: applyPatch) {
                                 Text("INJETAR AGORA")
@@ -415,7 +428,12 @@ private struct ZyvexInjectView: View {
     }
 
     private func applyPatch() {
-        guard selectedTarget != nil, selectedAsset != nil else { return }
+        guard selectedTarget != nil && (selectedAsset != nil || selectedVIPPackage != nil) else {
+            resultTitle = "Atenção"
+            resultMessage = "Selecione um jogo alvo e um pacote/arquivo para injetar."
+            showResult = true
+            return
+        }
         Task { @MainActor in
             await applyPatchAuthorized()
         }
