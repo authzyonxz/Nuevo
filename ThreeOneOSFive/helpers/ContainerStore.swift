@@ -93,7 +93,7 @@ enum ContainerStore {
         // Tentar identificar o app pelos metadados ou arquivos internos
         for app in filesystemApps {
             // Tentar ler metadados diretamente
-            if let metadata: ContainerIdentityResolver.ContainerMetadata = readContainerMetadata(containerPath: app.containerPath), metadata.bundleID == bundleID {
+            if let metadata = readContainerMetadata(containerPath: app.containerPath), metadata.bundleID == bundleID {
                 log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
                 return app.containerPath
             }
@@ -446,7 +446,7 @@ enum ContainerStore {
         return names.map { (path as NSString).appendingPathComponent($0) }
     }
 
-    static func readContainerMetadata(containerPath: String) -> ContainerIdentityResolver.ContainerMetadata? {
+    static func readContainerMetadata(containerPath: String) -> ContainerMetadata? {
         let metadataPath = metadataPath(for: containerPath)
 
         var data: Data?
@@ -473,7 +473,7 @@ enum ContainerStore {
         if let info = plist["MCMMetadataInfo"] as? [String: Any] {
             displayName = (info["CFBundleDisplayName"] as? String) ?? (info["CFBundleName"] as? String) ?? ""
         }
-        return ContainerIdentityResolver.ContainerMetadata(bundleID: bundleID, displayName: displayName)
+        return ContainerMetadata(bundleID: bundleID, displayName: displayName)
     }
 
     static func metadataPath(for containerPath: String) -> String {
