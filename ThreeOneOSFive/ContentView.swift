@@ -290,9 +290,14 @@ private struct ZyvexInjectView: View {
                                 HStack {
                                     Image(systemName: "doc.fill")
                                         .foregroundColor(.blue)
-                                    Text(url.lastPathComponent)
-                                        .font(.subheadline)
-                                        .foregroundColor(.white)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(AssetMetadataService.shared.getDisplayName(for: url))
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundColor(.white)
+                                        Text(url.lastPathComponent)
+                                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                            .foregroundColor(.gray.opacity(0.7))
+                                    }
                                     Spacer()
                                     if selectedAsset == url {
                                         Image(systemName: "checkmark.circle.fill")

@@ -6,6 +6,11 @@ public struct PatchProjectsView: View {
     @State private var importedAssets: [URL] = OnyxImporterService.shared.getImportedAssets()
     @State private var showImporter = false
     @State private var statusMessage: String?
+    
+    // Nomes personalizados
+    @State private var showNamePrompt = false
+    @State private var customNameInput = ""
+    @State private var pendingAssetURL: URL?
 
     public init() {}
 
@@ -34,13 +39,13 @@ public struct PatchProjectsView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "doc.fill")
                                     .foregroundColor(.blue)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(url.lastPathComponent)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(AssetMetadataService.shared.getDisplayName(for: url))
                                         .font(.headline)
                                         .foregroundColor(.white)
-                                    Text("Pronto para injeção no Free Fire")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
+                                    Text(url.lastPathComponent)
+                                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                        .foregroundColor(.gray.opacity(0.8))
                                 }
                                 Spacer()
                             }
@@ -49,6 +54,7 @@ public struct PatchProjectsView: View {
                         .onDelete { indexSet in
                             for index in indexSet {
                                 let url = importedAssets[index]
+                                AssetMetadataService.shared.deleteMetadata(for: url)
                                 try? FileManager.default.removeItem(at: url)
                             }
                             importedAssets = OnyxImporterService.shared.getImportedAssets()
@@ -74,13 +80,27 @@ public struct PatchProjectsView: View {
                 DocumentPickerView { url in
                     let result = OnyxImporterService.shared.importOnyxFile(from: url)
                     switch result {
-                    case .success(let (meta, _)):
+                    case .success(let (meta, destURL)):
                         importedAssets = OnyxImporterService.shared.getImportedAssets()
-                        statusMessage = "Importado com sucesso: \(meta.payload_filename)"
+                        pendingAssetURL = destURL
+                        customNameInput = url.deletingPathExtension().lastPathComponent
+                        showNamePrompt = true
                     case .failure(let err):
                         statusMessage = "Erro ao importar: \(err.localizedDescription)"
                     }
                 }
+            }
+            .alert("Identificar Pacote", isPresented: $showNamePrompt) {
+                TextField("Ex: Hs Pescoço", text: $customNameInput)
+                Button("Salvar") {
+                    if let url = pendingAssetURL {
+                        AssetMetadataService.shared.setDisplayName(customNameInput, for: url)
+                        importedAssets = OnyxImporterService.shared.getImportedAssets()
+                    }
+                }
+                Button("Cancelar", role: .cancel) { }
+            } message: {
+                Text("Dê um nome fácil para identificar este arquivo na hora da injeção.")
             }
         }
     }
