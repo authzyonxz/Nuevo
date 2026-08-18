@@ -59,22 +59,28 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
+        log("diag: Resolvendo container para \(bundleID)")
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
+            log("diag: Erro: BundleID inválido")
             return nil
         }
         
         // 1. Tentar via MCM (Método rápido e oficial via exploit)
         var lookupError: NSString?
         if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {
-            log("patch: MHA-C2 returned path for \(bundleID): \(path)")
+            log("diag: MCM retornou caminho: \(path)")
             if isApplicationContainerPath(path) {
-                log("patch: MHA-C2 resolved and validated \(bundleID)")
+                log("diag: Caminho validado via MCM")
                 return path
+            } else {
+                log("diag: Caminho MCM falhou na validação isApplicationContainerPath")
             }
+        } else {
+            log("diag: MCM falhou. Erro: \(lookupError ?? "sem erro")")
         }
         
         // 2. Fallback: LaunchServices Store (Técnica do FilzaJailed/FilzaSlop)
-        log("patch: MCM failed for \(bundleID), trying LaunchServices discovery...")
+        log("diag: Tentando descoberta via LaunchServices...")
         let lsIdentifiers = launchServicesStoreIdentifiers()
         if lsIdentifiers.contains(bundleID) {
             if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {

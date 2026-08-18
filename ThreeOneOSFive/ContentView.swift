@@ -403,19 +403,32 @@ private struct ZyvexInjectView: View {
             }
 
             log("patch: iniciando varredura por '\(targetFileName)' em \(selectedTarget.identifier)")
+            
+            // Tenta obter acesso antecipado para a varredura
+            _ = ContainerStore.grantContainerAccess(containerPath)
+            
             let foundPaths = ContainerStore.findFilesRecursively(at: containerPath, filename: targetFileName)
             var rules: [PatchRule] = []
 
             if foundPaths.isEmpty {
-                log("patch: arquivo não encontrado na varredura; usando caminho padrão")
-                let defaultRelPath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)"
-                rules = [PatchRule(
-                    id: UUID(),
-                    bundleID: selectedTarget.identifier,
-                    relativePath: defaultRelPath,
-                    replacementFilename: targetFileName,
-                    replacementData: patchData
-                )]
+                log("patch: arquivo não encontrado na varredura; forçando caminhos conhecidos")
+                // Se a varredura falhar, tentamos os caminhos mais comuns do Free Fire
+                let knownRelPaths = [
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)",
+                    "Documents/ContentCache/Compulsory/ios/gameassetbundles/avatar/\(targetFileName)",
+                    "Library/Caches/Compulsory/ios/gameassetbundles/\(targetFileName)"
+                ]
+                
+                rules = knownRelPaths.map { relPath in
+                    PatchRule(
+                        id: UUID(),
+                        bundleID: selectedTarget.identifier,
+                        relativePath: relPath,
+                        replacementFilename: targetFileName,
+                        replacementData: patchData
+                    )
+                }
+                log("patch: configuradas \(rules.count) regras de injeção direta via fallback")
             } else {
                 log("patch: encontrados \(foundPaths.count) locais para substituição")
                 rules = foundPaths.map { fullPath in
