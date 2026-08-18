@@ -196,6 +196,11 @@ private struct DashboardView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.mutedText)
                                     .fixedSize(horizontal: false, vertical: true)
+                                
+                                Text("Desenvolvido por: ruanwq")
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(AppTheme.accent.opacity(0.9))
+                                    .padding(.top, 4)
                             }
                             Spacer(minLength: 8)
                             AppLogo(size: 76)

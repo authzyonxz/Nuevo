@@ -119,7 +119,11 @@ struct AppLogo: View {
     var size: CGFloat = 48
     var body: some View {
         Group {
-            if let icon = UIImage(named: "AppIcon60x60")
+            if let logo = UIImage(named: "FreeFireLogo") {
+                Image(uiImage: logo)
+                    .resizable()
+                    .scaledToFit()
+            } else if let icon = UIImage(named: "AppIcon60x60")
                 ?? Bundle.main.path(forResource: "AppIcon60x60@2x", ofType: "png").flatMap(UIImage.init(contentsOfFile:))
                 ?? UIImage(named: "AppIcon") {
                 Image(uiImage: icon).resizable().scaledToFill()
