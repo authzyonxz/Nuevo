@@ -57,7 +57,7 @@ class AppState: ObservableObject {
             
             // Tentar abrir o exploit de forma segura com tratamento de exceção simulada
             let kopenSuccess = kopen_opa334()
-            if !kopenSuccess {
+            if kopenSuccess != 0 {
                 DispatchQueue.main.async {
                     self?.exploitStatus = .failed(method: "OPA334 Init", code: -1)
                     print("[EXPLOIT] Kopen falhou ou não suportado nesta versão.")
