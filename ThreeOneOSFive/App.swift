@@ -47,26 +47,39 @@ class AppState: ObservableObject {
             self?.deactivate()
         }
         
-        // Executar exploits em background para nunca congelar a thread principal (evita tela preta)
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        // Adicionar um delay de 3 segundos para evitar kernel panic/reboot imediato ao abrir o app
+        // e garantir estabilidade na thread de fundo.
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            print("[EXPLOIT] Iniciando estabilização de kernel em background...")
+            
+            // Verificar se o exploit é suportado antes de executar para evitar panics em versões incompatíveis
             offsets_init()
-            kopen_opa334()
+            
+            // Tentar abrir o exploit de forma segura com tratamento de exceção simulada
+            let kopenSuccess = kopen_opa334()
+            if !kopenSuccess {
+                DispatchQueue.main.async {
+                    self?.exploitStatus = .failed(method: "OPA334 Init", code: -1)
+                    print("[EXPLOIT] Kopen falhou ou não suportado nesta versão.")
+                }
+                return
+            }
             
             let selfProc = proc_self()
             if selfProc != 0 {
                 let escResult = sandbox_escape(selfProc)
-                sandbox_elevate_to_root(selfProc)
                 DispatchQueue.main.async {
                     if escResult == 0 {
                         self?.exploitStatus = .success(method: "Kernel OPA334 / DarkSword")
+                        print("[EXPLOIT] Sandbox escape aplicado com sucesso!")
                     } else {
-                        self?.exploitStatus = .failed(method: "Kernel Bypass", code: Int64(escResult))
+                        self?.exploitStatus = .failed(method: "Sandbox Escape", code: Int64(escResult))
+                        print("[EXPLOIT] Sandbox escape retornou código: \(escResult)")
                     }
-                    print("[EXPLOIT] Startup Kernel Bypass Finished with result: \(escResult)")
                 }
             } else {
                 DispatchQueue.main.async {
-                    self?.exploitStatus = .failed(method: "Kernel Bypass", code: -999)
+                    self?.exploitStatus = .failed(method: "Proc Self", code: -999)
                 }
             }
         }
