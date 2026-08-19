@@ -460,7 +460,10 @@
 				990102FB /* OnyxImporterService.swift in Sources */,
 				990202FB /* PatchProjectsView.swift in Sources */,
 				990302FB /* DocumentPickerView.swift in Sources */,
-				3105B901 /* apfs_own.m in Sources */,);
+				3105B901 /* apfs_own.m in Sources */,
+				880102FB /* OnyxImporterService.swift in Sources */,
+				880202FB /* PatchProjectsView.swift in Sources */,
+				880302FB /* DocumentPickerView.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 };
 /* End PBXSourcesBuildPhase section */
