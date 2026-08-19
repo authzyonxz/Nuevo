@@ -32,7 +32,7 @@ jobs:
             AD_HOC_CODE_SIGNING_ALLOWED=YES
           
           mkdir -p build/Payload
-          cp -r build/Build/Products/Release-iphoneos/3105.app build/Payload/
+          cp -r build/Build/Products/Release-iphoneos/*.app build/Payload/
           cd build
           zip -r 3105.ipa Payload
           
@@ -40,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ThreeOneOSFive-Unsigned
-          path: build/3105.ipa
+          path: build/*.ipa
