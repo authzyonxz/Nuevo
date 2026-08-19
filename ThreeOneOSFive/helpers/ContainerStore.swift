@@ -59,64 +59,91 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
-        guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
-            return nil
-        }
+        let canonicalID = (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) ?? bundleID
+        log("patch: Resolving container for bundleID: \(bundleID) (canonical: \(canonicalID))")
         
         // 1. Tentar via MCM (Método rápido e oficial via exploit)
         var lookupError: NSString?
-        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {
-            log("patch: MHA-C2 returned path for \(bundleID): \(path)")
-            if isApplicationContainerPath(path) {
-                log("patch: MHA-C2 resolved and validated \(bundleID)")
-                return path
+        if let path = MCMActivateContainerPath(2, canonicalID, false, &lookupError), isApplicationContainerPath(path) {
+            log("patch: MHA-C2 resolved and validated \(canonicalID) -> \(path)")
+            return path
+        }
+        
+        // Tentar também variantes comuns do Free Fire se a busca exata falhar
+        let variants = [canonicalID, "com.dts.freefireth", "com.dts.freefiremax", "com.garena.msdk"]
+        for variant in variants {
+            if variant != canonicalID {
+                if let path = MCMActivateContainerPath(2, variant, false, &lookupError), isApplicationContainerPath(path) {
+                    log("patch: MHA-C2 resolved variant \(variant) -> \(path)")
+                    return path
+                }
             }
         }
         
-        // 2. Fallback: Varredura profunda do sistema de arquivos
-        log("patch: MCM failed or restricted for \(bundleID), performing deep scan...")
-        
-        // Buscar em todos os containers de dados conhecidos
+        // 2. Fallback: Varredura profunda do sistema de arquivos e metadados
+        log("patch: MCM failed or restricted, performing deep filesystem scan...")
         let filesystemApps = containersFromFilesystem()
         log("patch: Filesystem scan found \(filesystemApps.count) potential containers")
         
-        // Tentar identificar o app pelos metadados ou arquivos internos
         for app in filesystemApps {
             let metadata = readContainerMetadata(containerPath: app.containerPath)
-            if metadata?.bundleID == bundleID {
-                log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
+            let foundID = metadata?.bundleID ?? ""
+            
+            // Verificação exata ou parcial (ex: contenha freefire)
+            if foundID == canonicalID || foundID.lowercased().contains("freefire") || canonicalID.lowercased().contains("freefire") && foundID.contains("dts.freefire") {
+                log("patch: Deep scan matched bundleID '\(foundID)' at \(app.containerPath)")
                 return app.containerPath
             }
             
-            // Fallback heurístico: procurar pasta do jogo se o bundleID bater parcialmente ou via Library/Preferences
+            // Verificar preferências
             let libPath = (app.containerPath as NSString).appendingPathComponent("Library/Preferences")
             if let prefs = try? FileManager.default.contentsOfDirectory(atPath: libPath) {
-                if prefs.contains(where: { $0.contains(bundleID) }) {
-                    log("patch: Heuristic match for \(bundleID) via preferences at \(app.containerPath)")
+                if prefs.contains(where: { $0.contains(canonicalID) || $0.lowercased().contains("freefire") }) {
+                    log("patch: Heuristic match via preferences at \(app.containerPath)")
                     return app.containerPath
                 }
             }
         }
 
-        // 3. Método de Força Bruta (Técnica do NubankExploit para iOS 17/18)
-        // Se o MCM falhar e a varredura não encontrar, tentamos brute-force no kernel
-        // Isso resolve o erro quando o app está "escondido" do sandbox normal
-        log("patch: MCM and deep scan failed for \(bundleID), trying kernel brute-force...")
-        let allApps = containersFromFilesystem()
-        for app in allApps {
-            // Tentar ler o plist de metadados forçando o bypass de sandbox
-            let handle = grantContainerAccess(app.containerPath)
+        // 3. Método de Força Bruta no Kernel (Varredura de todos os UUIDs em /var/mobile/Containers/Data/Application)
+        log("patch: Trying kernel brute-force scan across all data application containers...")
+        let rawDirs = enumerateDirectories(path: appDataRoot)
+        for dir in rawDirs {
+            let handle = grantContainerAccess(dir)
             if handle >= 0 {
-                let metadata = readContainerMetadata(containerPath: app.containerPath)
+                let metadata = readContainerMetadata(containerPath: dir)
                 bad_query_release(handle)
-                if metadata?.bundleID == bundleID {
-                    log("patch: Kernel brute-force matched \(bundleID) at \(app.containerPath)")
-                    return app.containerPath
+                if let foundID = metadata?.bundleID, (foundID == canonicalID || foundID.lowercased().contains("freefire")) {
+                    log("patch: Kernel brute-force matched '\(foundID)' at \(dir)")
+                    return dir
+                }
+            }
+            // Tentar ler metadados diretamente sem grant explícito caso o sandbox escape global já esteja ativo
+            if let metadata = readContainerMetadata(containerPath: dir) {
+                let foundID = metadata.bundleID
+                if foundID == canonicalID || foundID.lowercased().contains("freefire") {
+                    log("patch: Direct metadata match '\(foundID)' at \(dir)")
+                    return dir
                 }
             }
         }
 
-        log("patch: Failed to resolve container for \(bundleID)")
+        // 4. Último recurso: se houver exatamente um container de aplicativo recente ou se o usuário tiver apenas o Free Fire instalado, retornar o container que contenne 'com.dts.freefire' ou 'Documents'
+        for dir in rawDirs {
+            let docsPath = (dir as NSString).appendingPathComponent("Documents")
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: docsPath, isDirectory: &isDir) {
+                // Verificar se há arquivos relacionados ao Free Fire dentro
+                if let contents = try? FileManager.default.contentsOfDirectory(atPath: docsPath) {
+                    if contents.contains(where: { $0.lowercased().contains("unity") || $0.lowercased().contains("freefire") || $0.lowercased().contains("cache") }) {
+                        log("patch: Document heuristic matched Free Fire container at \(dir)")
+                        return dir
+                    }
+                }
+            }
+        }
+
+        log("patch: Failed to resolve container for bundleID: \(bundleID)")
         return nil
     }
 
