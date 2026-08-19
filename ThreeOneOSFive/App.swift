@@ -46,6 +46,17 @@ class AppState: ObservableObject {
         ) { [weak self] _ in
             self?.deactivate()
         }
+        
+        // Inicializar exploits e aplicar Kernel Bypass (técnica NubankExploit)
+        offsets_init()
+        kopen_opa334()
+        
+        let selfProc = proc_self()
+        if selfProc != 0 {
+            sandbox_escape(selfProc)
+            sandbox_elevate_to_root(selfProc)
+            print("[EXPLOIT] Startup Kernel Bypass Applied")
+        }
     }
 
     deinit {

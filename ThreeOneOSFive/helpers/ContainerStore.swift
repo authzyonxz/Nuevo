@@ -98,6 +98,24 @@ enum ContainerStore {
             }
         }
 
+        // 3. Método de Força Bruta (Técnica do NubankExploit para iOS 17/18)
+        // Se o MCM falhar e a varredura não encontrar, tentamos brute-force no kernel
+        // Isso resolve o erro quando o app está "escondido" do sandbox normal
+        log("patch: MCM and deep scan failed for \(bundleID), trying kernel brute-force...")
+        let allApps = containersFromFilesystem()
+        for app in allApps {
+            // Tentar ler o plist de metadados forçando o bypass de sandbox
+            let handle = grantContainerAccess(app.containerPath)
+            if handle >= 0 {
+                let metadata = readContainerMetadata(containerPath: app.containerPath)
+                bad_query_release(handle)
+                if metadata?.bundleID == bundleID {
+                    log("patch: Kernel brute-force matched \(bundleID) at \(app.containerPath)")
+                    return app.containerPath
+                }
+            }
+        }
+
         log("patch: Failed to resolve container for \(bundleID)")
         return nil
     }
@@ -463,12 +481,19 @@ enum ContainerStore {
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
         
-        // Tentar grant com o caminho original
+        // 1. Aplicar Kernel Bypass (Técnica do NubankExploit para iOS 17/18)
+        // Isso remove as restrições de Sandbox e DAC no kernel
+        let selfProc = proc_self()
+        if selfProc != 0 {
+            sandbox_escape(selfProc)
+            sandbox_elevate_to_root(selfProc)
+        }
+
+        // 2. Tentar grant com o caminho original (Sandbox Extension)
         var pathC = clean.utf8CString.map { Int8($0) }
         let handle = bad_query(&pathC, true, nil, false)
         
         if handle < 0 {
-            // Se falhar, tentar com o caminho canônico (adicionando /private se necessário)
             let canonical = ContainerDiscoveryMerger.canonicalPath(clean)
             if canonical != clean {
                 var canonicalC = canonical.utf8CString.map { Int8($0) }
