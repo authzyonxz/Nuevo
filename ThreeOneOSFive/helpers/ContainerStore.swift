@@ -444,19 +444,22 @@ enum ContainerStore {
             let metadata = readContainerMetadata(containerPath: fallback.containerPath)
             bad_query_release(metadataHandle)
             if let metadata {
-                let bundleID = metadata.bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+                let bundleID = metadata.bundleID.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
                 if ContainerBundleCandidateResolver.isValidBundleIdentifier(bundleID),
                    !bundleID.hasPrefix("systemgroup.") {
                     let info = appInfoForBundleID(bundleID) as? [String: Any] ?? [:]
                     let resolvedName = metadata.displayName.isEmpty
                         ? (info["name"] as? String ?? bundleID)
                         : metadata.displayName
+                    
+                    let version = info["version"] as? String ?? ""
+                    let icon = info["icon"] as? UIImage
                     return InstalledApp(
                         bundleID: bundleID,
                         name: resolvedName,
                         containerPath: fallback.containerPath,
-                        version: info["version"] as? String ?? "",
-                        icon: info["icon"] as? UIImage
+                        version: version,
+                        icon: icon
                     )
                 }
             }
@@ -584,6 +587,30 @@ enum ContainerStore {
         let unresolvedCount = result.filter { UUID(uuidString: $0.bundleID) != nil }.count
         log("browser: inferred identities for \(inferredCount)/\(apps.count) merged containers; unresolved=\(unresolvedCount)")
         return result
+    }
+
+    // MARK: Heuristic helpers
+    
+    static func isApplicationContainerPath(_ path: String) -> Bool {
+        let clean = ContainerDiscoveryMerger.canonicalPath(path)
+        return clean.contains("/Containers/Data/Application/") || clean.contains("/Containers/Bundle/Application/")
+    }
+    
+    static func metadataPath(for containerPath: String) -> String {
+        return (containerPath as NSString).appendingPathComponent(".com.apple.mobile_container_manager.metadata.plist")
+    }
+    
+    static func readContainerMetadata(containerPath: String) -> ContainerMetadata? {
+        let path = metadataPath(for: containerPath)
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
+              let bundleID = plist["MCMMetadataIdentifier"] as? String else {
+            return nil
+        }
+        return ContainerMetadata(
+            bundleID: bundleID,
+            displayName: (plist["MCMMetadataUserDescription"] as? String) ?? ""
+        )
     }
 
     // MARK: File browsing
