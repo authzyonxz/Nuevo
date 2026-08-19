@@ -1,4 +1,3 @@
-#import "exploit/bad_query.h"
 #import "exploit/mcm_bridge.h"
 #import "kexploit/kexploit_opa334.h"
 #import "kexploit/sandbox_escape.h"
@@ -8,6 +7,6 @@
 #import "kexploit/krw.h"
 #import <sys/stat.h>
 #import <sys/mount.h>
-
-// Prototyped in kexploit_opa334.h
 #import "helpers/AppIconHelper.h"
+
+// EARLY_KRW_LENGTH is in kexploit_opa334.h
