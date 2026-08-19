@@ -84,6 +84,11 @@ enum DevicePatchService {
             } else {
                 log("patch: traversal grant returned \(handle), proceeding in standard mode")
             }
+            
+            // Bypass DAC: Garantir que o app (mobile:501) seja dono do container para permitir escrita
+            let ownResult = apfs_own_tree(path, 501, 501)
+            log("patch: apfs_own_tree returned \(ownResult) for \(bundleID)")
+            
             roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
         }
         return try operation(roots)
