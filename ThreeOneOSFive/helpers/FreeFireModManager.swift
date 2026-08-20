@@ -113,8 +113,10 @@ class FreeFireModManager: ObservableObject {
         addLog("Bundles candidatos: \(bundleIds.joined(separator: ", "))")
 
         var targetPaths: [String] = []
+        var resolvedRoots: [String: URL] = [:]
         for bid in bundleIds {
             if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
+                resolvedRoots[bid] = URL(fileURLWithPath: rootPath, isDirectory: true)
                 addLog("Escaneando container: \(bid)")
                 let found = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
                 targetPaths.append(contentsOf: found)
@@ -127,14 +129,20 @@ class FreeFireModManager: ObservableObject {
         if targetPaths.isEmpty {
             addLog("AVISO: Busca global vazia, usando caminhos padrão")
             for bid in bundleIds {
-                if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid) {
-                    let subPath = isHolo ? "optional" : "compulsory"
-                    let standardPaths = [
-                        "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
-                        "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
-                    ]
-                    for sp in standardPaths {
-                        targetPaths.append((rootPath as NSString).appendingPathComponent(sp))
+                guard let rootURL = resolvedRoots[bid] else { continue }
+                let rootPath = rootURL.path
+                let subPath = isHolo ? "optional" : "compulsory"
+                let standardPaths = [
+                    "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
+                    "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
+                ]
+                for sp in standardPaths {
+                    let candidate = (rootPath as NSString).appendingPathComponent(sp)
+                    if FileManager.default.fileExists(atPath: candidate) {
+                        targetPaths.append(candidate)
+                        addLog("Caminho padrão confirmado: ...\(candidate.suffix(70))")
+                    } else {
+                        addLog("Caminho padrão ausente: ...\(candidate.suffix(70))")
                     }
                 }
             }
@@ -142,8 +150,9 @@ class FreeFireModManager: ObservableObject {
 
         var rules: [PatchRule] = []
         for fullPath in targetPaths {
-            for bid in bundleIds {
-                if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), fullPath.hasPrefix(root) {
+            for (bid, rootURL) in resolvedRoots {
+                let root = rootURL.path
+                if fullPath.hasPrefix(root) {
                     let relative = String(fullPath.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                     rules.append(PatchRule(
                         bundleID: bid,
@@ -166,7 +175,7 @@ class FreeFireModManager: ObservableObject {
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let receipt = try DevicePatchService.apply(project: project)
+                let receipt = try DevicePatchService.apply(project: project, preResolvedRoots: resolvedRoots)
                 self.addLog("SUCESSO: Injetado em \(rules.count) locais!")
                 DispatchQueue.main.async {
                     self.activeReceipt = receipt
