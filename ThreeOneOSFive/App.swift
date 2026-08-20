@@ -46,6 +46,9 @@ class KernelExploitState: ObservableObject {
         guard !exploitRunning, !exploitStatus.isSuccess else { return }
 
         switch KernelExploit.currentAccessPath {
+        case .kfd16:
+            runKernelExploitIfNeeded()
+
         case .badQuery:
             // bad_query is requested by ContainerStore/DevicePatchService only
             // when a concrete path needs access; do not run the kernel exploit.
@@ -65,17 +68,19 @@ class KernelExploitState: ObservableObject {
     private func runKernelExploitIfNeeded() {
         guard !exploitRunning, !exploitStatus.isSuccess else { return }
         exploitRunning = true
-        log("exploit: running kernel exploit for iOS 17/18...")
+        log("exploit: running selected native access path for iOS \(AppInfo.osVersion)...")
         DispatchQueue.global(qos: .userInitiated).async {
             let ok = KernelExploit.run()
             DispatchQueue.main.async {
                 self.exploitRunning = false
                 if ok {
-                    self.exploitStatus = .success(method: "Kernel offsets")
+                    let method = KernelExploit.usesKFD16 ? "KFD16 kernel access" : "Kernel offsets"
+                    self.exploitStatus = .success(method: method)
                     log("exploit: success — kernel access active")
                 } else {
-                    self.exploitStatus = .failed(method: "Kernel offsets", code: -1)
-                    log("exploit: failed")
+                    let method = KernelExploit.usesKFD16 ? "KFD16 kernel access" : "Kernel offsets"
+                    self.exploitStatus = .failed(method: method, code: -1)
+                    log("exploit: failed — \(method)")
                 }
             }
         }

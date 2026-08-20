@@ -2,11 +2,13 @@ import Foundation
 
 enum ExploitSupportPolicy {
     enum AccessPath: Equatable {
+        case kfd16
         case kernelOffsets
         case badQuery
         case unsupported
     }
 
+    static let verifiedIOS16Range = "16.0–16.6.1 (KFD; device/build restricted)"
     static let verifiedIOS17Range = "17.0–17.7.x"
     static let verifiedIOS18Range = "18.0–18.7.1"
     static let verifiedIOS26Range = "26.0–26.6.1"
@@ -24,6 +26,13 @@ enum ExploitSupportPolicy {
 
     static func iOS27PublicBetaNumber(for build: String) -> Int? {
         verifiedIOS27Builds.first { $0.build == build }?.publicBeta
+    }
+
+    static func supportsKFD16(major: Int, minor: Int, patch: Int) -> Bool {
+        // The Objective-C backend performs the device/build check. This method
+        // only describes the supported OS family and prevents iOS 15/17 from
+        // entering the KFD path.
+        return major == 16 && minor >= 0 && minor <= 6 && patch >= 0
     }
 
     static func supportsKernelExploit(major: Int, minor: Int, patch: Int) -> Bool {
@@ -52,6 +61,12 @@ enum ExploitSupportPolicy {
     }
 
     static func accessPath(major: Int, minor: Int, patch: Int, build: String) -> AccessPath {
+        if supportsKFD16(major: major, minor: minor, patch: patch) {
+            // Device/build validation happens in KFDBackend before kopen().
+            // Keep the OS family visible to the state machine; the native
+            // backend still refuses unknown combinations at runtime.
+            return .kfd16
+        }
         if supportsKernelExploit(major: major, minor: minor, patch: patch) {
             return .kernelOffsets
         }

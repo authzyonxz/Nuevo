@@ -97,6 +97,10 @@ enum ContainerStore {
             log("patch: metadata scan skipped — sandbox access not active")
             return nil
         }
+        let traversalHandle = shouldUseBadQuery ? grantContainerAccess(appDataRoot) : -1
+        defer {
+            if traversalHandle >= 0 { bad_query_release(traversalHandle) }
+        }
         let dirs = enumerateDirectories(path: appDataRoot)
         guard !dirs.isEmpty else {
             log("patch: metadata scan unavailable — no containers enumerated")
