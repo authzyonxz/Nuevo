@@ -19,6 +19,10 @@ func log(_ msg: String) { AppLog.shared.append(msg) }
 // MARK: - App Info
 enum AppInfo {
     static var osVersion: String {
+        let sysVersion = UIDevice.current.systemVersion
+        if !sysVersion.isEmpty {
+            return sysVersion
+        }
         let v = ProcessInfo.processInfo.operatingSystemVersion
         return "\(v.majorVersion).\(v.minorVersion).\(v.patchVersion)"
     }
