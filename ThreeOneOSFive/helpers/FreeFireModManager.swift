@@ -65,6 +65,10 @@ class FreeFireModManager: ObservableObject {
     }
 
     func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+        guard LicenseManager.shared.isAuthorized else {
+            complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
+            return
+        }
         guard beginOperation() else {
             complete(completion, success: false, message: "Outra operação já está em andamento.")
             return

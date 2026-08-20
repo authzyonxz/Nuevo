@@ -17,7 +17,9 @@ enum ExploitSupportPolicy {
         (1, nil, "24A5355q"),
         (2, nil, "24A5370h"),
         (3, 1, "24A5380h"),
-        (4, 2, "24A5390f")
+        (4, 2, "24A5390f"),
+        // Experimental: iOS 27.0 beta 5 reported as 24A5408d.
+        (5, nil, "24A5408d")
     ]
 
     static func iOS27BetaNumber(for build: String) -> Int? {

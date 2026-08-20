@@ -1,5 +1,7 @@
-import UIKit
+import Foundation
+import Combine
 import Security
+import UIKit
 
 struct LicenseInfo: Codable {
     let status: String
@@ -13,7 +15,9 @@ class LicenseManager: ObservableObject {
     static let shared = LicenseManager()
     
     @Published var isAuthorized: Bool = false
+    @Published var hasStoredKey: Bool = false
     @Published var isLoading: Bool = false
+    @Published var isValidatingActivation: Bool = false
     @Published var errorMessage: String? = nil
     @Published var licenseInfo: LicenseInfo? = nil
     
@@ -24,7 +28,7 @@ class LicenseManager: ObservableObject {
     private let product = "ruanwq"
     
     init() {
-        loadSavedKey()
+        hasStoredKey = loadSavedKey()?.isEmpty == false
     }
     
     func deviceID() -> String {
@@ -74,6 +78,22 @@ class LicenseManager: ObservableObject {
     func loadSavedKey() -> String? {
         return keychainRead(account: keychainAccount)
     }
+
+    func validateForActivation(completion: @escaping (Bool, String?) -> Void) {
+        guard let savedKey = loadSavedKey(), !savedKey.isEmpty else {
+            DispatchQueue.main.async {
+                self.isAuthorized = false
+                self.hasStoredKey = false
+                completion(false, "Cadastre uma key ativa no Perfil para ativar funções.")
+            }
+            return
+        }
+        isValidatingActivation = true
+        validateKey(savedKey) { success, message in
+            self.isValidatingActivation = false
+            completion(success, success ? nil : (message ?? "Key inválida, expirada ou desativada."))
+        }
+    }
     
     func validateKey(_ key: String, completion: @escaping (Bool, String?) -> Void) {
         guard !key.isEmpty else {
@@ -85,6 +105,7 @@ class LicenseManager: ObservableObject {
         errorMessage = nil
         
         var request = URLRequest(url: apiURL)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.httpMethod = "POST"
         request.timeoutInterval = 20.0
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -134,13 +155,20 @@ class LicenseManager: ObservableObject {
                             )
                             self.licenseInfo = info
                             self.isAuthorized = true
+                            self.hasStoredKey = true
                             self.keychainSave(value: key, account: self.keychainAccount)
                             completion(true, nil)
                         } else {
                             let msg = json["message"] as? String ?? (json["error"] as? String ?? "Key inválida ou expirada.")
+                            self.isAuthorized = false
+                            self.licenseInfo = nil
                             self.errorMessage = msg
                             completion(false, msg)
                         }
+                    } else {
+                        self.isAuthorized = false
+                        self.errorMessage = "Resposta inválida do servidor."
+                        completion(false, self.errorMessage)
                     }
                 } catch {
                     self.errorMessage = "Resposta inválida do servidor."
@@ -158,6 +186,8 @@ class LicenseManager: ObservableObject {
         ]
         SecItemDelete(query as CFDictionary)
         isAuthorized = false
+        hasStoredKey = false
         licenseInfo = nil
+        errorMessage = nil
     }
 }

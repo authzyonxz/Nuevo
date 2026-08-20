@@ -24,10 +24,6 @@ struct ThreeOneOSFiveApp: App {
                     // kernel/offset chain; iOS 26/27 use bad_query lazily.
                     exploitState.prepareForCurrentOS()
 
-                    // Auto-validar se já existe key salva no Keychain
-                    if let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty {
-                        licenseManager.validateKey(savedKey) { _, _ in }
-                    }
                 }
         }
         .onChange(of: scenePhase) { newPhase in

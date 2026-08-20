@@ -9,26 +9,14 @@ struct ContentView: View {
     @State private var timer: Timer? = nil
 
     var body: some View {
-        Group {
-            if licenseManager.isAuthorized {
-                MainTabView(selectedTab: $selectedTab)
-            } else {
-                LoginView(inputKey: $inputKey, timeRemaining: timeRemaining, onLogin: {
-                    timer?.invalidate()
-                    licenseManager.validateKey(inputKey) { success, error in
-                        if !success {
-                            print("Login falhou: \(error ?? "Erro desconhecido")")
-                        }
-                    }
-                })
-                .onAppear {
-                    startCountdown()
-                }
-                .onDisappear {
-                    timer?.invalidate()
+        MainTabView(selectedTab: $selectedTab)
+            .onAppear {
+                // A key não é exigida para abrir o painel. Cada ativação
+                // consulta novamente o servidor antes de iniciar o patch.
+                if licenseManager.loadSavedKey() != nil {
+                    licenseManager.validateKey(licenseManager.loadSavedKey() ?? "") { _, _ in }
                 }
             }
-        }
     }
 
     private func startCountdown() {
@@ -197,10 +185,12 @@ struct TabButton: View {
 
 // MARK: - Home View (Exact Reference Layout)
 struct HomeView: View {
+    @EnvironmentObject var licenseManager: LicenseManager
     @StateObject private var modManager = FreeFireModManager.shared
     @State private var alertMessage: String = ""
     @State private var showAlert: Bool = false
     @State private var showLogs: Bool = false
+    @State private var showKeySheet: Bool = false
 
     var body: some View {
         ZStack {
@@ -307,6 +297,10 @@ struct HomeView: View {
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
+        .sheet(isPresented: $showKeySheet) {
+            KeyRegistrationView()
+                .environmentObject(licenseManager)
+        }
     }
 
     private var aimbotMods: [ModType] {
@@ -318,13 +312,23 @@ struct HomeView: View {
     }
 
     private func handleToggle(mod: ModType, isOn: Bool) {
-        if isOn {
-            modManager.applyMod(mod) { success, msg in
+        guard isOn else {
+            modManager.restoreOriginal { _, msg in
                 alertMessage = msg
                 showAlert = true
             }
-        } else {
-            modManager.restoreOriginal { success, msg in
+            return
+        }
+
+        guard !licenseManager.isValidatingActivation else { return }
+        licenseManager.validateForActivation { success, message in
+            guard success else {
+                alertMessage = message ?? "Key inválida ou expirada."
+                showAlert = true
+                showKeySheet = true
+                return
+            }
+            modManager.applyMod(mod) { _, msg in
                 alertMessage = msg
                 showAlert = true
             }
@@ -375,6 +379,25 @@ struct ModRowReference: View {
 // MARK: - Profile View
 struct ProfileView: View {
     @EnvironmentObject var licenseManager: LicenseManager
+    @State private var showKeySheet = false
+
+    private var compatibilityStatus: (text: String, color: Color) {
+        switch KernelExploit.currentAccessPath {
+        case .kfd16: return ("Compatível — KFD16 experimental", .orange)
+        case .kernelOffsets: return ("Compatível — offsets", .green)
+        case .badQuery: return ("Compatível — bad_query", .green)
+        case .unsupported: return ("Não compatível", .red)
+        }
+    }
+
+    private var accessPathText: String {
+        switch KernelExploit.currentAccessPath {
+        case .kfd16: return "KFD iOS 16"
+        case .kernelOffsets: return "Kernel/offsets iOS 17–18"
+        case .badQuery: return "ContainerManager iOS 26–27"
+        case .unsupported: return "Indisponível"
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -389,12 +412,14 @@ struct ProfileView: View {
                         .padding(.top, 20)
 
                     VStack(spacing: 16) {
-                        InfoRow(title: "Status da Licença", value: licenseManager.licenseInfo?.status ?? "VIP ATIVO", color: .green)
+                        InfoRow(title: "Status da Licença", value: licenseManager.licenseInfo?.status ?? "Sem key registrada", color: licenseManager.isAuthorized ? .green : .orange)
                         InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
                         InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Vitalício", color: .white)
                         InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
                         InfoRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
-                        InfoRow(title: "Compatibilidade", value: "Compatível (iOS 18.2.1+)", color: .green)
+                        InfoRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
+                        InfoRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
+                        InfoRow(title: "Build do sistema", value: AppInfo.osBuild, color: .blue)
                         InfoRow(title: "Modelo do Aparelho", value: UIDevice.current.model, color: .white)
                         InfoRow(title: "Versão do iOS", value: UIDevice.current.systemVersion, color: .blue.opacity(0.8))
                     }
@@ -422,10 +447,24 @@ struct ProfileView: View {
                         )
                     }
                     .padding(.horizontal, 16)
+
+                    Button("REGISTRAR / VALIDAR KEY") {
+                        showKeySheet = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(Color.blue.opacity(0.85))
+                    .cornerRadius(12)
+                    .padding(.horizontal, 16)
                     
                     Spacer(minLength: 100)
                 }
             }
+        }
+        .sheet(isPresented: $showKeySheet) {
+            KeyRegistrationView()
+                .environmentObject(licenseManager)
         }
     }
 }
@@ -444,6 +483,71 @@ struct InfoRow: View {
             Text(value)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(color)
+        }
+    }
+}
+
+
+// MARK: - Key Registration
+struct KeyRegistrationView: View {
+    @EnvironmentObject var licenseManager: LicenseManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var inputKey = ""
+    @State private var message = ""
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 18) {
+                Image(systemName: "key.fill")
+                    .font(.system(size: 42))
+                    .foregroundColor(.blue)
+                Text("KEY NECESSÁRIA")
+                    .font(.system(size: 22, weight: .black))
+                Text("Registre uma key ativa para liberar a ativação das funções. A key será validada novamente antes de cada ativação.")
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.secondary)
+                SecureField("Digite sua key", text: $inputKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding()
+                    .background(Color.secondary.opacity(0.12))
+                    .cornerRadius(12)
+                if !message.isEmpty {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+                Button {
+                    licenseManager.validateKey(inputKey.trimmingCharacters(in: .whitespacesAndNewlines)) { success, error in
+                        if success {
+                            message = "Key ativa e vinculada a este aparelho."
+                            dismiss()
+                        } else {
+                            message = error ?? "Key inválida ou expirada."
+                        }
+                    }
+                } label: {
+                    Group {
+                        if licenseManager.isLoading { ProgressView() }
+                        else { Text("VALIDAR KEY").fontWeight(.bold) }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(Color.blue)
+                    .cornerRadius(12)
+                }
+                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Spacer()
+            }
+            .padding(24)
+            .navigationTitle("Acesso às funções")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Fechar") { dismiss() }
+                }
+            }
         }
     }
 }
