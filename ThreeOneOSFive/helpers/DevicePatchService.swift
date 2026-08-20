@@ -46,11 +46,26 @@ enum DevicePatchService {
         operation: ([String: URL]) throws -> T
     ) throws -> T {
         var roots: [String: URL] = [:]
+        var handles: [Int64] = []
+        defer { handles.forEach(bad_query_release) }
 
         for bundleID in bundleIDs {
             guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
                   ContainerStore.isApplicationContainerPath(path) else {
                 throw PatchPackageError.targetAppUnavailable(bundleID)
+            }
+            if ExploitSupportPolicy.accessPath(
+                major: AppInfo.versionTuple.major,
+                minor: AppInfo.versionTuple.minor,
+                patch: AppInfo.versionTuple.patch,
+                build: AppInfo.osBuild
+            ) == .badQuery {
+                let handle = ContainerStore.grantContainerAccess(path)
+                guard handle >= 0 else {
+                    log("patch: bad_query grant failed for \(bundleID), result=\(handle)")
+                    throw PatchPackageError.targetAppUnavailable(bundleID)
+                }
+                handles.append(handle)
             }
             roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
         }

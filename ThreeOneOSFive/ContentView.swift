@@ -40,7 +40,7 @@ struct ContentView: View {
             } else {
                 t.invalidate()
                 if !licenseManager.isAuthorized {
-                    exit(0)
+                    licenseManager.errorMessage = "Tempo de autenticação expirado. Insira sua key para continuar."
                 }
             }
         }
@@ -259,6 +259,7 @@ struct HomeView: View {
                                 ModRowReference(
                                     mod: mod,
                                     isActive: modManager.activeMod == mod,
+                                    isProcessing: modManager.isProcessing,
                                     onToggle: { isOn in
                                         handleToggle(mod: mod, isOn: isOn)
                                     }
@@ -287,6 +288,7 @@ struct HomeView: View {
                                 ModRowReference(
                                     mod: mod,
                                     isActive: modManager.activeMod == mod,
+                                    isProcessing: modManager.isProcessing,
                                     onToggle: { isOn in
                                         handleToggle(mod: mod, isOn: isOn)
                                     }
@@ -334,8 +336,8 @@ struct HomeView: View {
 struct ModRowReference: View {
     let mod: ModType
     let isActive: Bool
+    let isProcessing: Bool
     let onToggle: (Bool) -> Void
-    @State private var isProcessing = false
 
     var body: some View {
         HStack {
@@ -353,18 +355,16 @@ struct ModRowReference: View {
             if isProcessing {
                 ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
             } else {
-                Toggle("", isOn: Binding(
-                    get: { isActive },
-                    set: { value in
-                        isProcessing = true
-                        onToggle(value)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                            isProcessing = false
+                    Toggle("", isOn: Binding(
+                        get: { isActive },
+                        set: { value in
+                            guard !isProcessing else { return }
+                            onToggle(value)
                         }
-                    }
-                ))
-                .labelsHidden()
-                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                    ))
+                    .labelsHidden()
+                    .disabled(isProcessing)
+                    .toggleStyle(SwitchToggleStyle(tint: .blue))
             }
         }
         .padding(.horizontal, 16)

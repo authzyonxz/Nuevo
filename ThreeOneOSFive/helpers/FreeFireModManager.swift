@@ -43,7 +43,11 @@ class FreeFireModManager: ObservableObject {
     @Published var activeMod: ModType? = nil
     @Published var statusMessage: String = "Pronto para injetar"
     @Published var debugLogs: String = ""
-    
+    @Published private(set) var isProcessing = false
+
+    private let operationLock = NSLock()
+    private var operationInFlight = false
+
     private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
     private let bundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
@@ -61,6 +65,21 @@ class FreeFireModManager: ObservableObject {
     }
 
     func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+        guard beginOperation() else {
+            complete(completion, success: false, message: "Outra operação já está em andamento.")
+            return
+        }
+        guard KernelExploit.currentAccessPath != .unsupported else {
+            endOperation()
+            complete(completion, success: false, message: "Esta versão/build do iOS não é suportada.")
+            return
+        }
+        guard activeMod == nil else {
+            endOperation()
+            complete(completion, success: false, message: "Restaure a função ativa antes de aplicar outra.")
+            return
+        }
+
         addLog("Injeção V21: \(mod.rawValue)")
         
         let isHolo = (mod == .hologramaArmas)
@@ -68,20 +87,21 @@ class FreeFireModManager: ObservableObject {
         let modPath = Bundle.main.path(forResource: currentTarget, ofType: nil, inDirectory: "Mods/\(mod.folderName)")
         guard let finalModPath = modPath, let modData = try? Data(contentsOf: URL(fileURLWithPath: finalModPath)) else {
             addLog("ERRO: Mod não encontrado na IPA (\(currentTarget))")
-            completion(false, "Mod não encontrado na IPA.")
+            endOperation()
+            complete(completion, success: false, message: "Mod não encontrado na IPA.")
             return
         }
         
         let modSize = modData.count
         addLog("Origem OK: \(modSize) bytes")
 
-        sandbox_elevate_to_root(proc_self())
-        
+        prepareLegacyKernelAccessIfNeeded()
+
         var targetPaths: [String] = []
         for bid in bundleIds {
             if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
                 addLog("Escaneando container: \(bid)")
-                let found = findFiles(named: currentTarget, in: rootPath)
+                let found = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
                 targetPaths.append(contentsOf: found)
                 for p in found {
                     addLog("Alvo encontrado: ...\(p.suffix(40))")
@@ -122,7 +142,8 @@ class FreeFireModManager: ObservableObject {
         
         if rules.isEmpty {
             addLog("ERRO: Nenhum destino válido localizado")
-            completion(false, "Destino não localizado.")
+            endOperation()
+            complete(completion, success: false, message: "Destino não localizado.")
             return
         }
 
@@ -131,21 +152,56 @@ class FreeFireModManager: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 let receipt = try DevicePatchService.apply(project: project)
-                self.activeReceipt = receipt
-                
                 self.addLog("SUCESSO: Injetado em \(rules.count) locais!")
                 DispatchQueue.main.async {
+                    self.activeReceipt = receipt
                     self.activeMod = mod
                     self.statusMessage = "\(mod.rawValue) ATIVO"
+                    self.endOperation()
                     completion(true, "Injetado com Sucesso!")
                 }
             } catch {
                 self.addLog("ERRO: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(false, "Falha: \(error.localizedDescription)")
-                }
+                self.endOperation()
+                self.complete(completion, success: false, message: "Falha: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func prepareLegacyKernelAccessIfNeeded() {
+        guard KernelExploit.currentAccessPath == .kernelOffsets else {
+            log("access: mod operation uses ContainerManager bad_query; kernel elevation skipped")
+            return
+        }
+        guard KernelExploit.kernelAccessActive else {
+            log("access: kernel elevation skipped because kernel access is not active")
+            return
+        }
+
+        let selfProc = proc_self()
+        guard selfProc != 0 else {
+            log("access: kernel elevation skipped because proc_self returned 0")
+            return
+        }
+
+        let result = sandbox_elevate_to_root(selfProc)
+        guard result == 0 else {
+            log("access: kernel elevation failed with result=\(result)")
+            return
+        }
+        log("access: legacy kernel elevation active")
+    }
+
+    private func findFilesWithSelectedAccess(named name: String, in directory: String) -> [String] {
+        if KernelExploit.currentAccessPath == .badQuery {
+            let handle = ContainerStore.grantContainerAccess(directory)
+            guard handle >= 0 else {
+                log("access: bad_query grant failed for search result=\(handle)")
+                return []
+            }
+            defer { bad_query_release(handle) }
+        }
+        return findFiles(named: name, in: directory)
     }
 
     private func findFiles(named name: String, in directory: String) -> [String] {
@@ -164,29 +220,66 @@ class FreeFireModManager: ObservableObject {
     }
 
     func restoreOriginal(completion: @escaping (Bool, String) -> Void) {
+        guard beginOperation() else {
+            complete(completion, success: false, message: "Outra operação já está em andamento.")
+            return
+        }
+        guard KernelExploit.currentAccessPath != .unsupported else {
+            endOperation()
+            complete(completion, success: false, message: "Esta versão/build do iOS não é suportada.")
+            return
+        }
+
         addLog("Restaurando original...")
         guard let receipt = activeReceipt else {
-            completion(false, "Nenhum backup encontrado.")
+            endOperation()
+            complete(completion, success: false, message: "Nenhum backup encontrado.")
             return
         }
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                sandbox_elevate_to_root(proc_self())
+                self.prepareLegacyKernelAccessIfNeeded()
                 try DevicePatchService.restore(receipt: receipt)
-                self.activeReceipt = nil
                 self.addLog("SUCESSO: Original restaurado")
                 DispatchQueue.main.async {
+                    self.activeReceipt = nil
                     self.activeMod = nil
                     self.statusMessage = "Original restaurado"
+                    self.endOperation()
                     completion(true, "Original restaurado!")
                 }
             } catch {
                 self.addLog("ERRO: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(false, "Falha ao restaurar.")
-                }
+                self.endOperation()
+                self.complete(completion, success: false, message: "Falha ao restaurar.")
             }
+        }
+    }
+
+    private func beginOperation() -> Bool {
+        operationLock.lock()
+        defer { operationLock.unlock() }
+        guard !operationInFlight else { return false }
+        operationInFlight = true
+        DispatchQueue.main.async { self.isProcessing = true }
+        return true
+    }
+
+    private func endOperation() {
+        operationLock.lock()
+        operationInFlight = false
+        operationLock.unlock()
+        DispatchQueue.main.async { self.isProcessing = false }
+    }
+
+    private func complete(
+        _ completion: @escaping (Bool, String) -> Void,
+        success: Bool,
+        message: String
+    ) {
+        DispatchQueue.main.async {
+            completion(success, message)
         }
     }
 }
