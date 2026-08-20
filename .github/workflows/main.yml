@@ -20,21 +20,20 @@ jobs:
 
       - name: Build Unsigned IPA
         run: |
+          # Usar -alltargets e remover -derivedDataPath para evitar o erro do xcodebuild
           xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
-            -target MenagerFF \
+            -alltargets \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES
           
           mkdir -p build/Payload
-          # O xcodebuild build coloca o app em build/Build/Products/Release-iphoneos/
-          # Tentaremos copiar qualquer .app que for gerado se o nome MenagerFF falhar
-          cp -r build/Build/Products/Release-iphoneos/*.app build/Payload/
+          # Tentar localizar o .app em caminhos comuns de build
+          find . -name "*.app" -type d -exec cp -r {} build/Payload/ \;
           cd build
           zip -r MenagerFF_V27_Rev7.ipa Payload
           
