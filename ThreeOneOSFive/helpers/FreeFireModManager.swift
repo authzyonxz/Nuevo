@@ -188,8 +188,9 @@ class FreeFireModManager: ObservableObject {
         apps.append(contentsOf: ContainerStore.installedAppsFromMCM())
         apps.append(contentsOf: ContainerStore.containersFromFilesystem())
 
-        let discoveredIDs = Set(apps.map(\.bundleID))
-        ids.append(contentsOf: knownBundleIds.filter { discoveredIDs.contains($0) })
+        // Try the documented IDs directly first. They are candidates only;
+        // resolveAppContainerPath must confirm an actual installed container.
+        ids.append(contentsOf: knownBundleIds)
 
         for app in apps {
             let normalizedName = app.displayName
