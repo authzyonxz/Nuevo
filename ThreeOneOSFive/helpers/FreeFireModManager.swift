@@ -50,8 +50,7 @@ class FreeFireModManager: ObservableObject {
 
     private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
-    private let knownBundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
-    private let resolverRevision = "bundle-resolver-2026.08.20.03"
+    private let bundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
     
     private var activeReceipt: PatchTransactionReceipt?
 
@@ -66,7 +65,6 @@ class FreeFireModManager: ObservableObject {
     }
 
     func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
-        addLog("Resolver revision: \(resolverRevision)")
         guard LicenseManager.shared.isAuthorized else {
             complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
             return
@@ -103,20 +101,9 @@ class FreeFireModManager: ObservableObject {
 
         prepareLegacyKernelAccessIfNeeded()
 
-        let bundleIds = discoveredFreeFireBundleIDs()
-        guard !bundleIds.isEmpty else {
-            addLog("ERRO: Free Fire não localizado entre os apps instalados")
-            endOperation()
-            complete(completion, success: false, message: "Free Fire não localizado. Abra o jogo uma vez e tente novamente.")
-            return
-        }
-        addLog("Bundles candidatos: \(bundleIds.joined(separator: ", "))")
-
         var targetPaths: [String] = []
-        var resolvedRoots: [String: URL] = [:]
         for bid in bundleIds {
             if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
-                resolvedRoots[bid] = URL(fileURLWithPath: rootPath, isDirectory: true)
                 addLog("Escaneando container: \(bid)")
                 let found = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
                 targetPaths.append(contentsOf: found)
@@ -129,20 +116,14 @@ class FreeFireModManager: ObservableObject {
         if targetPaths.isEmpty {
             addLog("AVISO: Busca global vazia, usando caminhos padrão")
             for bid in bundleIds {
-                guard let rootURL = resolvedRoots[bid] else { continue }
-                let rootPath = rootURL.path
-                let subPath = isHolo ? "optional" : "compulsory"
-                let standardPaths = [
-                    "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
-                    "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
-                ]
-                for sp in standardPaths {
-                    let candidate = (rootPath as NSString).appendingPathComponent(sp)
-                    if FileManager.default.fileExists(atPath: candidate) {
-                        targetPaths.append(candidate)
-                        addLog("Caminho padrão confirmado: ...\(candidate.suffix(70))")
-                    } else {
-                        addLog("Caminho padrão ausente: ...\(candidate.suffix(70))")
+                if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid) {
+                    let subPath = isHolo ? "optional" : "compulsory"
+                    let standardPaths = [
+                        "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
+                        "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
+                    ]
+                    for sp in standardPaths {
+                        targetPaths.append((rootPath as NSString).appendingPathComponent(sp))
                     }
                 }
             }
@@ -150,9 +131,8 @@ class FreeFireModManager: ObservableObject {
 
         var rules: [PatchRule] = []
         for fullPath in targetPaths {
-            for (bid, rootURL) in resolvedRoots {
-                let root = rootURL.path
-                if fullPath.hasPrefix(root) {
+            for bid in bundleIds {
+                if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), fullPath.hasPrefix(root) {
                     let relative = String(fullPath.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                     rules.append(PatchRule(
                         bundleID: bid,
@@ -165,9 +145,9 @@ class FreeFireModManager: ObservableObject {
         }
         
         if rules.isEmpty {
-            addLog("ERRO: Nenhum destino válido localizado nos bundles: \(bundleIds.joined(separator: ", "))")
+            addLog("ERRO: Nenhum destino válido localizado")
             endOperation()
-            complete(completion, success: false, message: "Arquivo-alvo não localizado no Free Fire. Abra o jogo e aguarde o download dos recursos antes de ativar.")
+            complete(completion, success: false, message: "Destino não localizado.")
             return
         }
 
@@ -175,7 +155,7 @@ class FreeFireModManager: ObservableObject {
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let receipt = try DevicePatchService.apply(project: project, preResolvedRoots: resolvedRoots)
+                let receipt = try DevicePatchService.apply(project: project)
                 self.addLog("SUCESSO: Injetado em \(rules.count) locais!")
                 DispatchQueue.main.async {
                     self.activeReceipt = receipt
@@ -190,36 +170,6 @@ class FreeFireModManager: ObservableObject {
                 self.complete(completion, success: false, message: "Falha: \(error.localizedDescription)")
             }
         }
-    }
-
-    private func discoveredFreeFireBundleIDs() -> [String] {
-        var ids: [String] = []
-        var apps: [InstalledApp] = []
-        apps.append(contentsOf: ContainerStore.installedAppsFromAPI())
-        apps.append(contentsOf: ContainerStore.installedAppsFromMCM())
-        apps.append(contentsOf: ContainerStore.containersFromFilesystem())
-
-        // Try the documented IDs directly first. They are candidates only;
-        // resolveAppContainerPath must confirm an actual installed container.
-        ids.append(contentsOf: knownBundleIds)
-
-        for app in apps {
-            let normalizedName = app.displayName
-                .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                .replacingOccurrences(of: " ", with: "")
-            let looksLikeFreeFire = normalizedName.contains("freefire") ||
-                app.bundleID.lowercased().hasPrefix("com.dts.freefire")
-            if looksLikeFreeFire {
-                ids.append(app.bundleID)
-            }
-        }
-
-        var unique: [String] = []
-        var seen = Set<String>()
-        for id in ids where seen.insert(id).inserted {
-            unique.append(id)
-        }
-        return unique
     }
 
     private func prepareLegacyKernelAccessIfNeeded() {

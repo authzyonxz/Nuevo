@@ -380,6 +380,8 @@ struct ModRowReference: View {
 struct ProfileView: View {
     @EnvironmentObject var licenseManager: LicenseManager
     @State private var showKeySheet = false
+    @State private var showKeyAlert = false
+    @State private var keyAlertMessage = ""
 
     private var compatibilityStatus: (text: String, color: Color) {
         switch KernelExploit.currentAccessPath {
@@ -430,10 +432,12 @@ struct ProfileView: View {
 
                     Button(action: {
                         licenseManager.clearSavedKey()
+                        keyAlertMessage = "Key removida. Agora você pode validar outra key."
+                        showKeyAlert = true
                     }) {
                         HStack {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("SAIR E LIMPAR KEY")
+                            Text("LIMPAR / TROCAR KEY")
                         }
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.red)
@@ -448,8 +452,23 @@ struct ProfileView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    Button("REGISTRAR / VALIDAR KEY") {
-                        showKeySheet = true
+                    Button("VALIDAR KEY") {
+                        if licenseManager.isAuthorized {
+                            keyAlertMessage = "Você já tem uma key válida. Se quiser validar outra key, aperte em Limpar ou Trocar key."
+                            showKeyAlert = true
+                        } else if let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty {
+                            licenseManager.validateKey(savedKey) { success, error in
+                                if success {
+                                    keyAlertMessage = "Você já tem uma key válida. Se quiser validar outra key, aperte em Limpar ou Trocar key."
+                                    showKeyAlert = true
+                                } else {
+                                    keyAlertMessage = error ?? "Sua key não está mais válida."
+                                    showKeyAlert = true
+                                }
+                            }
+                        } else {
+                            showKeySheet = true
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -465,6 +484,11 @@ struct ProfileView: View {
         .sheet(isPresented: $showKeySheet) {
             KeyRegistrationView()
                 .environmentObject(licenseManager)
+        }
+        .alert("Status da key", isPresented: $showKeyAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(keyAlertMessage)
         }
     }
 }
