@@ -350,7 +350,7 @@
 			dependencies = (
 			);
 			name = MenagerFF;
-			productName = 3105;
+			productName = MenagerFF;
 			productReference = 3105A010;
 			productType = "com.apple.product-type.application";
 		};
