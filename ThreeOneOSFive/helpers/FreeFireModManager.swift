@@ -51,6 +51,7 @@ class FreeFireModManager: ObservableObject {
     private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
     private let knownBundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
+    private let resolverRevision = "bundle-resolver-2026.08.20.03"
     
     private var activeReceipt: PatchTransactionReceipt?
 
@@ -65,6 +66,7 @@ class FreeFireModManager: ObservableObject {
     }
 
     func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+        addLog("Resolver revision: \(resolverRevision)")
         guard LicenseManager.shared.isAuthorized else {
             complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
             return
