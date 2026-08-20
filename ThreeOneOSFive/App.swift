@@ -20,9 +20,10 @@ struct ThreeOneOSFiveApp: App {
                 .environmentObject(exploitState)
                 .preferredColorScheme(.dark)
                 .onAppear {
-                    // Ativar exploit de Kernel para permissões de container
-                    exploitState.runExploitIfNeeded()
-                    
+                    // Select the access path by OS family. iOS 17/18 use the
+                    // kernel/offset chain; iOS 26/27 use bad_query lazily.
+                    exploitState.prepareForCurrentOS()
+
                     // Auto-validar se já existe key salva no Keychain
                     if let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty {
                         licenseManager.validateKey(savedKey) { _, _ in }
@@ -41,19 +42,39 @@ class KernelExploitState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
     @Published var exploitRunning = false
 
-    func runExploitIfNeeded() {
+    func prepareForCurrentOS() {
+        guard !exploitRunning, !exploitStatus.isSuccess else { return }
+
+        switch KernelExploit.currentAccessPath {
+        case .badQuery:
+            // bad_query is requested by ContainerStore/DevicePatchService only
+            // when a concrete path needs access; do not run the kernel exploit.
+            exploitStatus = .success(method: "ContainerManager/bad_query")
+            log("access: iOS 26/27 selected ContainerManager bad_query path")
+
+        case .kernelOffsets:
+            runKernelExploitIfNeeded()
+
+        case .unsupported:
+            let message = "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
+            exploitStatus = .unsupported(message)
+            log("access: unsupported OS/build \(message)")
+        }
+    }
+
+    private func runKernelExploitIfNeeded() {
         guard !exploitRunning, !exploitStatus.isSuccess else { return }
         exploitRunning = true
-        log("exploit: running kernel exploit...")
+        log("exploit: running kernel exploit for iOS 17/18...")
         DispatchQueue.global(qos: .userInitiated).async {
             let ok = KernelExploit.run()
             DispatchQueue.main.async {
                 self.exploitRunning = false
                 if ok {
-                    self.exploitStatus = .success(method: "DarkSword/Root")
-                    log("exploit: success — root elevation active")
+                    self.exploitStatus = .success(method: "Kernel offsets")
+                    log("exploit: success — kernel access active")
                 } else {
-                    self.exploitStatus = .failed(method: "DarkSword/Root", code: -1)
+                    self.exploitStatus = .failed(method: "Kernel offsets", code: -1)
                     log("exploit: failed")
                 }
             }

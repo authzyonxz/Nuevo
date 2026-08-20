@@ -33,10 +33,10 @@ jobs:
           mkdir -p build/Payload
           find . -name "*.app" -type d -exec cp -r {} build/Payload/ \;
           cd build
-          zip -r MenagerFF_V27_Rev8.ipa Payload
+          zip -r MenagerFF_V27_Pure.ipa Payload
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MenagerFF_V27_IPA
-          path: build/MenagerFF_V27_Rev8.ipa
+          path: build/MenagerFF_V27_Pure.ipa
