@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-enum ModType: String, CaseIterable, Identifiable {
+enum ModType: String, CaseIterable, Identifiable, Hashable {
     case hsAlto = "HS ALTO"
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS PEITO"
@@ -40,7 +40,7 @@ enum ModType: String, CaseIterable, Identifiable {
 class FreeFireModManager: ObservableObject {
     static let shared = FreeFireModManager()
 
-    @Published var activeMod: ModType? = nil
+    @Published private(set) var activeMods: Set<ModType> = []
     @Published var statusMessage: String = "Pronto para injetar"
     @Published var debugLogs: String = ""
     @Published private(set) var isProcessing = false
@@ -52,7 +52,7 @@ class FreeFireModManager: ObservableObject {
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
     private let bundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
     
-    private var activeReceipt: PatchTransactionReceipt?
+    private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
 
     func addLog(_ msg: String) {
         DispatchQueue.main.async {
@@ -78,9 +78,9 @@ class FreeFireModManager: ObservableObject {
             complete(completion, success: false, message: "Esta versão/build do iOS não é suportada.")
             return
         }
-        guard activeMod == nil else {
+        guard !activeMods.contains(where: { $0.sectionName == mod.sectionName }) else {
             endOperation()
-            complete(completion, success: false, message: "Restaure a função ativa antes de aplicar outra.")
+            complete(completion, success: false, message: "Já existe uma função ativa neste grupo. Restaure-a antes de escolher outra.")
             return
         }
 
@@ -158,9 +158,9 @@ class FreeFireModManager: ObservableObject {
                 let receipt = try DevicePatchService.apply(project: project)
                 self.addLog("SUCESSO: Injetado em \(rules.count) locais!")
                 DispatchQueue.main.async {
-                    self.activeReceipt = receipt
-                    self.activeMod = mod
-                    self.statusMessage = "\(mod.rawValue) ATIVO"
+                    self.activeReceipts[mod] = receipt
+                    self.activeMods.insert(mod)
+                    self.statusMessage = self.activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
                     self.endOperation()
                     completion(true, "Injetado com Sucesso!")
                 }
@@ -235,20 +235,23 @@ class FreeFireModManager: ObservableObject {
         }
 
         addLog("Restaurando original...")
-        guard let receipt = activeReceipt else {
+        guard !activeReceipts.isEmpty else {
             endOperation()
             complete(completion, success: false, message: "Nenhum backup encontrado.")
             return
         }
+        let receipts = Array(activeReceipts.values)
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 self.prepareLegacyKernelAccessIfNeeded()
-                try DevicePatchService.restore(receipt: receipt)
+                for receipt in receipts {
+                    try DevicePatchService.restore(receipt: receipt)
+                }
                 self.addLog("SUCESSO: Original restaurado")
                 DispatchQueue.main.async {
-                    self.activeReceipt = nil
-                    self.activeMod = nil
+                    self.activeReceipts.removeAll()
+                    self.activeMods.removeAll()
                     self.statusMessage = "Original restaurado"
                     self.endOperation()
                     completion(true, "Original restaurado!")

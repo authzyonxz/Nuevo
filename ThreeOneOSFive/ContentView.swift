@@ -248,7 +248,7 @@ struct HomeView: View {
                             ForEach(Array(aimbotMods.enumerated()), id: \.element.id) { index, mod in
                                 ModRowReference(
                                     mod: mod,
-                                    isActive: modManager.activeMod == mod,
+                                    isActive: modManager.activeMods.contains(mod),
                                     isProcessing: modManager.isProcessing,
                                     onToggle: { isOn in
                                         handleToggle(mod: mod, isOn: isOn)
@@ -277,7 +277,7 @@ struct HomeView: View {
                             ForEach(hologramMods, id: \.id) { mod in
                                 ModRowReference(
                                     mod: mod,
-                                    isActive: modManager.activeMod == mod,
+                                    isActive: modManager.activeMods.contains(mod),
                                     isProcessing: modManager.isProcessing,
                                     onToggle: { isOn in
                                         handleToggle(mod: mod, isOn: isOn)
@@ -416,7 +416,7 @@ struct ProfileView: View {
                     VStack(spacing: 16) {
                         InfoRow(title: "Status da Licença", value: licenseManager.licenseInfo?.status ?? "Sem key registrada", color: licenseManager.isAuthorized ? .green : .orange)
                         InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
-                        InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Vitalício", color: .white)
+                        InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
                         InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
                         InfoRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
                         InfoRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
@@ -453,22 +453,7 @@ struct ProfileView: View {
                     .padding(.horizontal, 16)
 
                     Button("VALIDAR KEY") {
-                        if licenseManager.isAuthorized {
-                            keyAlertMessage = "Você já tem uma key válida. Se quiser validar outra key, aperte em Limpar ou Trocar key."
-                            showKeyAlert = true
-                        } else if let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty {
-                            licenseManager.validateKey(savedKey) { success, error in
-                                if success {
-                                    keyAlertMessage = "Você já tem uma key válida. Se quiser validar outra key, aperte em Limpar ou Trocar key."
-                                    showKeyAlert = true
-                                } else {
-                                    keyAlertMessage = error ?? "Sua key não está mais válida."
-                                    showKeyAlert = true
-                                }
-                            }
-                        } else {
-                            showKeySheet = true
-                        }
+                        showKeySheet = true
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -521,52 +506,65 @@ struct KeyRegistrationView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 18) {
-                Image(systemName: "key.fill")
-                    .font(.system(size: 42))
-                    .foregroundColor(.blue)
-                Text("KEY NECESSÁRIA")
-                    .font(.system(size: 22, weight: .black))
-                Text("Registre uma key ativa para liberar a ativação das funções. A key será validada novamente antes de cada ativação.")
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-                SecureField("Digite sua key", text: $inputKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .padding()
-                    .background(Color.secondary.opacity(0.12))
-                    .cornerRadius(12)
-                if !message.isEmpty {
-                    Text(message)
-                        .font(.footnote)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                }
-                Button {
-                    licenseManager.validateKey(inputKey.trimmingCharacters(in: .whitespacesAndNewlines)) { success, error in
-                        if success {
-                            message = "Key ativa e vinculada a este aparelho."
-                            dismiss()
-                        } else {
-                            message = error ?? "Key inválida ou expirada."
+            ZStack {
+                Color.black
+                    .ignoresSafeArea()
+
+                VStack(spacing: 18) {
+                    Text("INSIRA SUA KEY")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 8)
+
+                    SecureField("Cole sua key aqui", text: $inputKey)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .foregroundColor(.white)
+                        .tint(.white)
+                        .padding()
+                        .background(Color.white.opacity(0.12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                        )
+                        .cornerRadius(10)
+
+                    if !message.isEmpty {
+                        Text(message)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Button {
+                        licenseManager.validateKey(inputKey.trimmingCharacters(in: .whitespacesAndNewlines)) { success, error in
+                            if success {
+                                message = "Key ativa e vinculada a este aparelho."
+                                dismiss()
+                            } else {
+                                message = error ?? "Key inválida ou expirada."
+                            }
                         }
+                    } label: {
+                        Group {
+                            if licenseManager.isLoading { ProgressView() }
+                            else { Text("VALIDAR KEY").fontWeight(.bold) }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .foregroundColor(.white)
+                        .background(Color.blue)
+                        .cornerRadius(12)
                     }
-                } label: {
-                    Group {
-                        if licenseManager.isLoading { ProgressView() }
-                        else { Text("VALIDAR KEY").fontWeight(.bold) }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(Color.blue)
-                    .cornerRadius(12)
+                    .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Spacer()
                 }
-                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                Spacer()
+                .padding(24)
             }
-            .padding(24)
-            .navigationTitle("Acesso às funções")
+            .preferredColorScheme(.dark)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Fechar") { dismiss() }
