@@ -9,6 +9,40 @@
 "common.version" = "版本 %@";
 "common.device" = "设备";
 "common.reboot" = "重新启动";
+"common.next" = "下一步";
+"common.back" = "返回";
+"common.finish" = "完成";
+
+"update.title" = "发现新版本";
+"update.message" = "GitHub 上已发布 3105 %@。";
+"update.agree" = "同意";
+"update.dismiss" = "不再显示";
+"patch.error.wrong_password" = "密码错误。";
+
+"attribution.title" = "关于 3105";
+"attribution.subtitle" = "项目信息";
+"attribution.link_section" = "项目链接";
+"attribution.url" = "URL";
+"attribution.open" = "打开链接";
+"attribution.share" = "分享链接";
+
+"onboarding.step" = "第 %@ 步，共 %@ 步";
+"onboarding.language_title" = "选择语言";
+"onboarding.language_subtitle" = "之后可在设置中更改。";
+"onboarding.language_hint" = "选择一种语言以继续。";
+"onboarding.welcome_title" = "欢迎使用 3105";
+"onboarding.welcome_message" = "由 YangJiii 开发";
+"onboarding.welcome_badge" = "官方 3105 标识";
+"onboarding.versions_title" = "支持的 iOS 版本";
+"onboarding.versions_subtitle" = "3105 已在下列范围内验证。不支持的版本会被阻止。";
+"onboarding.versions_footer" = "本设备：iOS %@（%@）";
+"onboarding.beta" = "Beta";
+"onboarding.install_title" = "证书要求";
+"onboarding.install_message" = "3105 需要受支持的签名方式才能访问设备功能。";
+"onboarding.install_ok" = "支持企业证书，包括 eSign 和类似的企业安装方式。";
+"onboarding.install_bad" = "不支持 SideStore、AltStore、3uTools 或 LiveContainer。";
+"onboarding.install_jailbreak" = "在 iOS 17 至 iOS 18.7.1 上，如果设备已越狱，3105 将无法运行。";
+"onboarding.install_footer" = "继续前，请在未越狱的设备上使用受支持的证书。";
 
 "dashboard.exploit_access" = "漏洞利用权限";
 "dashboard.ready_to_edit" = "可以编辑";
@@ -23,23 +57,26 @@
 "dashboard.device_name" = "设备名称";
 "dashboard.hardware_model" = "硬件型号";
 "dashboard.access_footer" = "只有成功以读写模式打开系统文件后，才会报告权限获取成功。";
-"dashboard.unsupported_footer" = "iOS %@（%@）不在已验证的 bad_query 范围内。支持：iOS 26.0–26.6.1、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
+"dashboard.unsupported_footer" = "iOS %@（%@）不在已验证范围内。支持：iOS 17.0–17.7.x、iOS 18.0–18.7.1、iOS 26.0–26.6.1、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
 "dashboard.app_browser" = "应用数据浏览器";
 "dashboard.browser" = "文件浏览器";
 "dashboard.open_browser" = "打开文件浏览器";
 "dashboard.browser_footer" = "浏览并读取此设备上所有应用和系统容器中的数据。";
 "dashboard.device_actions_warning" = "重新启动设备前，请先保存尚未应用的更改。";
 "dashboard.unsupported_device" = "不支持的设备";
-"dashboard.unsupported_message" = "暂不支持 iOS %@。\n\n当前支持：\n• iOS 26.0–26.6.1\n• iOS 27.0 开发者 Beta 1–4\n• iOS 27.0 公开 Beta 1–2";
+"dashboard.unsupported_message" = "暂不支持 iOS %@。\n\n当前支持：\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.1\n• iOS 27.0 开发者 Beta 1–4\n• iOS 27.0 公开 Beta 1–2";
 "dashboard.installation" = "应用安装";
+"dashboard.kernel_status" = "内核状态";
+"dashboard.kernel_running" = "正在激活…";
+"dashboard.kernel_active" = "已激活";
+"dashboard.kernel_inactive" = "未激活";
 "dashboard.enterprise_signing" = "3105 仅在使用企业证书签名时运行。不支持 SideStore、AltStore、3uTools 或 LiveContainer。";
 "dashboard.features" = "功能";
 "dashboard.features_footer" = "开启清理或壁纸后，该功能才会显示在应用导航中。";
 "tab.home" = "主页";
-"tab.inject" = "Inject";
-"tab.library" = "库";
+"tab.files" = "文件";
+"tab.patches" = "补丁";
 "tab.cleaner" = "清理";
-"tab.settings" = "设置";
 
 "cleaner.title" = "清理";
 "cleaner.limited_mode" = "有限清理";
@@ -191,12 +228,24 @@
 "settings.beta_build" = "Beta %lld · %@";
 "settings.developer_beta_build" = "开发者 Beta %lld · %@";
 "settings.developer_public_beta_build" = "开发者 Beta %lld / 公开 Beta %lld · %@";
-"settings.supported_range_summary" = "已验证：iOS 26.0–26.6.1、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
+"settings.supported_range_summary" = "已验证：iOS 17.0–17.7.x、iOS 18.0–18.7.1、iOS 26.0–26.6.1、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
+
+"kernel.section_title" = "内核漏洞利用";
+"kernel.run_exploit" = "运行内核漏洞利用";
+"kernel.exploit_running" = "正在运行内核漏洞利用…";
+"kernel.exploit_success" = "已验证沙盒外访问权限";
+"kernel.exploit_failed" = "内核漏洞利用失败";
+"kernel.footer_warning" = "仅内存运行（重启后不保留）。失败时请重新打开应用后再试。";
+"kernel.auto_run" = "启动时自动运行";
+"kernel.failed_requires_relaunch" = "请重新打开应用后再试。";
 "settings.supported_versions_footer" = "仅启用上方列出的精确构建版本。其他 iOS 27 构建版本在验证前会标记为不支持。";
 "settings.sandbox_token" = "沙盒令牌";
 "settings.generate_token" = "生成令牌";
 "settings.token_footer" = "成功获得漏洞利用权限后可用。";
 "settings.credits" = "致谢";
+"settings.social_media" = "社交媒体";
+"social.github_role" = "3105 源代码";
+"social.iosvn_role" = "iOSVN 社区";
 "credit.yangjiii" = "开发者与设计者";
 "credit.forcequit" = "bad_query 漏洞利用";
 "credit.filzaslop" = "FilzaSlop — MHA-C2 与应用发现";
@@ -266,6 +315,8 @@
 
 "logs.title" = "会话日志";
 "logs.clear" = "清除";
+"logs.copy" = "复制日志";
+"logs.share" = "分享日志";
 "logs.empty_title" = "没有日志条目";
 "logs.empty_message" = "本次会话中的漏洞利用和编辑器活动将显示在这里。";
 

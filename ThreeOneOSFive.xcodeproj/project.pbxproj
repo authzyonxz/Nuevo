@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // !UTF8*0
 {
 	archiveVersion = 1;
@@ -13,11 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3105B901 /* apfs_own.m in Sources */ = {isa = PBXBuildFile; fileRef = 3105B900 /* apfs_own.m */; };
-		880102FB /* OnyxImporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880101FA /* OnyxImporterService.swift */; };
-		880202FB /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880201FA /* PatchProjectsView.swift */; };
-				880302FB /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880301FA /* DocumentPickerView.swift */; };
-				880402FB /* AssetMetadataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880401FA /* AssetMetadataService.swift */; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
@@ -36,6 +25,10 @@
 		3105A226 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A098; };
 		3105A227 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A099; };
 		3105A235 /* AppIconHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 3105A106; };
+		3105A208 /* KernelExploit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A202; };
+		3105J200 /* AntiDetection.m in Sources */ = {isa = PBXBuildFile; fileRef = 3105J201; };
+		3105J204 /* DisplayIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 3105J203; };
+		3105J206 /* DisplayIdentityAttribution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105J205; };
 		3105A236 /* ContainerIdentityResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A108; };
 		3105A237 /* ContainerBrowserLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A109; };
 		3105A238 /* FileReplacementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A110; };
@@ -49,6 +42,7 @@
 		3105B218 /* DevicePatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105B118; };
 		3105B219 /* PatchProjectLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105B119; };
 		3105B220 /* PatchProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105B120; };
+		3105B221 /* PatchProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105B121; };
 		3105B222 /* PatchProjectEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105B122; };
 		3105C200 /* PatchDraftService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105C100; };
 		3105C201 /* PatchDraftCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105C101; };
@@ -62,6 +56,7 @@
 		3105F203 /* WallpaperInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F104; };
 		3105F204 /* WallpaperLabService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F105; };
 		3105F205 /* WallpaperLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F106; };
+		3105F206 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F108; };
 		3105G200 /* ZIPArchiveWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105G100; };
 		3105G201 /* FileOperationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105G101; };
 		3105G202 /* ZIPArchiveExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105G102; };
@@ -73,19 +68,15 @@
 		3105A234 /* AppDataBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A105; };
 		3105A228 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3105A120; };
 		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
-		3105J200 /* cache_res Body fixture in Resources */ = {isa = PBXBuildFile; fileRef = 3105J100; };
-		3105L002 /* LicenseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L001; };
-		3105L004 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105L003; };
+
+    3105LMBF /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105LM01 /* LicenseManager.swift */; };
+    3105MMBF /* FreeFireModManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105MM01 /* FreeFireModManager.swift */; };
+    3105MODSBF /* Mods in Resources */ = {isa = PBXBuildFile; fileRef = 3105MODS /* Mods */; };
+    
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		3105B900 /* apfs_own.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = apfs_own.m; sourceTree = "<group>"; };
-		3105B902 /* apfs_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apfs_own.h; sourceTree = "<group>"; };
-		880101FA /* OnyxImporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnyxImporterService.swift; sourceTree = "<group>"; };
-		880201FA /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
-			880301FA /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
-				880401FA /* AssetMetadataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetMetadataService.swift; sourceTree = "<group>"; };
-		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MenagerFF.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3105A023 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -118,9 +109,13 @@
 		3105A099 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		3105A104 /* ContainerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerStore.swift; sourceTree = "<group>"; };
 		3105A105 /* AppDataBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDataBrowserView.swift; sourceTree = "<group>"; };
-		3105J100 /* cache_res Body fixture */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"; sourceTree = "<group>"; };
 		3105A106 /* AppIconHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppIconHelper.m; sourceTree = "<group>"; };
 		3105A107 /* AppIconHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppIconHelper.h; sourceTree = "<group>"; };
+		3105A202 /* KernelExploit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KernelExploit.swift; sourceTree = "<group>"; };
+		3105J201 /* AntiDetection.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AntiDetection.m; sourceTree = "<group>"; };
+		3105J202 /* DisplayIdentity.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DisplayIdentity.h; sourceTree = "<group>"; };
+		3105J203 /* DisplayIdentity.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DisplayIdentity.m; sourceTree = "<group>"; };
+		3105J205 /* DisplayIdentityAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayIdentityAttribution.swift; sourceTree = "<group>"; };
 		3105A108 /* ContainerIdentityResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerIdentityResolver.swift; sourceTree = "<group>"; };
 		3105A109 /* ContainerBrowserLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerBrowserLogic.swift; sourceTree = "<group>"; };
 		3105A110 /* FileReplacementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileReplacementService.swift; sourceTree = "<group>"; };
@@ -134,6 +129,7 @@
 		3105B118 /* DevicePatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePatchService.swift; sourceTree = "<group>"; };
 		3105B119 /* PatchProjectLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectLibrary.swift; sourceTree = "<group>"; };
 		3105B120 /* PatchProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectStore.swift; sourceTree = "<group>"; };
+		3105B121 /* PatchProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectsView.swift; sourceTree = "<group>"; };
 		3105B122 /* PatchProjectEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchProjectEditorView.swift; sourceTree = "<group>"; };
 		3105C100 /* PatchDraftService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchDraftService.swift; sourceTree = "<group>"; };
 		3105C101 /* PatchDraftCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchDraftCoordinator.swift; sourceTree = "<group>"; };
@@ -148,6 +144,7 @@
 		3105F104 /* WallpaperInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperInstaller.swift; sourceTree = "<group>"; };
 		3105F105 /* WallpaperLabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperLabService.swift; sourceTree = "<group>"; };
 		3105F106 /* WallpaperLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperLabView.swift; sourceTree = "<group>"; };
+		3105F108 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		3105G100 /* ZIPArchiveWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZIPArchiveWriter.swift; sourceTree = "<group>"; };
 		3105G101 /* FileOperationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationCoordinator.swift; sourceTree = "<group>"; };
 		3105G102 /* ZIPArchiveExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZIPArchiveExtractor.swift; sourceTree = "<group>"; };
@@ -158,8 +155,11 @@
 		3105A121 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105A122 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105B123 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
-		3105L001 /* LicenseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseService.swift; sourceTree = "<group>"; };
-		3105L003 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+
+    3105LM01 /* LicenseManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
+    3105MM01 /* FreeFireModManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FreeFireModManager.swift; sourceTree = "<group>"; };
+    3105MODS /* Mods */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Mods; sourceTree = "<group>"; };
+    
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -177,8 +177,8 @@
 			isa = PBXGroup;
 			children = (
 				3105A401 /* ThreeOneOSFive */,
-				3105A402 /* Products */
-				);
+				3105A402 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 		3105A401 /* ThreeOneOSFive */ = {
@@ -187,54 +187,23 @@
 				3105A050 /* ThreeOneOSFive-Bridging-Header.h */,
 				3105A060 /* Info.plist */,
 				3105A020 /* App.swift */,
-
-
-
-
 				3105A021 /* ContentView.swift */,
-				880101FA /* OnyxImporterService.swift */,
-				880201FA /* PatchProjectsView.swift */,
-				880301FA /* DocumentPickerView.swift */,
 				3105A403 /* exploit */,
 				3105A404 /* views */,
 				3105A405 /* helpers */,
 				3105A406 /* kexploit */,
 				3105A120 /* Localizable.strings */,
-				3105A031 /* Assets.xcassets */,
-				3105J302 /* PackageFixtures */
+					3105A031 /* Assets.xcassets */,
+					3105MODS /* Mods */,
 				);
 			path = ThreeOneOSFive;
-			sourceTree = "<group>";
-		};
-		3105J302 /* PackageFixtures */ = {
-			isa = PBXGroup;
-			children = (
-				3105J301 /* Body */
-				);
-			path = PackageFixtures;
-			sourceTree = "<group>";
-		};
-		3105J301 /* Body */ = {
-			isa = PBXGroup;
-			children = (
-				3105J300 /* com.dts.freefireth */
-				);
-			path = Body;
-			sourceTree = "<group>";
-		};
-		3105J300 /* com.dts.freefireth */ = {
-			isa = PBXGroup;
-			children = (
-				3105J100 /* cache_res Body fixture */
-				);
-			path = "com.dts.freefireth";
 			sourceTree = "<group>";
 		};
 		3105A402 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3105A010 /* 3105.app */
-				);
+				3105A010 /* 3105.app */,
+			);
 			name = Products;
 			sourceTree = "<group>";
 		};
@@ -246,15 +215,14 @@
 				3105A030 /* mcm_bridge.m */,
 				3105A041 /* mcm_bridge.h */,
 				3105F100 /* wallpaper_zip.c */,
-				3105F101 /* wallpaper_zip.h */
-				);
+				3105F101 /* wallpaper_zip.h */,
+			);
 			path = exploit;
 			sourceTree = "<group>";
 		};
 		3105A404 /* views */ = {
 			isa = PBXGroup;
 			children = (
-					3105L003 /* LoginView.swift */,
 				3105A098 /* DesignSystem.swift */,
 				3105A023 /* SettingsView.swift */,
 				3105A024 /* LogView.swift */,
@@ -262,20 +230,20 @@
 				3105A112 /* FileBrowserView.swift */,
 				3105I100 /* FilesTabControls.swift */,
 				3105I101 /* FilesTabSwitcherView.swift */,
+				3105B121 /* PatchProjectsView.swift */,
 				3105B122 /* PatchProjectEditorView.swift */,
 				3105C102 /* FolderPatchSelectionView.swift */,
 				3105E101 /* CleanerView.swift */,
-				3105F106 /* WallpaperLabView.swift */
-				);
+				3105F106 /* WallpaperLabView.swift */,
+				3105F108 /* OnboardingView.swift */,
+			);
 			path = views;
 			sourceTree = "<group>";
 		};
-			3105A405 /* helpers */ = {
-				isa = PBXGroup;
-				children = (
-						3105L001 /* LicenseService.swift */,
-				880401FA /* AssetMetadataService.swift */,
-					3105A099 /* Localization.swift */,
+		3105A405 /* helpers */ = {
+			isa = PBXGroup;
+			children = (
+				3105A099 /* Localization.swift */,
 				3105A104 /* ContainerStore.swift */,
 				3105A108 /* ContainerIdentityResolver.swift */,
 				3105A109 /* ContainerBrowserLogic.swift */,
@@ -304,11 +272,19 @@
 				3105F105 /* WallpaperLabService.swift */,
 				3105A106 /* AppIconHelper.m */,
 				3105A107 /* AppIconHelper.h */,
+				3105A202 /* KernelExploit.swift */,
+				3105J201 /* AntiDetection.m */,
+				3105J202 /* DisplayIdentity.h */,
+				3105J203 /* DisplayIdentity.m */,
+				3105J205 /* DisplayIdentityAttribution.swift */,
 				3105A025 /* Utils.swift */,
 				3105A026 /* SBX.swift */,
-				3105A027 /* MG.swift */
+				3105A027 /* MG.swift */,
+			
+				3105LM01 /* LicenseManager.swift */,
+					3105MM01 /* FreeFireModManager.swift */,
 				);
-			path = helpers;
+				path = helpers;
 			sourceTree = "<group>";
 		};
 		3105A406 /* kexploit */ = {
@@ -328,9 +304,7 @@
 				3105A095 /* sandbox_escape.h */,
 				3105A096 /* machine_info.h */,
 				3105A097 /* xpaci.h */,
-				3105B902 /* apfs_own.h */,
-				3105B900 /* apfs_own.m */
-				);
+			);
 			path = kexploit;
 			sourceTree = "<group>";
 		};
@@ -343,14 +317,14 @@
 			buildPhases = (
 				3105A700 /* Sources */,
 				3105A300 /* Frameworks */,
-				3105A800 /* Resources */
-				);
+				3105A800 /* Resources */,
+			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = MenagerFF;
-			productName = MenagerFF;
+			name = 3105;
+			productName = 3105;
 			productReference = 3105A010;
 			productType = "com.apple.product-type.application";
 		};
@@ -372,15 +346,15 @@
 				en,
 				vi,
 				"zh-Hans",
-				Base
-				);
+				Base,
+			);
 			mainGroup = 3105A400;
 			productRefGroup = 3105A402;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3105A500
-				);
+				3105A500,
+			);
 		};
 /* End PBXProject section */
 
@@ -391,8 +365,8 @@
 			files = (
 				3105A211,
 				3105A228,
-				3105J200
-				);
+			
+				3105MODSBF /* Mods in Resources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -402,23 +376,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3105L002 /* LicenseService.swift in Sources */,
-				3105L004 /* LoginView.swift in Sources */,
-				3105A200,
-				3105A201,
-				3105A203,
-				3105A204,
-				3105A205,
-				3105A206,
-				3105A207,
-				3105A209,
-				3105A210,
-				3105A220,
-				3105A221,
-				3105A222,
-				3105A223,
-				3105A224,
-				3105A225,
+				3105A200, 3105A201, 3105A203, 3105A204,
+				3105A205, 3105A206, 3105A207, 3105A209,
+				3105A210, 3105A220, 3105A221, 3105A222, 3105A223,
+				3105A224, 3105A225,
 				3105A226,
 				3105A227,
 				3105A233,
@@ -428,6 +389,10 @@
 				3105A237,
 				3105A238,
 				3105A239,
+				3105A208,
+				3105J200,
+				3105J204,
+				3105J206,
 				3105A240,
 				3105A241,
 				3105B214,
@@ -437,6 +402,7 @@
 				3105B218,
 				3105B219,
 				3105B220,
+				3105B221,
 				3105B222,
 				3105C200,
 				3105C201,
@@ -450,6 +416,7 @@
 				3105F203,
 				3105F204,
 				3105F205,
+				3105F206,
 				3105G200,
 				3105G201,
 				3105G202,
@@ -457,16 +424,11 @@
 				3105H200,
 				3105I200,
 				3105I201,
-				880402FB /* AssetMetadataService.swift in Sources */,
-				990102FB /* OnyxImporterService.swift in Sources */,
-				990202FB /* PatchProjectsView.swift in Sources */,
-				990302FB /* DocumentPickerView.swift in Sources */,
-				3105B901 /* apfs_own.m in Sources */,
-				880102FB /* OnyxImporterService.swift in Sources */,
-				880202FB /* PatchProjectsView.swift in Sources */,
-				880302FB /* DocumentPickerView.swift in Sources */,);
+			
+				3105LMBF /* LicenseManager.swift in Sources */,
+				3105MMBF /* FreeFireModManager.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
-};
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
@@ -475,8 +437,8 @@
 			children = (
 				3105A121 /* en */,
 				3105A122 /* vi */,
-				3105B123 /* zh-Hans */
-				);
+				3105B123 /* zh-Hans */,
+			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
@@ -490,7 +452,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 7;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -504,15 +466,14 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/Frameworks"
+					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.1.1;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.apple.mobile.MobileHouseArrest";
 				PRODUCT_NAME = MenagerFF;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";
-				USER_HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/ThreeOneOSFive $(SRCROOT)/ThreeOneOSFive/kexploit";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -525,7 +486,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 7;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -539,15 +500,14 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/Frameworks"
+					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.1.1;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.apple.mobile.MobileHouseArrest";
 				PRODUCT_NAME = MenagerFF;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";
-				USER_HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/ThreeOneOSFive $(SRCROOT)/ThreeOneOSFive/kexploit";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -597,7 +557,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
-					""
+					"",
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -648,9 +608,8 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = YES;
+				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEPLOYMENT_POSTPROCESSING = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -666,10 +625,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_SWIFT_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -677,12 +633,12 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3105A600 /* Build configuration list for PBXNativeTarget "MenagerFF" */ = {
+		3105A600 /* Build configuration list for PBXNativeTarget "3105" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3105A601 /* Debug */,
-				3105A602 /* Release */
-				);
+				3105A602 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
@@ -690,8 +646,8 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3105AA01 /* Debug */,
-				3105AA02 /* Release */
-				);
+				3105AA02 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};

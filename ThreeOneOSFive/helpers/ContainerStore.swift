@@ -38,6 +38,9 @@ struct FileEntry: Identifiable, Hashable {
 enum ContainerStore {
     static let appDataRoot = "/var/mobile/Containers/Data/Application"
     static let systemDataRoot = "/var/mobile/Containers/Data/System"
+    private static var shouldUseBadQuery: Bool {
+        ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 26
+    }
     private static let applicationBundleRoots: [(path: String, nested: Bool)] = [
         ("/var/containers/Bundle/Application", true),
         ("/Applications", false),
@@ -62,61 +65,45 @@ enum ContainerStore {
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
         }
-        
-        // 1. Tentar via MCM (Método rápido e oficial via exploit)
         var lookupError: NSString?
-        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError) {
-            log("patch: MHA-C2 returned path for \(bundleID): \(path)")
-            if isApplicationContainerPath(path) {
-                log("patch: MHA-C2 resolved and validated \(bundleID)")
-                return path
-            }
+        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
+           isApplicationContainerPath(path) {
+            log("patch: MHA-C2 resolved \(bundleID)")
+            return path
         }
-        
-        // 2. Fallback: Varredura profunda do sistema de arquivos
-        log("patch: MCM failed or restricted for \(bundleID), performing deep scan...")
-        
-        // Buscar em todos os containers de dados conhecidos
-        let filesystemApps = containersFromFilesystem()
-        log("patch: Filesystem scan found \(filesystemApps.count) potential containers")
-        
-        // Tentar identificar o app pelos metadados ou arquivos internos
-        for app in filesystemApps {
-            let metadata = readContainerMetadata(containerPath: app.containerPath)
-            if metadata?.bundleID == bundleID {
-                log("patch: Deep scan matched \(bundleID) at \(app.containerPath)")
-                return app.containerPath
-            }
-            
-            // Fallback heurístico: procurar pasta do jogo se o bundleID bater parcialmente ou via Library/Preferences
-            let libPath = (app.containerPath as NSString).appendingPathComponent("Library/Preferences")
-            if let prefs = try? FileManager.default.contentsOfDirectory(atPath: libPath) {
-                if prefs.contains(where: { $0.contains(bundleID) }) {
-                    log("patch: Heuristic match for \(bundleID) via preferences at \(app.containerPath)")
-                    return app.containerPath
-                }
-            }
-        }
+        let detail = lookupError.map(String.init) ?? "unavailable"
+        log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
-        // 3. Método de Força Bruta (Técnica do NubankExploit para iOS 17/18)
-        // Se o MCM falhar e a varredura não encontrar, tentamos brute-force no kernel
-        // Isso resolve o erro quando o app está "escondido" do sandbox normal
-        log("patch: MCM and deep scan failed for \(bundleID), trying kernel brute-force...")
-        let allApps = containersFromFilesystem()
-        for app in allApps {
-            // Tentar ler o plist de metadados forçando o bypass de sandbox
-            let handle = grantContainerAccess(app.containerPath)
-            if handle >= 0 {
-                let metadata = readContainerMetadata(containerPath: app.containerPath)
-                bad_query_release(handle)
-                if metadata?.bundleID == bundleID {
-                    log("patch: Kernel brute-force matched \(bundleID) at \(app.containerPath)")
-                    return app.containerPath
-                }
-            }
+        // Fallback for iOS builds where MCM refuses to hand out sandbox
+        // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
+        // walk and read each container's MCM metadata plist directly. The
+        // raw reads only succeed when the sandbox escape is active.
+        if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bundleID) {
+            log("patch: filesystem metadata scan resolved \(bundleID)")
+            return scanned
         }
+        return nil
+    }
 
-        log("patch: Failed to resolve container for \(bundleID)")
+    static func resolveAppContainerPathByMetadataScan(bundleID: String) -> String? {
+        // iOS < 26: kernel R/W is enough, no need to require full sandbox escape
+        if KernelExploit.requiresSandboxEscape, !KernelExploit.hasSandboxAccess() {
+            log("patch: metadata scan skipped — sandbox access not active")
+            return nil
+        }
+        let dirs = enumerateDirectories(path: appDataRoot)
+        guard !dirs.isEmpty else {
+            log("patch: metadata scan unavailable — no containers enumerated")
+            return nil
+        }
+        for dir in dirs {
+            guard UUID(uuidString: (dir as NSString).lastPathComponent) != nil else { continue }
+            guard let metadata = readContainerMetadata(containerPath: dir),
+                  metadata.bundleID == bundleID else { continue }
+            let canonical = ContainerDiscoveryMerger.canonicalPath(dir)
+            guard isApplicationContainerPath(canonical) else { continue }
+            return canonical
+        }
         return nil
     }
 
@@ -125,15 +112,29 @@ enum ContainerStore {
     static func installedAppsFromAPI() -> [InstalledApp] {
         let raw = installedAppInfo() as? [String: [String: Any]] ?? [:]
         var apps: [InstalledApp] = []
+        var missingContainer = 0
         for (bundleID, info) in raw {
+            var containerPath = info["container"] as? String ?? ""
+            if containerPath.isEmpty {
+                var lookupError: NSString?
+                if let resolved = MCMActivateContainerPath(2, bundleID, false, &lookupError),
+                   isApplicationContainerPath(resolved) {
+                    containerPath = resolved
+                } else {
+                    missingContainer += 1
+                }
+            }
+            // Skip entries we cannot browse — empty path is dropped by mergers anyway.
+            guard !containerPath.isEmpty else { continue }
             apps.append(InstalledApp(
                 bundleID: bundleID,
                 name: info["name"] as? String ?? "",
-                containerPath: info["container"] as? String ?? "",
+                containerPath: containerPath,
                 version: info["version"] as? String ?? "",
                 icon: info["icon"] as? UIImage
             ))
         }
+        log("browser: LS/API apps=\(apps.count) raw=\(raw.count) missingContainer=\(missingContainer)")
         return apps
     }
 
@@ -331,7 +332,7 @@ enum ContainerStore {
             let cachePath = (servicePath as NSString).appendingPathComponent("Library/Caches")
             addCachePath(cachePath)
             leasedCachePaths.insert(ContainerDiscoveryMerger.canonicalPath(cachePath))
-        } else {
+        } else if shouldUseBadQuery {
             let detail = serviceLookupError.map { String($0) } ?? "no path"
             log("browser: MCM com.apple.lsd activation unavailable detail=\(detail)")
         }
@@ -341,11 +342,12 @@ enum ContainerStore {
             ? enumerateDirectories(path: systemDataRoot)
             : traversedSystemDirectories
         for directory in systemDirectories {
-            let metadataHandle = grantContainerAccess(metadataPath(for: directory))
-            guard metadataHandle >= 0 else { continue }
-            let metadata = readContainerMetadata(containerPath: directory)
-            bad_query_release(metadataHandle)
-            guard metadata?.bundleID == "com.apple.lsd" else { continue }
+            // Attempt the raw metadata read even without a traversal grant:
+            // it succeeds when the sandbox escape is active, which is the
+            // only path left when MCM/bad_query grants are denied.
+            guard readContainerMetadata(containerPath: directory)?.bundleID == "com.apple.lsd" else {
+                continue
+            }
             addCachePath((directory as NSString).appendingPathComponent("Library/Caches"))
         }
 
@@ -362,10 +364,15 @@ enum ContainerStore {
             let hasLease = leasedCachePaths.contains(
                 ContainerDiscoveryMerger.canonicalPath(cachePath)
             )
-            let handle = hasLease ? Int64(-1) : grantContainerAccess(cachePath)
-            if !hasLease, handle < 0 {
-                log("browser: LaunchServices traversal grant failed \(cachePath) -> \(handle)")
-                continue
+            let handle: Int64
+            if hasLease || !shouldUseBadQuery {
+                handle = -1
+            } else {
+                handle = grantContainerAccess(cachePath)
+                if handle < 0 {
+                    log("browser: LaunchServices traversal grant failed \(cachePath) -> \(handle)")
+                    continue
+                }
             }
             defer {
                 if handle >= 0 { bad_query_release(handle) }
@@ -398,19 +405,10 @@ enum ContainerStore {
     }
 
     static func isApplicationContainerPath(_ path: String) -> Bool {
-        // Se o kernel exploit estiver ativo e a sandbox escapada, podemos ser muito mais flexíveis.
-        // Aceitamos qualquer caminho que pareça um container de aplicação.
-        let lowPath = path.lowercased()
-        if lowPath.contains("/containers/data/application/") || lowPath.contains("/containers/bundle/application/") {
-            return true
-        }
-        
-        // Fallback para caminhos de jailbreak ou side-load
-        if path.hasPrefix("/var/mobile/Containers") || path.hasPrefix("/private/var/mobile/Containers") {
-            return true
-        }
-
-        return false
+        let canonicalRoot = ContainerDiscoveryMerger.canonicalPath(appDataRoot)
+        let canonicalPath = ContainerDiscoveryMerger.canonicalPath(path)
+        guard canonicalPath.hasPrefix(canonicalRoot + "/") else { return false }
+        return UUID(uuidString: (canonicalPath as NSString).lastPathComponent) != nil
     }
 
     // MARK: Filesystem discovery
@@ -418,28 +416,45 @@ enum ContainerStore {
     static func enumerateDirectories(path: String, maxInode: Int64 = 2_000_000) -> [String] {
         let clean = path.hasSuffix("/") ? String(path.dropLast()) : path
         guard clean.hasPrefix("/") else { return [] }
+
+        if let names = try? FileManager.default.contentsOfDirectory(atPath: clean), !names.isEmpty {
+            return names.map { (clean as NSString).appendingPathComponent($0) }
+        }
+
         var pathC = clean.utf8CString.map { Int8($0) }
         guard let result = bad_query_list(&pathC, maxInode) else {
             log("enumerate: NULL for \(clean)")
             return []
         }
         defer { free(result) }
-        return String(cString: result).components(separatedBy: "\n").filter { !$0.isEmpty }
+        let list = String(cString: result).components(separatedBy: "\n").filter { !$0.isEmpty }
+        if !list.isEmpty {
+            log("enumerate: inode fallback for \(clean) -> \(list.count) entries")
+        } else {
+            log("enumerate: FileManager+inode unavailable for \(clean)")
+        }
+        return list
     }
 
     static func enumerateDirectoriesWithTraversalGrant(path: String) -> [String] {
-        let handle = grantContainerAccess(path)
-        guard handle >= 0 else {
-            log("browser: root traversal grant failed \(path) -> \(handle)")
-            return []
+        if !shouldUseBadQuery {
+            if let names = try? FileManager.default.contentsOfDirectory(atPath: path), !names.isEmpty {
+                return names.map { (path as NSString).appendingPathComponent($0) }
+            }
+            return enumerateDirectories(path: path)
         }
-        defer { bad_query_release(handle) }
 
-        guard let names = try? FileManager.default.contentsOfDirectory(atPath: path) else {
-            log("browser: root traversal enumeration unavailable")
-            return []
+        let handle = grantContainerAccess(path)
+        if handle >= 0 {
+            defer { bad_query_release(handle) }
+            if let names = try? FileManager.default.contentsOfDirectory(atPath: path), !names.isEmpty {
+                return names.map { (path as NSString).appendingPathComponent($0) }
+            }
+        } else {
+            log("browser: root traversal grant failed \(path) -> \(handle)")
         }
-        return names.map { (path as NSString).appendingPathComponent($0) }
+
+        return enumerateDirectories(path: path)
     }
 
     static func readContainerMetadata(containerPath: String) -> ContainerMetadata? {
@@ -479,29 +494,10 @@ enum ContainerStore {
     }
 
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
+        guard shouldUseBadQuery else { return -1 }
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
-        
-        // 1. Aplicar Kernel Bypass (Técnica do NubankExploit para iOS 17/18)
-        // Isso remove as restrições de Sandbox e DAC no kernel
-        let selfProc = proc_self()
-        if selfProc != 0 {
-            sandbox_escape(selfProc)
-            sandbox_elevate_to_root(selfProc)
-        }
-
-        // 2. Tentar grant com o caminho original (Sandbox Extension)
         var pathC = clean.utf8CString.map { Int8($0) }
-        let handle = bad_query(&pathC, true, nil, false)
-        
-        if handle < 0 {
-            let canonical = ContainerDiscoveryMerger.canonicalPath(clean)
-            if canonical != clean {
-                var canonicalC = canonical.utf8CString.map { Int8($0) }
-                return bad_query(&canonicalC, true, nil, false)
-            }
-        }
-        
-        return handle
+        return bad_query(&pathC, true, nil, false)
     }
 
     static func containersFromFilesystem() -> [InstalledApp] {
@@ -537,33 +533,31 @@ enum ContainerStore {
     ) -> InstalledApp? {
         guard UUID(uuidString: fallback.bundleID) != nil else { return fallback }
 
-        let directMetadataPath = metadataPath(for: fallback.containerPath)
-        let metadataHandle = grantContainerAccess(directMetadataPath)
-        if metadataHandle >= 0 {
-            let metadata = readContainerMetadata(containerPath: fallback.containerPath)
-            bad_query_release(metadataHandle)
-            if let metadata {
-                let bundleID = metadata.bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
-                if ContainerBundleCandidateResolver.isValidBundleIdentifier(bundleID),
-                   !bundleID.hasPrefix("systemgroup.") {
-                    let info = appInfoForBundleID(bundleID) as? [String: Any] ?? [:]
-                    let resolvedName = metadata.displayName.isEmpty
-                        ? (info["name"] as? String ?? bundleID)
-                        : metadata.displayName
-                    return InstalledApp(
-                        bundleID: bundleID,
-                        name: resolvedName,
-                        containerPath: fallback.containerPath,
-                        version: info["version"] as? String ?? "",
-                        icon: info["icon"] as? UIImage
-                    )
-                }
+        // Read the MCM metadata plist directly. With the sandbox escape
+        // active the raw read succeeds even when every MCM/bad_query grant
+        // is denied; without it the read simply fails and we fall through.
+        if let metadata = readContainerMetadata(containerPath: fallback.containerPath) {
+            let bundleID = metadata.bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+            if ContainerBundleCandidateResolver.isValidBundleIdentifier(bundleID),
+               !bundleID.hasPrefix("systemgroup.") {
+                let info = appInfoForBundleID(bundleID) as? [String: Any] ?? [:]
+                let resolvedName = metadata.displayName.isEmpty
+                    ? (info["name"] as? String ?? bundleID)
+                    : metadata.displayName
+                return InstalledApp(
+                    bundleID: bundleID,
+                    name: resolvedName,
+                    containerPath: fallback.containerPath,
+                    version: info["version"] as? String ?? "",
+                    icon: info["icon"] as? UIImage
+                )
             }
         }
 
         let handle = grantContainerAccess(fallback.containerPath)
-        guard handle >= 0 else { return nil }
-        defer { bad_query_release(handle) }
+        defer {
+            if handle >= 0 { bad_query_release(handle) }
+        }
 
         let libraryPath = (fallback.containerPath as NSString).appendingPathComponent("Library")
         let savedStatePath = (libraryPath as NSString).appendingPathComponent("Saved Application State")
@@ -720,43 +714,5 @@ enum ContainerStore {
             return data.count > limit ? text + "\n… [truncated]" : text
         }
         return "Binary data (\(data.count) bytes) — not text."
-    }
-}
-
-extension ContainerStore {
-    static func findFilesRecursively(at rootPath: String, filename: String) -> [String] {
-        var results: [String] = []
-        let fileManager = FileManager.default
-        
-        // Obter acesso ao diretório atual
-        let handle = grantContainerAccess(rootPath)
-        defer { if handle >= 0 { bad_query_release(handle) } }
-        
-        guard let items = try? fileManager.contentsOfDirectory(atPath: rootPath) else {
-            return []
-        }
-        
-        for item in items {
-            let fullPath = (rootPath as NSString).appendingPathComponent(item)
-            
-            // Verificar se o nome bate (Case Insensitive)
-            if item.lowercased() == filename.lowercased() {
-                results.append(fullPath)
-            }
-            
-            // Se for diretório, buscar recursivamente
-            var isDir: ObjCBool = false
-            if fileManager.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue {
-                // Evitar entrar em pastas de sistema óbvias para economizar tempo
-                if item == "Library" || item == "Documents" || item == "tmp" || item == "ContentCache" || item == "Compulsory" || item == "ios" || item == "gameassetbundles" {
-                    results.append(contentsOf: findFilesRecursively(at: fullPath, filename: filename))
-                } else if !item.hasPrefix(".") {
-                    // Buscar em outras pastas também, mas com cautela
-                    results.append(contentsOf: findFilesRecursively(at: fullPath, filename: filename))
-                }
-            }
-        }
-        
-        return results
     }
 }

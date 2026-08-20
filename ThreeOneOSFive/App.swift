@@ -1,105 +1,62 @@
 import SwiftUI
+import UIKit
 
 @main
 struct ThreeOneOSFiveApp: App {
-    @StateObject private var appState = AppState()
-    @StateObject private var patchDraftCoordinator = PatchDraftCoordinator()
-    @StateObject private var fileOperationCoordinator = FileOperationCoordinator()
-    @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
+    @StateObject private var licenseManager = LicenseManager.shared
+    @StateObject private var exploitState = KernelExploitState()
 
-    private var language: AppLanguage {
-        AppLanguage(rawValue: languageCode) ?? .english
+    init() {
+        setupLogCapture()
+        log("app: MenagerFF launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
     }
+
+    @Environment(\.scenePhase) var scenePhase
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .zyvexScreen()
-                .environmentObject(appState)
-                .environmentObject(patchDraftCoordinator)
-                .environmentObject(fileOperationCoordinator)
-                .environment(\.appLanguage, language)
-                .environment(\.locale, language.locale)
+                .environmentObject(licenseManager)
+                .environmentObject(exploitState)
+                .preferredColorScheme(.dark)
                 .onAppear {
-                    appState.detectSupport()
-                    appState.checkInitialActivation()
+                    // Ativar exploit de Kernel para permissões de container
+                    exploitState.runExploitIfNeeded()
+                    
+                    // Auto-validar se já existe key salva no Keychain
+                    if let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty {
+                        licenseManager.validateKey(savedKey) { _, _ in }
+                    }
                 }
-                .onOpenURL { url in
-                    patchDraftCoordinator.presentImport(url)
-                }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .background {
+                KernelExploit.cleanup()
+            }
         }
     }
 }
 
-class AppState: ObservableObject {
+class KernelExploitState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
-    @Published var unsupportedMessage: String?
-    @Published private(set) var isActivated: Bool = false
-    @Published private(set) var activeLicense: LicenseInfo? = nil
-    private var invalidationObserver: NSObjectProtocol?
+    @Published var exploitRunning = false
 
-    init() {
-        invalidationObserver = NotificationCenter.default.addObserver(
-            forName: LicenseService.sessionInvalidatedNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.deactivate()
-        }
-        
-        // Exploits e Kernel Bypass agora são acionados on-demand no momento da injeção do mod
-        print("[EXPLOIT] App launched safely without eager kernel exploit activation")
-    }
-
-    deinit {
-        if let invalidationObserver {
-            NotificationCenter.default.removeObserver(invalidationObserver)
-        }
-    }
-
-    var isSupported: Bool { unsupportedMessage == nil }
-
-    func checkInitialActivation() {
-        if let savedKey = LicenseService.shared.getSavedKey() {
-            LicenseService.shared.validateKey(savedKey) { result in
-                DispatchQueue.main.async {
-                    if case .success(let info) = result {
-                        self.activate(with: info)
-                    }
+    func runExploitIfNeeded() {
+        guard !exploitRunning, !exploitStatus.isSuccess else { return }
+        exploitRunning = true
+        log("exploit: running kernel exploit...")
+        DispatchQueue.global(qos: .userInitiated).async {
+            let ok = KernelExploit.run()
+            DispatchQueue.main.async {
+                self.exploitRunning = false
+                if ok {
+                    self.exploitStatus = .success(method: "DarkSword/Root")
+                    log("exploit: success — root elevation active")
+                } else {
+                    self.exploitStatus = .failed(method: "DarkSword/Root", code: -1)
+                    log("exploit: failed")
                 }
             }
-        }
-    }
-
-    func activate(with info: LicenseInfo) {
-        activeLicense = info
-        isActivated = true
-        exploitStatus = .success(method: "Authorized session")
-    }
-
-    func deactivate() {
-        activeLicense = nil
-        isActivated = false
-        exploitStatus = .notStarted
-    }
-
-    func detectSupport() {
-        let v = AppInfo.versionTuple
-        let supported = ExploitSupportPolicy.isSupported(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        )
-#if targetEnvironment(simulator)
-        if ProcessInfo.processInfo.arguments.contains("--simulate-access") {
-            exploitStatus = .success(method: "Simulator preview")
-        }
-#endif
-
-        unsupportedMessage = supported ? nil : "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
-        if let unsupportedMessage {
-            exploitStatus = .unsupported(unsupportedMessage)
         }
     }
 }

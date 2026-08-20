@@ -20,7 +20,6 @@ jobs:
 
       - name: Build Unsigned IPA
         run: |
-          # Usar -alltargets e remover -derivedDataPath para evitar o erro do xcodebuild
           xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
             -alltargets \
@@ -32,13 +31,12 @@ jobs:
             AD_HOC_CODE_SIGNING_ALLOWED=YES
           
           mkdir -p build/Payload
-          # Tentar localizar o .app em caminhos comuns de build
           find . -name "*.app" -type d -exec cp -r {} build/Payload/ \;
           cd build
-          zip -r MenagerFF_V27_Rev7.ipa Payload
-          
+          zip -r MenagerFF_V27_Rev8.ipa Payload
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MenagerFF_V27_IPA
-          path: build/MenagerFF_V27_Rev7.ipa
+          path: build/MenagerFF_V27_Rev8.ipa

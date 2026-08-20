@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-E6753A?style=flat-square">
-  <img alt="iOS" src="https://img.shields.io/badge/iOS-26.0–26.6.1%20%7C%2027%20beta%201–4-222222?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.1.0-E6753A?style=flat-square">
+  <img alt="iOS" src="https://img.shields.io/badge/iOS-17.0–18.7.1%20%7C%2026.0–26.6.1%20%7C%2027%20beta%201–4-222222?style=flat-square">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-5-F05138?style=flat-square&logo=swift&logoColor=white">
   <img alt="Languages" src="https://img.shields.io/badge/languages-English%20%7C%20Tiếng%20Việt%20%7C%20简体中文-E6753A?style=flat-square">
 </p>
@@ -34,6 +34,14 @@
   &nbsp;
   <img src="docs/images/cleaner.png" width="245" alt="3105 Cleaner">
 </p>
+
+## What's new in 1.1.0
+
+- **Broader iOS support** — verified range now includes iOS 17.0–17.7.x (kernel exploit), iOS 18.0–18.7.1 (kernel exploit), iOS 26.0–26.6.1 and iOS 27 Developer Beta 1–4 / Public Beta 1–2.
+- **Wrong-password feedback** — importing a `.3105` patch with an incorrect password now shows "Incorrect password" instead of failing silently.
+- **Onboarding for reinstalls** — onboarding reappears after overwriting the app with the same version, so fresh and overwritten installs both see the guided setup.
+
+See the complete [Patch workspace guide](docs/PATCH_GUIDE.md).
 
 ## What's new in 1.0.1
 
@@ -61,13 +69,15 @@ See the complete [Patch workspace guide](docs/PATCH_GUIDE.md).
 
 | System | Verified range/builds |
 | --- | --- |
+| iOS 17 | 17.0 through 17.7 (kernel exploit) |
+| iOS 18 | 18.0 through 18.7.1 (kernel exploit) |
 | iOS 26 | 26.0 through 26.6.1 |
 | iOS 27 Developer Beta 1 | `24A5355q` |
 | iOS 27 Developer Beta 2 | `24A5370h` |
 | iOS 27 Developer Beta 3 / Public Beta 1 | `24A5380h` |
 | iOS 27 Developer Beta 4 / Public Beta 2 | `24A5390f` |
 
-Unlisted iOS 27 builds are marked unsupported rather than assumed compatible.
+Unlisted iOS 27 builds are marked unsupported rather than assumed compatible. The iOS 17–18 kernel exploit is opt-in (manual button) because a failed exploit attempt may restart the app.
 
 ## Installation notes
 
@@ -91,7 +101,16 @@ Do not publish logs, app containers, cookies, account databases, or patch payloa
 
 ## Credits
 
-3105 is developed and designed by [YangJiii](https://x.com/duongduong0908). The project builds on research and community work from FilzaSlop, Pocket Poster/Nugget, CrazyMind90, forcequitOS, Dopamine, and their contributors. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for attribution and upstream links.
+3105 is developed and designed by [YangJiii](https://x.com/duongduong0908).
+
+Special thanks to [0xjohnny](https://x.com/0xjohnny) for [FilzaSlop](https://github.com/0xjohnnydev/FilzaSlop) and related research:
+
+- [MobileHouseArrest-PoC](https://github.com/0xjohnnydev/MobileHouseArrest-PoC) — ContainerManager identity-trust bug
+- [Geod-MCM-PoC](https://github.com/0xjohnnydev/Geod-MCM-PoC) — `geod` MobileContainerManager `partDomain` traversal
+- [InstallCoordination-PoC](https://github.com/0xjohnnydev/InstallCoordination-PoC) — persisted-state and final-symlink chain
+- [CFPrefsZeroFile-PoC](https://github.com/0xjohnnydev/CFPrefsZeroFile-PoC) — `cfprefsd` zero-file creation
+
+The project also builds on work from Pocket Poster/Nugget, CrazyMind90, forcequitOS, Dopamine, and their contributors. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full attribution and upstream links.
 
 ## License
 

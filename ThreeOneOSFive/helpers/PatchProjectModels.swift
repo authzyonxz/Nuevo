@@ -263,13 +263,9 @@ enum PatchPathValidator {
         let path = try canonicalRelativePath(relativePath)
         let root = canonicalFileURL(containerRoot)
 
-        // Se o exploit estiver ativo, permitimos qualquer container que tenha sido resolvido com sucesso.
-        // A trava de segurança anterior (root.deletingLastPathComponent().path == applicationRoot) 
-        // estava bloqueando caminhos válidos em versões diferentes do iOS.
-        let resolvedPath = root.path.lowercased()
-        guard resolvedPath.contains("/containers/data/application/") || 
-              resolvedPath.contains("/var/mobile/containers/") ||
-              resolvedPath.contains("/private/var/mobile/containers/") else {
+        guard root.deletingLastPathComponent().path == applicationRoot,
+              UUID(uuidString: root.lastPathComponent) != nil
+        else {
             throw PatchPackageError.unsafeTargetPath
         }
 

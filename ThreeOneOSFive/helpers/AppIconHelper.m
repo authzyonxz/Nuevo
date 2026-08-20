@@ -117,38 +117,90 @@ static NSDictionary *appsFromMobileInstallation(void) {
     return result;
 }
 
+static void ensureLaunchServicesLoaded(void) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        const char *candidates[] = {
+            "/System/Library/Frameworks/CoreServices.framework/CoreServices",
+            "/System/Library/PrivateFrameworks/MobileCoreServices.framework/MobileCoreServices",
+            "/System/Library/Frameworks/MobileCoreServices.framework/MobileCoreServices",
+        };
+        for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++) {
+            if (dlopen(candidates[i], RTLD_LAZY | RTLD_GLOBAL)) {
+                NSLog(@"[3105] ls: loaded %s", candidates[i]);
+                return;
+            }
+        }
+        NSLog(@"[3105] ls: CoreServices/MobileCoreServices dlopen failed");
+    });
+}
+
 static NSDictionary *appsFromWorkspace(void) {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    ensureLaunchServicesLoaded();
 
     Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
-    if (!workspaceClass) return result;
+    if (!workspaceClass) {
+        NSLog(@"[3105] ls: LSApplicationWorkspace class unavailable");
+        return result;
+    }
     SEL defaultWorkspaceSel = NSSelectorFromString(@"defaultWorkspace");
-    if (![workspaceClass respondsToSelector:defaultWorkspaceSel]) return result;
+    if (![workspaceClass respondsToSelector:defaultWorkspaceSel]) {
+        NSLog(@"[3105] ls: defaultWorkspace selector unavailable");
+        return result;
+    }
     id workspace = ((id (*)(id, SEL))objc_msgSend)(workspaceClass, defaultWorkspaceSel);
-    if (!workspace) return result;
+    if (!workspace) {
+        NSLog(@"[3105] ls: defaultWorkspace returned nil");
+        return result;
+    }
+
     NSArray *apps = nil;
-    for (NSString *selectorName in @[@"allInstalledApplications", @"allApplications"]) {
+    NSString *usedSelector = nil;
+    for (NSString *selectorName in @[@"allApplications", @"allInstalledApplications"]) {
         SEL allAppsSel = NSSelectorFromString(selectorName);
         if (![workspace respondsToSelector:allAppsSel]) continue;
         id candidate = ((id (*)(id, SEL))objc_msgSend)(workspace, allAppsSel);
         if ([candidate isKindOfClass:[NSArray class]] && [candidate count] > 0) {
             apps = candidate;
+            usedSelector = selectorName;
             break;
         }
+        NSLog(@"[3105] ls: %@ returned %lu", selectorName,
+              (unsigned long)([candidate isKindOfClass:[NSArray class]] ? [candidate count] : 0));
     }
-    if (!apps || apps.count == 0) return result;
+    if (!apps || apps.count == 0) {
+        NSLog(@"[3105] ls: workspace enumeration empty");
+        return result;
+    }
+    NSLog(@"[3105] ls: %@ returned %lu proxies", usedSelector, (unsigned long)apps.count);
 
+    NSUInteger withContainer = 0;
     for (id app in apps) {
         @autoreleasepool {
             NSString *bundleID = nil;
-            SEL bundleSel = NSSelectorFromString(@"bundleIdentifier");
-            if ([app respondsToSelector:bundleSel]) bundleID = ((id (*)(id, SEL))objc_msgSend)(app, bundleSel);
-            if (![bundleID isKindOfClass:[NSString class]] || bundleID.length == 0) continue;
+            for (NSString *selectorName in @[@"bundleIdentifier", @"applicationIdentifier"]) {
+                SEL bundleSel = NSSelectorFromString(selectorName);
+                if (![app respondsToSelector:bundleSel]) continue;
+                id value = ((id (*)(id, SEL))objc_msgSend)(app, bundleSel);
+                if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
+                    bundleID = value;
+                    break;
+                }
+            }
+            if (bundleID.length == 0) continue;
 
             NSString *name = nil;
-            SEL nameSel = NSSelectorFromString(@"localizedName");
-            if ([app respondsToSelector:nameSel]) name = ((id (*)(id, SEL))objc_msgSend)(app, nameSel);
-            if (![name isKindOfClass:[NSString class]]) name = bundleID;
+            for (NSString *selectorName in @[@"localizedName", @"localizedShortName"]) {
+                SEL nameSel = NSSelectorFromString(selectorName);
+                if (![app respondsToSelector:nameSel]) continue;
+                id value = ((id (*)(id, SEL))objc_msgSend)(app, nameSel);
+                if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
+                    name = value;
+                    break;
+                }
+            }
+            if (name.length == 0) name = bundleID;
 
             NSMutableDictionary *entry = [NSMutableDictionary dictionary];
             entry[@"name"] = name;
@@ -159,19 +211,25 @@ static NSDictionary *appsFromWorkspace(void) {
                 NSString *containerPath = [containerValue isKindOfClass:[NSURL class]] ? [containerValue path] : containerValue;
                 if ([containerPath isKindOfClass:[NSString class]] && containerPath.length > 0) {
                     entry[@"container"] = containerPath;
+                    withContainer++;
                     break;
                 }
             }
             result[bundleID] = entry;
         }
     }
+    NSLog(@"[3105] ls: extracted %lu apps (%lu with container)",
+          (unsigned long)result.count, (unsigned long)withContainer);
     return result;
 }
 
 NSDictionary<NSString *, NSDictionary *> *installedAppInfo(void) {
     NSDictionary *workspace = appsFromWorkspace();
     if (workspace.count > 0) return workspace;
-    return appsFromMobileInstallation();
+    NSDictionary *mobileInstallation = appsFromMobileInstallation();
+    NSLog(@"[3105] ls: workspace empty; MobileInstallation=%lu",
+          (unsigned long)mobileInstallation.count);
+    return mobileInstallation;
 }
 
 // Icon via LSApplicationProxy (per bundle ID)

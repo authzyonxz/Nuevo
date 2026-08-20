@@ -1,486 +1,449 @@
-import UIKit
 import SwiftUI
-
-private struct DemoTarget: Identifiable {
-    let id = UUID()
-    let name: String
-    let identifier: String
-}
+import UIKit
 
 struct ContentView: View {
-    @Environment(\.appLanguage) private var language
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @EnvironmentObject private var appState: AppState
-    @EnvironmentObject private var patchDraftCoordinator: PatchDraftCoordinator
-    @State private var tabNavigation: AppTabNavigationState
-    @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
-
-    init() {
-#if targetEnvironment(simulator)
-        let arguments = ProcessInfo.processInfo.arguments
-        let initialTab: Int
-        if arguments.contains("--simulate-inject-tab") {
-            initialTab = 1
-        } else if arguments.contains("--simulate-library-tab") {
-            initialTab = 2
-        } else if arguments.contains("--simulate-cleaner-tab") {
-            initialTab = 3
-        } else if arguments.contains("--simulate-settings-tab") {
-            initialTab = 4
-        } else {
-            initialTab = 0
-        }
-        _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: initialTab))
-#else
-        _tabNavigation = State(initialValue: AppTabNavigationState())
-#endif
-    }
+    @EnvironmentObject var licenseManager: LicenseManager
+    @State private var inputKey: String = ""
+    @State private var selectedTab: Int = 0
+    @State private var timeRemaining: Int = 10
+    @State private var timer: Timer? = nil
 
     var body: some View {
         Group {
-            if !appState.isActivated {
-                LoginView()
-            } else if horizontalSizeClass == .compact {
-                compactLayout
+            if licenseManager.isAuthorized {
+                MainTabView(selectedTab: $selectedTab)
             } else {
-                regularLayout
+                LoginView(inputKey: $inputKey, timeRemaining: timeRemaining, onLogin: {
+                    timer?.invalidate()
+                    licenseManager.validateKey(inputKey) { success, error in
+                        if !success {
+                            print("Login falhou: \(error ?? "Erro desconhecido")")
+                        }
+                    }
+                })
+                .onAppear {
+                    startCountdown()
+                }
+                .onDisappear {
+                    timer?.invalidate()
+                }
             }
         }
-        .tint(AppTheme.accent)
-        .imageScale(.small)
     }
 
-    private var compactLayout: some View {
-        TabView(selection: tabSelection) {
-            ForEach(featureVisibility.visibleSections) { section in
-                sectionContent(section)
-                    .tabItem {
-                        CompactTabLabel(
-                            title: language.text(section.titleKey),
-                            systemImage: section.systemImage
+    private func startCountdown() {
+        timeRemaining = 10
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { t in
+            if timeRemaining > 1 {
+                timeRemaining -= 1
+            } else {
+                t.invalidate()
+                if !licenseManager.isAuthorized {
+                    exit(0)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Login View (MenagerFF)
+struct LoginView: View {
+    @Binding var inputKey: String
+    var timeRemaining: Int
+    var onLogin: () -> Void
+    @EnvironmentObject var licenseManager: LicenseManager
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.02, green: 0.02, blue: 0.04)
+                .ignoresSafeArea()
+
+            VStack(spacing: 24) {
+                Spacer()
+
+                VStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(gradient: Gradient(colors: [.blue, .cyan]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 90, height: 90)
+                            .shadow(color: .blue.opacity(0.5), radius: 15)
+                        
+                        Image(systemName: "shield.checkerboard")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                    }
+
+                    Text("MenagerFF")
+                        .font(.system(size: 28, weight: .black))
+                        .foregroundColor(.white)
+                }
+
+                // Janela preta com título em branco
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("INSIRA SUA KEY")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+
+                    SecureField("Digite sua Key...", text: $inputKey)
+                        .padding(16)
+                        .background(Color.black)
+                        .cornerRadius(12)
+                        .foregroundColor(.white)
+                        .font(.system(size: 15, design: .monospaced))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
+
+                    if let err = licenseManager.errorMessage {
+                        Text(err)
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                    }
+
+                    Button(action: onLogin) {
+                        HStack {
+                            if licenseManager.isLoading {
+                                ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                Text("ENTRAR NO PAINEL")
+                                    .font(.system(size: 15, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(LinearGradient(gradient: Gradient(colors: [.blue, Color.blue.opacity(0.7)]), startPoint: .leading, endPoint: .trailing))
+                        .cornerRadius(12)
+                        .shadow(color: .blue.opacity(0.3), radius: 8, y: 4)
+                    }
+                    .disabled(licenseManager.isLoading)
+                }
+                .padding(24)
+                .background(Color(#colorLiteral(red: 0.06, green: 0.06, blue: 0.08, alpha: 1)))
+                .cornerRadius(20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+                .padding(.horizontal, 24)
+
+                Text("Tempo restante: \(timeRemaining)s")
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.4))
+
+                Spacer()
+            }
+        }
+    }
+}
+
+// MARK: - Main Tab View (Custom Floating Bar)
+struct MainTabView: View {
+    @Binding var selectedTab: Int
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Group {
+                if selectedTab == 0 {
+                    HomeView()
+                } else {
+                    ProfileView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Custom Floating Tab Bar
+            HStack(spacing: 60) {
+                TabButton(index: 0, icon: "house.fill", title: "INÍCIO", selectedTab: $selectedTab)
+                TabButton(index: 1, icon: "person.fill", title: "PERFIL", selectedTab: $selectedTab)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 30)
+            .background(
+                Capsule()
+                    .fill(Color.white.opacity(0.08))
+                    .background(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+            )
+            .padding(.bottom, 30)
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+}
+
+struct TabButton: View {
+    let index: Int
+    let icon: String
+    let title: String
+    @Binding var selectedTab: Int
+
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring()) {
+                selectedTab = index
+            }
+        }) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                Text(title)
+                    .font(.system(size: 10, weight: .bold))
+            }
+            .foregroundColor(selectedTab == index ? .blue : .white.opacity(0.4))
+        }
+    }
+}
+
+// MARK: - Home View (Exact Reference Layout)
+struct HomeView: View {
+    @StateObject private var modManager = FreeFireModManager.shared
+    @State private var alertMessage: String = ""
+    @State private var showAlert: Bool = false
+    @State private var showLogs: Bool = false
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.02, green: 0.02, blue: 0.04)
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Terminal Log Toggle Header
+                    HStack {
+                        Circle()
+                            .fill(modManager.activeMod != nil ? Color.green : Color.blue)
+                            .frame(width: 8, height: 8)
+                        Text(modManager.statusMessage)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        Spacer()
+                        
+                        Button(action: { showLogs.toggle() }) {
+                            Image(systemName: "terminal.fill")
+                                .foregroundColor(.white.opacity(0.5))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+
+                    if showLogs {
+                        VStack(alignment: .leading) {
+                            Text("DIAGNÓSTICO EM TEMPO REAL")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.blue)
+                            ScrollView {
+                                Text(modManager.debugLogs)
+                                    .font(.system(size: 9, design: .monospaced))
+                                    .foregroundColor(.green.opacity(0.8))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(height: 100)
+                        }
+                        .padding()
+                        .background(Color.black.opacity(0.4))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 16)
+                    }
+
+                    // Seção de Aimbots (HS Alto, Pescoço, Peito)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("FUNÇÕES DE AIMBOT")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 20)
+
+                        VStack(spacing: 0) {
+                            ForEach(Array(aimbotMods.enumerated()), id: \.element.id) { index, mod in
+                                ModRowReference(
+                                    mod: mod,
+                                    isActive: modManager.activeMod == mod,
+                                    onToggle: { isOn in
+                                        handleToggle(mod: mod, isOn: isOn)
+                                    }
+                                )
+                                if index < aimbotMods.count - 1 {
+                                    Divider()
+                                        .background(Color.white.opacity(0.08))
+                                        .padding(.leading, 16)
+                                }
+                            }
+                        }
+                        .background(Color(#colorLiteral(red: 0.08, green: 0.08, blue: 0.12, alpha: 1)))
+                        .cornerRadius(16)
+                        .padding(.horizontal, 16)
+                    }
+
+                    // Seção de Holograma
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("FUNÇÕES DE HOLOGRAMA")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 20)
+
+                        VStack(spacing: 0) {
+                            ForEach(hologramMods, id: \.id) { mod in
+                                ModRowReference(
+                                    mod: mod,
+                                    isActive: modManager.activeMod == mod,
+                                    onToggle: { isOn in
+                                        handleToggle(mod: mod, isOn: isOn)
+                                    }
+                                )
+                            }
+                        }
+                        .background(Color(#colorLiteral(red: 0.08, green: 0.08, blue: 0.12, alpha: 1)))
+                        .cornerRadius(16)
+                        .padding(.horizontal, 16)
+                    }
+
+                    Spacer(minLength: 100)
+                }
+            }
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+    }
+
+    private var aimbotMods: [ModType] {
+        [.hsAlto, .hsPescoco, .hsPeito]
+    }
+
+    private var hologramMods: [ModType] {
+        [.hologramaArmas]
+    }
+
+    private func handleToggle(mod: ModType, isOn: Bool) {
+        if isOn {
+            modManager.applyMod(mod) { success, msg in
+                alertMessage = msg
+                showAlert = true
+            }
+        } else {
+            modManager.restoreOriginal { success, msg in
+                alertMessage = msg
+                showAlert = true
+            }
+        }
+    }
+}
+
+// MARK: - Mod Row Reference Component (Exact Image Match)
+struct ModRowReference: View {
+    let mod: ModType
+    let isActive: Bool
+    let onToggle: (Bool) -> Void
+    @State private var isProcessing = false
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(mod.rawValue)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+                Text(mod.subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+            }
+
+            Spacer()
+
+            if isProcessing {
+                ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isActive },
+                    set: { value in
+                        isProcessing = true
+                        onToggle(value)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            isProcessing = false
+                        }
+                    }
+                ))
+                .labelsHidden()
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+}
+
+// MARK: - Profile View
+struct ProfileView: View {
+    @EnvironmentObject var licenseManager: LicenseManager
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.02, green: 0.02, blue: 0.04)
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 25) {
+                    Text("MEU PERFIL")
+                        .font(.system(size: 26, weight: .black))
+                        .foregroundColor(.white)
+                        .padding(.top, 20)
+
+                    VStack(spacing: 16) {
+                        InfoRow(title: "Status da Licença", value: licenseManager.licenseInfo?.status ?? "VIP ATIVO", color: .green)
+                        InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
+                        InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Vitalício", color: .white)
+                        InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
+                        InfoRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
+                        InfoRow(title: "Compatibilidade", value: "Compatível (iOS 18.2.1+)", color: .green)
+                        InfoRow(title: "Modelo do Aparelho", value: UIDevice.current.model, color: .white)
+                        InfoRow(title: "Versão do iOS", value: UIDevice.current.systemVersion, color: .blue.opacity(0.8))
+                    }
+                    .padding(20)
+                    .background(Color(#colorLiteral(red: 0.08, green: 0.08, blue: 0.12, alpha: 1)))
+                    .cornerRadius(20)
+                    .padding(.horizontal, 16)
+
+                    Button(action: {
+                        licenseManager.clearSavedKey()
+                    }) {
+                        HStack {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                            Text("SAIR E LIMPAR KEY")
+                        }
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.red)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(15)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(Color.red.opacity(0.3), lineWidth: 1.5)
                         )
                     }
-                    .tag(section.rawValue)
-            }
-        }
-        .background(AppTheme.pageBackground)
-    }
-
-    private var regularLayout: some View {
-        NavigationSplitView {
-            List {
-                ForEach(featureVisibility.visibleSections) { section in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            tabNavigation.select(section.rawValue)
-                        }
-                    } label: {
-                        Label(language.text(section.titleKey), systemImage: section.systemImage)
-                            .fontWeight(section.rawValue == tabNavigation.selectedTab ? .semibold : .regular)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(
-                        section.rawValue == tabNavigation.selectedTab
-                            ? AppTheme.accent.opacity(0.14)
-                            : Color.clear
-                    )
+                    .padding(.horizontal, 16)
+                    
+                    Spacer(minLength: 100)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(AppTheme.pageBackground)
-            .navigationTitle("IPA FF")
-            .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 300)
-        } detail: {
-            sectionContent(AppSection(rawValue: tabNavigation.selectedTab) ?? .home)
-                .id(tabNavigation.selectedTab)
         }
-        .navigationSplitViewStyle(.balanced)
-    }
-
-    @ViewBuilder
-    private func sectionContent(_ section: AppSection) -> some View {
-        switch section {
-        case .home:
-            DashboardView(
-                cleanerEnabled: $cleanerEnabled,
-                onSelect: { section in
-                    if let section { tabNavigation.select(section.rawValue) }
-                }
-            )
-        case .inject:
-            ZyvexInjectView(onOpenLibrary: { tabNavigation.select(AppSection.library.rawValue) })
-        case .library:
-            PatchProjectsView()
-        case .cleaner:
-            CleanerView()
-        case .settings:
-            SettingsView()
-        }
-    }
-
-    private var tabSelection: Binding<Int> {
-        Binding(
-            get: { tabNavigation.selectedTab },
-            set: { tabNavigation.select($0) }
-        )
-    }
-
-    private var featureVisibility: FeatureVisibility {
-        FeatureVisibility()
     }
 }
 
-private struct CompactTabLabel: View {
+struct InfoRow: View {
     let title: String
-    let systemImage: String
-
-    @ViewBuilder
-    var body: some View {
-        if let image = UIImage(
-            systemName: systemImage,
-            withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)
-        )?.withRenderingMode(.alwaysTemplate) {
-            Image(uiImage: image)
-        } else {
-            Image(systemName: systemImage)
-                .font(.system(size: 17, weight: .medium))
-        }
-        Text(title)
-    }
-}
-
-private extension AppSection {
-    var titleKey: String {
-        switch self {
-        case .home: return "tab.home"
-        case .inject: return "tab.inject"
-        case .library: return "tab.library"
-        case .cleaner: return "tab.cleaner"
-        case .settings: return "tab.settings"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .home: return "house.fill"
-        case .inject: return "bolt.fill"
-        case .library: return "shippingbox.fill"
-        case .cleaner: return "trash.fill"
-        case .settings: return "gearshape.fill"
-        }
-    }
-}
-
-private struct DashboardView: View {
-    @Environment(\.appLanguage) private var language
-    @EnvironmentObject private var appState: AppState
-    @Binding var cleanerEnabled: Bool
-    let onSelect: (AppSection?) -> Void
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 14) {
-                    ZyvexCard {
-                        HStack(spacing: 14) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("FREE FIRE TOOLKIT")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(AppTheme.accent)
-                                Text("IPA FF")
-                                    .font(.system(size: 30, weight: .black, design: .rounded))
-                                    .foregroundStyle(.white)
-                                Text("Importe seus arquivos IPA na Library e realize injeções atômicas no Free Fire.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(AppTheme.mutedText)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                
-                                Text("Desenvolvido por: ruanwq")
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(AppTheme.accent.opacity(0.9))
-                                    .padding(.top, 4)
-                            }
-                            Spacer(minLength: 8)
-                            AppLogo(size: 76)
-                        }
-                    }
-                }
-                .padding(.horizontal, AppTheme.pageInset)
-                .padding(.top, 16)
-            }
-            .background(AppTheme.pageBackground)
-            .navigationTitle("Dashboard")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
-
-private struct ZyvexInjectView: View {
-    @Environment(\.appLanguage) private var language
-    let onOpenLibrary: () -> Void
-    @State private var selectedTarget: DemoTarget?
-    @State private var importedAssets: [URL] = OnyxImporterService.shared.getImportedAssets()
-    @State private var selectedAsset: URL?
-    @State private var showResult = false
-    @State private var resultTitle = ""
-    @State private var resultMessage = ""
-
-    @State private var detectedTargets: [DemoTarget] = []
+    let value: String
+    let color: Color
     
-    private let targetTemplates = [
-        DemoTarget(name: "Free Fire", identifier: "com.dts.freefireth"),
-        DemoTarget(name: "Free Fire MAX", identifier: "com.dts.freefiremax")
-    ]
-
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    ZyvexSectionTitle(title: "1. Selecionar Jogo Alvo")
-                    
-                    if detectedTargets.isEmpty {
-                        Text("Nenhum jogo detectado automaticamente. Tente selecionar manualmente:")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 4)
-                    }
-                    
-                    ForEach(targetTemplates) { target in
-                        Button {
-                            selectedTarget = target
-                        } label: {
-                            HStack(spacing: 16) {
-                                Image("FreeFireLogo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 44, height: 44)
-                                    .cornerRadius(8)
-                                
-                                VStack(alignment: .leading) {
-                                    Text(target.name)
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                    Text(target.identifier)
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-                                }
-                                Spacer()
-                                if selectedTarget?.identifier == target.identifier {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
-                                }
-                            }
-                            .padding()
-                            .background(Color(white: 0.1))
-                            .cornerRadius(12)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    ZyvexSectionTitle(title: "2. Selecionar Arquivo IPA")
-                    if importedAssets.isEmpty {
-                        ZyvexCard {
-                            VStack(spacing: 12) {
-                                Text("Nenhum arquivo IPA encontrado na Library.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                Button("Ir para Library", action: onOpenLibrary)
-                                    .buttonStyle(.borderedProminent)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    } else {
-                        ForEach(importedAssets, id: \.self) { url in
-                            Button {
-                                selectedAsset = url
-                            } label: {
-                                HStack {
-                                    Image(systemName: "doc.fill")
-                                        .foregroundColor(.blue)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(AssetMetadataService.shared.getDisplayName(for: url))
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundColor(.white)
-                                        Text(url.lastPathComponent)
-                                            .font(.system(size: 9, weight: .medium, design: .monospaced))
-                                            .foregroundColor(.gray.opacity(0.7))
-                                    }
-                                    Spacer()
-                                    if selectedAsset == url {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.green)
-                                    }
-                                }
-                                .padding()
-                                .background(Color(white: 0.1))
-                                .cornerRadius(12)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    if selectedTarget != nil && selectedAsset != nil {
-                        VStack(spacing: 12) {
-                            Button(action: applyPatch) {
-                                Text("INJETAR AGORA")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 54)
-                                    .background(Color.blue)
-                                    .cornerRadius(14)
-                            }
-                            
-                            Button(action: restoreOriginal) {
-                                Text("RESTAURAR ORIGINAL")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 50)
-                                    .background(Color.red.opacity(0.8))
-                                    .cornerRadius(14)
-                            }
-                        }
-                        .padding(.top, 10)
-                    }
-                }
-                .padding(.horizontal, AppTheme.pageInset)
-                .padding(.top, 16)
-            }
-            .background(AppTheme.pageBackground)
-            .navigationTitle("Inject")
-            .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                importedAssets = OnyxImporterService.shared.getImportedAssets()
-                
-                // Tentar detectar qual jogo está instalado
-                let installed = ContainerStore.installedAppsFromAPI()
-                detectedTargets = targetTemplates.filter { template in
-                    installed.contains(where: { $0.bundleID == template.identifier })
-                }
-                
-                if selectedTarget == nil {
-                    selectedTarget = detectedTargets.first ?? targetTemplates.first
-                }
-                if selectedAsset == nil { selectedAsset = importedAssets.first }
-            }
-            .alert(resultTitle, isPresented: $showResult) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(resultMessage)
-            }
-        }
-    }
-
-    private func applyPatch() {
-        guard selectedTarget != nil, selectedAsset != nil else { return }
-        Task { @MainActor in
-            await applyPatchAuthorized()
-        }
-    }
-
-    @MainActor
-    private func applyPatchAuthorized() async {
-        guard let selectedTarget, let selectedAsset else { return }
-        let sourceFileName = selectedAsset.lastPathComponent
-
-        do {
-            guard let patchData = OnyxImporterService.shared.extractPayload(from: selectedAsset) else {
-                throw NSError(domain: "IPA", code: 2, userInfo: [NSLocalizedDescriptionKey: "Falha ao ler dados do arquivo."])
-            }
-
-            var targetFileName = sourceFileName
-            if sourceFileName.hasSuffix(".onyx") || sourceFileName.hasSuffix(".3105") {
-                if let (meta, _) = try? OnyxImporterService.shared.importOnyxFile(from: selectedAsset).get() {
-                    targetFileName = meta.payload_filename
-                }
-            }
-            
-            // VALIDAÇÃO RÍGIDA DE NOME
-            if !OnyxImporterService.shared.isAllowedCacheFilename(targetFileName) {
-                throw NSError(domain: "Validation", code: 1, userInfo: [NSLocalizedDescriptionKey: "Bloqueado: O arquivo deve se chamar 'cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D'."])
-            }
-            
-            // VALIDAÇÃO DE INTEGRIDADE (UnityFS / UnityWeb)
-            if !OnyxImporterService.shared.validateUnityHeader(data: patchData) {
-                throw NSError(domain: "Validation", code: 2, userInfo: [NSLocalizedDescriptionKey: "Bloqueado: O arquivo não é um UnityFS válido."])
-            }
-
-            guard let containerPath = ContainerStore.resolveAppContainerPath(bundleID: selectedTarget.identifier) else {
-                throw NSError(domain: "Patch", code: 404, userInfo: [NSLocalizedDescriptionKey: "Não foi possível localizar a pasta do jogo."])
-            }
-
-            log("patch: iniciando varredura por '\(targetFileName)' em \(selectedTarget.identifier)")
-            let foundPaths = ContainerStore.findFilesRecursively(at: containerPath, filename: targetFileName)
-            var rules: [PatchRule] = []
-
-            if foundPaths.isEmpty {
-                log("patch: arquivo não encontrado na varredura; usando caminho padrão")
-                let defaultRelPath = "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(targetFileName)"
-                rules = [PatchRule(
-                    id: UUID(),
-                    bundleID: selectedTarget.identifier,
-                    relativePath: defaultRelPath,
-                    replacementFilename: targetFileName,
-                    replacementData: patchData
-                )]
-            } else {
-                log("patch: encontrados \(foundPaths.count) locais para substituição")
-                rules = foundPaths.map { fullPath in
-                    let relPath = String(fullPath.dropFirst(containerPath.count + (containerPath.hasSuffix("/") ? 0 : 1)))
-                    return PatchRule(
-                        id: UUID(),
-                        bundleID: selectedTarget.identifier,
-                        relativePath: relPath,
-                        replacementFilename: targetFileName,
-                        replacementData: patchData
-                    )
-                }
-            }
-
-            let project = PatchProject(
-                id: UUID(),
-                name: "Secure Inject",
-                createdAt: Date(),
-                updatedAt: Date(),
-                bundleIdentifiers: [selectedTarget.identifier],
-                directories: [],
-                rules: rules
-            )
-            _ = try await DevicePatchService.apply(project: project)
-
-            resultTitle = "Sucesso!"
-            resultMessage = "Substituição autorizada e concluída em \(rules.count) local(is)."
-            showResult = true
-        } catch {
-            resultTitle = "Erro"
-            resultMessage = "Falha na injeção: \(error.localizedDescription)"
-            showResult = true
-        }
-    }
-
-    private func restoreOriginal() {
-        Task { @MainActor in
-            do {
-                let backupRoot = try PatchProjectLibrary.backupRootURL()
-                let fileManager = FileManager.default
-                if let items = try? fileManager.contentsOfDirectory(at: backupRoot, includingPropertiesForKeys: nil) {
-                    for item in items {
-                        if let receipt = PatchTransaction.latestReceipt(projectID: UUID(uuidString: item.lastPathComponent) ?? UUID(), backupRoot: backupRoot) {
-                            try await DevicePatchService.restore(receipt: receipt)
-                        }
-                    }
-                }
-                resultTitle = "Restauração"
-                resultMessage = "Restauração autorizada e concluída com sucesso."
-                showResult = true
-            } catch {
-                resultTitle = "Restauração"
-                resultMessage = "Restauração não autorizada ou nenhum backup encontrado."
-                showResult = true
-            }
+        HStack {
+            Text(title)
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.6))
+            Spacer()
+            Text(value)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(color)
         }
     }
 }

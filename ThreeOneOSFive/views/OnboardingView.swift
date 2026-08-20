@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct PatchProjectEditorView: View {
+struct OnboardingView: View {
     var body: some View {
         EmptyView()
     }
