@@ -50,7 +50,7 @@ class FreeFireModManager: ObservableObject {
 
     private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
-    private let bundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
+    private let knownBundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
     
     private var activeReceipt: PatchTransactionReceipt?
 
@@ -101,6 +101,15 @@ class FreeFireModManager: ObservableObject {
 
         prepareLegacyKernelAccessIfNeeded()
 
+        let bundleIds = discoveredFreeFireBundleIDs()
+        guard !bundleIds.isEmpty else {
+            addLog("ERRO: Free Fire não localizado entre os apps instalados")
+            endOperation()
+            complete(completion, success: false, message: "Free Fire não localizado. Abra o jogo uma vez e tente novamente.")
+            return
+        }
+        addLog("Bundles candidatos: \(bundleIds.joined(separator: ", "))")
+
         var targetPaths: [String] = []
         for bid in bundleIds {
             if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
@@ -145,9 +154,9 @@ class FreeFireModManager: ObservableObject {
         }
         
         if rules.isEmpty {
-            addLog("ERRO: Nenhum destino válido localizado")
+            addLog("ERRO: Nenhum destino válido localizado nos bundles: \(bundleIds.joined(separator: ", "))")
             endOperation()
-            complete(completion, success: false, message: "Destino não localizado.")
+            complete(completion, success: false, message: "Arquivo-alvo não localizado no Free Fire. Abra o jogo e aguarde o download dos recursos antes de ativar.")
             return
         }
 
@@ -170,6 +179,35 @@ class FreeFireModManager: ObservableObject {
                 self.complete(completion, success: false, message: "Falha: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func discoveredFreeFireBundleIDs() -> [String] {
+        var ids: [String] = []
+        var apps: [InstalledApp] = []
+        apps.append(contentsOf: ContainerStore.installedAppsFromAPI())
+        apps.append(contentsOf: ContainerStore.installedAppsFromMCM())
+        apps.append(contentsOf: ContainerStore.containersFromFilesystem())
+
+        let discoveredIDs = Set(apps.map(\.bundleID))
+        ids.append(contentsOf: knownBundleIds.filter { discoveredIDs.contains($0) })
+
+        for app in apps {
+            let normalizedName = app.displayName
+                .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                .replacingOccurrences(of: " ", with: "")
+            let looksLikeFreeFire = normalizedName.contains("freefire") ||
+                app.bundleID.lowercased().hasPrefix("com.dts.freefire")
+            if looksLikeFreeFire {
+                ids.append(app.bundleID)
+            }
+        }
+
+        var unique: [String] = []
+        var seen = Set<String>()
+        for id in ids where seen.insert(id).inserted {
+            unique.append(id)
+        }
+        return unique
     }
 
     private func prepareLegacyKernelAccessIfNeeded() {
