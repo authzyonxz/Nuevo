@@ -20,11 +20,9 @@ jobs:
 
       - name: Build Unsigned IPA
         run: |
-          # Garantir que o esquema MenagerFF seja reconhecido usando -alltargets se necessário, 
-          # mas o ideal é o nome do target que agora é MenagerFF
           xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
-            -target MenagerFF \
+            -scheme 3105 \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -35,7 +33,8 @@ jobs:
           
           mkdir -p build/Payload
           # O xcodebuild build coloca o app em build/Build/Products/Release-iphoneos/
-          cp -r build/Build/Products/Release-iphoneos/MenagerFF.app build/Payload/
+          # Tentaremos copiar qualquer .app que for gerado se o nome MenagerFF falhar
+          cp -r build/Build/Products/Release-iphoneos/*.app build/Payload/
           cd build
           zip -r MenagerFF_V27_Rev7.ipa Payload
           
