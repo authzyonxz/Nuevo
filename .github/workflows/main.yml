@@ -20,9 +20,11 @@ jobs:
 
       - name: Build Unsigned IPA
         run: |
+          # Garantir que o esquema MenagerFF seja reconhecido usando -alltargets se necessário, 
+          # mas o ideal é o nome do target que agora é MenagerFF
           xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
-            -scheme 3105 \
+            -target MenagerFF \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -32,12 +34,13 @@ jobs:
             AD_HOC_CODE_SIGNING_ALLOWED=YES
           
           mkdir -p build/Payload
-          cp -r build/Build/Products/Release-iphoneos/*.app build/Payload/
+          # O xcodebuild build coloca o app em build/Build/Products/Release-iphoneos/
+          cp -r build/Build/Products/Release-iphoneos/MenagerFF.app build/Payload/
           cd build
-          zip -r 3105.ipa Payload
+          zip -r MenagerFF_V27_Rev7.ipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ThreeOneOSFive-Unsigned
-          path: build/*.ipa
+          name: MenagerFF_V27_IPA
+          path: build/MenagerFF_V27_Rev7.ipa
