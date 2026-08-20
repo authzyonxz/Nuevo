@@ -452,14 +452,21 @@ struct ProfileView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    Button("VALIDAR KEY") {
+                    Button(action: {
                         showKeySheet = true
+                    }) {
+                        HStack {
+                            Image(systemName: "key.fill")
+                            Text("VALIDAR KEY")
+                        }
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(LinearGradient(gradient: Gradient(colors: [.blue, Color.blue.opacity(0.7)]), startPoint: .leading, endPoint: .trailing))
+                        .cornerRadius(15)
+                        .shadow(color: .blue.opacity(0.3), radius: 8, y: 4)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(Color.blue.opacity(0.85))
-                    .cornerRadius(12)
                     .padding(.horizontal, 16)
                     
                     Spacer(minLength: 100)
