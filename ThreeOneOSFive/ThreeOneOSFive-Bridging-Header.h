@@ -10,3 +10,4 @@
 #import "helpers/AppIconHelper.h"
 
 // EARLY_KRW_LENGTH is in kexploit_opa334.h
+#import "exploit/bad_query.h"
