@@ -202,7 +202,7 @@ struct HomeView: View {
                     // Terminal Log Toggle Header
                     HStack {
                         Circle()
-                            .fill(modManager.activeMod != nil ? Color.green : Color.blue)
+                            .fill(!modManager.activeMods.isEmpty ? Color.green : Color.blue)
                             .frame(width: 8, height: 8)
                         Text(modManager.statusMessage)
                             .font(.system(size: 13, weight: .medium))
