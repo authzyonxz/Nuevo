@@ -26,6 +26,9 @@ class LicenseManager: ObservableObject {
     private let deviceAccount = "device-id"
     private let apiURL = URL(string: "https://ffh4xcorporation.online/api/validate-key")!
     private let product = "ruanwq"
+    private let immediateActivationGrace: TimeInterval = 15
+    private var lastValidatedKey: String?
+    private var lastValidatedAt: Date?
     
     init() {
         hasStoredKey = loadSavedKey()?.isEmpty == false
@@ -88,6 +91,20 @@ class LicenseManager: ObservableObject {
             }
             return
         }
+        if savedKey == lastValidatedKey,
+           let validatedAt = lastValidatedAt,
+           Date().timeIntervalSince(validatedAt) <= immediateActivationGrace {
+            // A key just accepted in the registration screen authorizes one
+            // immediate activation without a duplicate API prompt.
+            lastValidatedKey = nil
+            lastValidatedAt = nil
+            DispatchQueue.main.async {
+                self.isAuthorized = true
+                completion(true, nil)
+            }
+            return
+        }
+
         isValidatingActivation = true
         validateKey(savedKey) { success, message in
             self.isValidatingActivation = false
@@ -156,11 +173,15 @@ class LicenseManager: ObservableObject {
                             self.licenseInfo = info
                             self.isAuthorized = true
                             self.hasStoredKey = true
+                            self.lastValidatedKey = key
+                            self.lastValidatedAt = Date()
                             self.keychainSave(value: key, account: self.keychainAccount)
                             completion(true, nil)
                         } else {
                             let msg = json["message"] as? String ?? (json["error"] as? String ?? "Key inválida ou expirada.")
                             self.isAuthorized = false
+                            self.lastValidatedKey = nil
+                            self.lastValidatedAt = nil
                             self.licenseInfo = nil
                             self.errorMessage = msg
                             completion(false, msg)
@@ -187,6 +208,8 @@ class LicenseManager: ObservableObject {
         SecItemDelete(query as CFDictionary)
         isAuthorized = false
         hasStoredKey = false
+        lastValidatedKey = nil
+        lastValidatedAt = nil
         licenseInfo = nil
         errorMessage = nil
     }

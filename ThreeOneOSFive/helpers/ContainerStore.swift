@@ -80,6 +80,18 @@ enum ContainerStore {
         let detail = lookupError.map(String.init) ?? "unavailable"
         log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
+        // Some iOS 26.6 builds return a valid object path but reject the
+        // legacy activation/lease step. Keep the raw path and let the caller
+        // obtain a grant separately through bad_query.
+        var rawLookupError: NSString?
+        if let rawPath = MCMContainerPathForIdentifier(2, bundleID, false, &rawLookupError),
+           isApplicationContainerPath(rawPath) {
+            log("patch: raw MCM path resolved \(bundleID); grant deferred to bad_query")
+            return rawPath
+        }
+        let rawDetail = rawLookupError.map(String.init) ?? "unavailable"
+        log("patch: raw MCM path unavailable \(bundleID), detail=\(rawDetail)")
+
         // Fallback for iOS builds where MCM refuses to hand out sandbox
         // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
         // walk and read each container's MCM metadata plist directly. The
