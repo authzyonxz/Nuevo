@@ -6,13 +6,12 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(settings.RepositoriesMode.SET_MODE_FAIL_ON_PROJECT_REPOS
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
     }
 }
 
-rootProcessManagement = false
 rootProject.name = "MenagerFF Android"
 include ':app'
