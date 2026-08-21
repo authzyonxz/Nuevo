@@ -22,9 +22,9 @@ jobs:
           echo "Compilando FreeFire External Injector..."
           mkdir -p build/Payload/FreeFireInjector.app
           
-          # Compilar código fonte Objective-C / C++
+          # Compilar código fonte Objective-C / C++ com caminho correto
           xcrun -sdk iphoneos clang++ -arch arm64 -std=c++17 -fobjc-arc \
-            FreeFireExternalInjector/Kernel/ExternalPatcher.mm \
+            Kernel/ExternalPatcher.mm \
             -framework Foundation -framework UIKit \
             -c -o build/ExternalPatcher.o
 
