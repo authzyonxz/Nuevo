@@ -25,8 +25,8 @@ final class LicenseManager: ObservableObject {
     private let keychainService = "com.ffh4x.rage.license"
     private let keychainAccount = "saved-key"
     private let deviceAccount = "device-id"
-    private let apiURL = URL(string: "https://ffh4xcorporation.online/api/secure/validate-key")!
-    private let sessionURL = URL(string: "https://ffh4xcorporation.online/api/secure/session/check")!
+    private let apiURL = URL(string: "https://ffh4xcorporation.online/api/validate-key")!
+    private let sessionURL = URL(string: "https://ffh4xcorporation.online/api/session/check")!
     private let product = "ruanwq"
     private let protocolName = "ffh4x-secure-v1"
     private let algorithm = "A256GCM"
@@ -143,7 +143,7 @@ final class LicenseManager: ObservableObject {
                 plaintext: plaintext,
                 key: bootstrapKey,
                 context: requestContext,
-                path: "/api/secure/validate-key"
+                path: "/api/validate-key"
             )
             post(body: body, url: apiURL) { data, response in
                 self.finishValidation(
@@ -199,7 +199,7 @@ final class LicenseManager: ObservableObject {
                 plaintext: ["action": "check"],
                 key: active.sessionKey,
                 context: context,
-                path: "/api/secure/session/check"
+                path: "/api/session/check"
             )
             post(body: body, url: sessionURL) { data, response in
                 guard let data else {
