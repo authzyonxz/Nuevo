@@ -57,7 +57,7 @@ jobs:
           extern "C" {
           #endif
           int fileport_makeport(int fd, mach_port_t *user_port);
-          int fileport_makefd(fileport_t port, int *fd);
+          int fileport_makefd(fileport_t port);
           #ifdef __cplusplus
           }
           #endif
@@ -74,9 +74,6 @@ jobs:
           echo "Usando Scheme: $SCHEME_NAME"
           
           SDK_PATH=$(xcrun -sdk iphoneos --show-sdk-path)
-          
-          # Patch kexploit_opa334.m se necessário para garantir chamada correta
-          sed -i '' 's/fileport_makefd(/fileport_makefd(/' kexploit/kexploit_opa334.m || true
           
           xcodebuild -project ThreeOneOSFive.xcodeproj \
             -scheme "$SCHEME_NAME" \
