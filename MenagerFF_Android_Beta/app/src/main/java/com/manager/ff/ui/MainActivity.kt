@@ -1,49 +1,28 @@
 package com.manager.ff.ui
 
-import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.view.View
 import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.manager.ff.R
-import com.manager.ff.service.ModService
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.net.Socket
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var layoutInicio: LinearLayout
-    private lateinit var layoutAdb: LinearLayout
-    private lateinit var btnTabInicio: Button
-    private lateinit var btnTabAdb: Button
-    
-    private lateinit var btnToggleMod: Button
-    private lateinit var tvStatus: TextView
-    private lateinit var tvLogs: TextView
-    private lateinit var scrollLogs: ScrollView
-    
-    private lateinit var etAdbPort: EditText
-    private lateinit var etAdbCode: EditText
-    private lateinit var btnConnectAdb: Button
-    
-    private var isModActive = false
-    private var isAdbConnected = false
-    
+    private lateinit var statusText: TextView
+    private lateinit var logConsole: TextView
+    private lateinit var btnPair: Button
+    private lateinit var btnInject: Button
+    private lateinit var btnRestore: Button
+
     private val packageNameTarget = "com.dts.freefireth"
-    
+
     private val modFiles = listOf(
         "optionalab_avatar_10.shRnSxfezhQr7WYmeE6Rm9AetpA~3D",
         "optionalab_avatar_20.l7rNg9cHUKHdAq7IIBGWc8Wvwx4~3D",
@@ -57,196 +36,149 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initViews()
-        setupListeners()
-        
-        appendLog("[Iniciado] MenagerFF pronto. Configure o ADB na aba ADB.")
-        appendLog("=== MenagerFF Android [ADB Real Shell I/O] ===")
-        appendLog("Alvo: $packageNameTarget (Optional Assets)")
-    }
+        statusText = findViewById(R.id.statusText)
+        logConsole = findViewById(R.id.logConsole)
+        btnPair = findViewById(R.id.btnPair)
+        btnInject = findViewById(R.id.btnInject)
+        btnRestore = findViewById(R.id.btnRestore)
 
-    private fun initViews() {
-        layoutInicio = findViewById(R.id.layoutInicio)
-        layoutAdb = findViewById(R.id.layoutAdb)
-        btnTabInicio = findViewById(R.id.btnTabInicio)
-        btnTabAdb = findViewById(R.id.btnTabAdb)
-        
-        btnToggleMod = findViewById(R.id.btnToggleMod)
-        tvStatus = findViewById(R.id.tvStatus)
-        tvLogs = findViewById(R.id.tvLogs)
-        scrollLogs = findViewById(R.id.scrollLogs)
-        
-        etAdbPort = findViewById(R.id.etAdbPort)
-        etAdbCode = findViewById(R.id.etAdbCode)
-        btnConnectAdb = findViewById(R.id.btnConnectAdb)
-    }
+        appendLog("MenagerFF Android Beta [Real I/O Engine] iniciado.")
+        appendLog("Alvo: com.dts.freefireth (Free Fire Normal)")
+        appendLog("Modo: Injeção Real de 6 Assets de Avatar (HS Pescoço)")
 
-    private fun setupListeners() {
-        btnTabInicio.setOnClickListener {
-            layoutInicio.visibility = View.VISIBLE
-            layoutAdb.visibility = View.GONE
-            btnTabInicio.setBackgroundColor(resources.getColor(android.R.color.holo_blue_dark))
-            btnTabAdb.setBackgroundColor(resources.getColor(android.R.color.darker_gray))
-        }
-
-        btnTabAdb.setOnClickListener {
-            layoutInicio.visibility = View.GONE
-            layoutAdb.visibility = View.VISIBLE
-            btnTabAdb.setBackgroundColor(resources.getColor(android.R.color.holo_blue_dark))
-            btnTabInicio.setBackgroundColor(resources.getColor(android.R.color.darker_gray))
-        }
-
-        btnConnectAdb.setOnClickListener {
-            val portStr = etAdbPort.text.toString().trim()
-            val codeStr = etAdbCode.text.toString().trim()
-            
-            if (portStr.isEmpty() || codeStr.isEmpty()) {
-                Toast.makeText(this, "Preencha a Porta e o Código ADB!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            connectAdbWireless(portStr, codeStr)
-        }
-
-        btnToggleMod.setOnClickListener {
-            if (!isAdbConnected) {
-                appendLog("[AVISO] Conexão ADB necessária antes de ativar o mod.")
-                Toast.INSTANCE.let { Toast.makeText(this, "Conecte o ADB na aba ADB primeiro!", Toast.LENGTH_SHORT) }
-                // Mudar para aba ADB automaticamente
-                btnTabAdb.performClick()
-                return@setOnClickListener
-            }
-
-            if (!isModActive) {
-                activateMod()
-            } else {
-                deactivateMod()
-            }
-        }
-    }
-
-    private fun connectAdbWireless(port: String, code: String) {
-        appendLog("[ADB] Tentando autenticação na porta $port...")
-        tvStatus.text = "STATUS: CONECTANDO ADB..."
-        
-        // Simulação de handshake ADB Wireless nativo com feedback no console
-        Handler(Looper.getMainLooper()).postDelayed({
-            isAdbConnected = true
-            appendLog("[SUCESSO] ADB Pareado e Autorizado com sucesso via Socket!")
-            tvStatus.text = "STATUS: ADB CONECTADO"
-            Toast.makeText(this, "ADB Autorizado!", Toast.LENGTH_SHORT).show()
-            // Voltar para aba Início
-            btnTabInicio.performClick()
-        }, 1500)
-    }
-
-    private fun activateMod() {
-        appendLog("[MOD] Iniciando injeção real via ADB Shell...")
-        tvStatus.text = "STATUS: INJETANDO..."
-
-        Thread {
+        btnPair.setOnClickListener {
+            appendLog("Iniciando assistente de pareamento Shizuku / ADB...")
+            statusText.text = "Status: Abra as Opções do Desenvolvedor > Depuração por Wi-Fi"
             try {
-                val targetDir = "/storage/emulated/0/Android/data/$packageNameTarget/files/contentcache/Optional/android/optionalavatarres/gameassetbundles"
-                
-                // 1. Criar diretório via ADB Shell (mkdir -p)
-                appendLog("[I/O] Criando diretórios no Free Fire via ADB...")
-                val mkdirResult = executeAdbShell("mkdir -p \"$targetDir\"")
-                appendLog("[ADB] mkdir: $mkdirResult")
-
-                // 2. Extrair arquivos dos assets para o diretório temporário do app
-                val tempDir = cacheDir
-                val copiedFiles = mutableListOf<File>()
-
-                for (fileName in modFiles) {
-                    val outFile = File(tempDir, fileName)
-                    val inputStream: InputStream = assets.open("mod_files/$fileName")
-                    val outputStream = FileOutputStream(outFile)
-                    inputStream.copyTo(outputStream)
-                    inputStream.close()
-                    outputStream.close()
-                    copiedFiles.add(outFile)
+                val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.manager")
+                if (intent != null) {
+                    startActivity(intent)
+                    appendLog("[INFO] Shizuku aberto com sucesso.")
+                } else {
+                    appendLog("[AVISO] Shizuku não encontrado. Conecte via ADB Wireless.")
+                    statusText.text = "Status: Shizuku não encontrado!"
                 }
-                appendLog("[I/O] Assets extraídos para cache temporário.")
+            } catch (e: Exception) {
+                appendLog("[ERRO] Falha ao abrir Shizuku: ${e.message}")
+            }
+        }
 
-                // 3. Mover arquivos para o destino final via ADB Shell (cp)
-                for (file in copiedFiles) {
-                    val destPath = "$targetDir/${file.name}"
-                    // Fazer backup do original se existir
-                    executeAdbShell("if [ -f \"$destPath\" ] && [ ! -f \"$destPath.bak\" ]; then cp \"$destPath\" \"$destPath.bak\"; fi")
-                    
-                    // Copiar modificado
-                    // Como o app tem permissão ADB root/shell, movemos do cache para o target
-                    val tempPath = file.absolutePath
-                    val cpResult = executeAdbShell("cp \"$tempPath\" \"$destPath\"")
-                    val chmodResult = executeAdbShell("chmod 644 \"$destPath\"")
-                    appendLog("[COPY] ${file.name} -> $cpResult")
+        btnInject.setOnClickListener {
+            appendLog("=== INICIANDO INJEÇÃO REAL DE ARQUIVOS ===")
+            statusText.text = "Status: Gravando arquivos do mod no Free Fire..."
+
+            Thread {
+                executeRealInjection()
+            }.start()
+        }
+
+        btnRestore.setOnClickListener {
+            appendLog("=== INICIANDO RESTAURAÇÃO DE BACKUP ===")
+            statusText.text = "Status: Restaurando originais (.bak)..."
+
+            Thread {
+                executeRealRestore()
+            }.start()
+        }
+    }
+
+    private fun executeRealInjection() {
+        try {
+            val targetPath = "/storage/emulated/0/Android/data/$packageNameTarget/files/contentcache/Optional/android/optionalavatarres/gameassetbundles"
+            
+            // 1. Criar diretório via shell/ADB
+            appendLog("[I/O] Criando diretório Optional no Free Fire...")
+            executeShell("mkdir -p \"$targetPath\"")
+
+            val targetDir = File(targetPath)
+            if (!targetDir.exists()) {
+                appendLog("[AVISO] Diretório alvo não criado diretamente. Tentando via shell...")
+            }
+
+            // 2. Extrair arquivos dos assets para cache e copiar para o destino
+            var successCount = 0
+            for (fileName in modFiles) {
+                val assetFileName = "mod_files/$fileName"
+                val destFile = File(targetDir, fileName)
+                val backupFile = File(targetDir, "$fileName.bak")
+
+                // Extrair dos assets para arquivo temporário
+                val tempFile = File(cacheDir, fileName)
+                val inputStream: InputStream = assets.open(assetFileName)
+                val outputStream = FileOutputStream(tempFile)
+                inputStream.copyTo(outputStream)
+                inputStream.close()
+                outputStream.close()
+
+                // Criar backup se o original existe e não tem backup
+                if (destFile.exists() && !backupFile.exists()) {
+                    executeShell("cp \"${destFile.absolutePath}\" \"${backupFile.absolutePath}\"")
+                    appendLog("[BACKUP] Original salvo: $fileName.bak")
                 }
 
-                Handler(Looper.getMainLooper()).post {
-                    isModActive = true
-                    tvStatus.text = "STATUS: MOD ATIVO (HS PESCOÇO)"
-                    btnToggleMod.text = "DESATIVAR MOD (RESTAURAR)"
-                    btnToggleMod.setBackgroundColor(resources.getColor(android.R.color.holo_red_dark))
-                    appendLog("[SUCESSO] Mod ATIVADO com sucesso!")
-                    
-                    // Iniciar serviço em segundo plano
-                    val serviceIntent = Intent(this, ModService::class.java)
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
-                    } else {
-                        startService(serviceIntent)
-                    }
+                // Copiar arquivo real do mod
+                val cpResult = executeShell("cp \"${tempFile.absolutePath}\" \"${destFile.absolutePath}\"")
+                executeShell("chmod 644 \"${destFile.absolutePath}\"")
 
-                    // Auto-Launch do Free Fire
+                if (destFile.exists()) {
+                    appendLog("[SUCESSO] Injetado: $fileName")
+                    successCount++
+                } else {
+                    appendLog("[ERRO] Falha ao gravar: $fileName (Output: $cpResult)")
+                }
+            }
+
+            Handler(Looper.getMainLooper()).post {
+                if (successCount == modFiles.size) {
+                    appendLog("=== INJEÇÃO CONCLUÍDA COM SUCESSO! ===")
+                    statusText.text = "Status: Mod Ativo! Abrindo Free Fire..."
                     launchFreeFire()
-                }
-
-            } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post {
-                    appendLog("[ERRO] Falha na injeção real: ${e.message}")
-                    tvStatus.text = "STATUS: ERRO NA INJEÇÃO"
-                    Toast.makeText(this, "Erro: ${e.message}", Toast.LENGTH_LONG).show()
+                } else {
+                    appendLog("[AVISO] Injeção parcial ($successCount/${modFiles.size}). Verifique permissões ADB.")
+                    statusText.text = "Status: Injeção concluída com avisos."
                 }
             }
-        }.start()
+
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                appendLog("[ERRO CRÍTICO] ${e.message}")
+                statusText.text = "Status: Erro na injeção!"
+            }
+        }
     }
 
-    private fun deactivateMod() {
-        appendLog("[MOD] Restaurando arquivos originais (.bak)...")
-        tvStatus.text = "STATUS: RESTAURANDO..."
+    private fun executeRealRestore() {
+        try {
+            val targetPath = "/storage/emulated/0/Android/data/$packageNameTarget/files/contentcache/Optional/android/optionalavatarres/gameassetbundles"
+            val targetDir = File(targetPath)
 
-        Thread {
-            try {
-                val targetDir = "/storage/emulated/0/Android/data/$packageNameTarget/files/contentcache/Optional/android/optionalavatarres/gameassetbundles"
-                
-                for (fileName in modFiles) {
-                    val destPath = "$targetDir/$fileName"
-                    // Restaurar .bak se existir
-                    val restoreResult = executeAdbShell("if [ -f \"$destPath.bak\" ]; then mv \"$destPath.bak\" \"$destPath\"; fi")
-                    appendLog("[RESTORE] $fileName -> $restoreResult")
-                }
+            var restoredCount = 0
+            for (fileName in modFiles) {
+                val destFile = File(targetDir, fileName)
+                val backupFile = File(targetDir, "$fileName.bak")
 
-                Handler(Looper.getMainLooper()).post {
-                    isModActive = false
-                    tvStatus.text = "STATUS: AGUARDANDO ATIVAÇÃO"
-                    btnToggleMod.text = "ATIVAR HS PESCOÇO"
-                    btnToggleMod.setBackgroundColor(resources.getColor(android.R.color.holo_blue_dark))
-                    appendLog("[SUCESSO] Sistema restaurado para o original!")
-                    Toast.makeText(this, "Mod desativado e original restaurado!", Toast.LENGTH_SHORT).show()
-                    
-                    // Parar serviço
-                    stopService(Intent(this, ModService::class.java))
-                }
-            } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post {
-                    appendLog("[ERRO] Falha ao restaurar: ${e.message}")
-                    tvStatus.text = "STATUS: ERRO AO RESTAURAR"
+                if (backupFile.exists()) {
+                    executeShell("mv \"${backupFile.absolutePath}\" \"${destFile.absolutePath}\"")
+                    appendLog("[RESTAURADO] Original de volta: $fileName")
+                    restoredCount++
+                } else {
+                    appendLog("[INFO] Nenhum backup encontrado para: $fileName")
                 }
             }
-        }.start()
+
+            Handler(Looper.getMainLooper()).post {
+                appendLog("=== RESTAURAÇÃO FINALIZADA ($restoredCount arquivos) ===")
+                statusText.text = "Status: Restaurado para o original com sucesso."
+            }
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                appendLog("[ERRO] Falha na restauração: ${e.message}")
+                statusText.text = "Status: Erro na restauração!"
+            }
+        }
     }
 
-    private fun executeAdbShell(command: String): String {
+    private fun executeShell(command: String): String {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
             val reader = process.inputStream.bufferedReader()
@@ -264,21 +196,19 @@ class MainActivity : AppCompatActivity() {
             val intent = packageManager.getLaunchIntentForPackage(packageNameTarget)
             if (intent != null) {
                 startActivity(intent)
-                appendLog("[SUCESSO] Free Fire iniciado com o mod aplicado!")
+                appendLog("[SUCESSO] Free Fire iniciado!")
             } else {
-                appendLog("[AVISO] Free Fire não encontrado instalado.")
+                appendLog("[AVISO] Free Fire não encontrado.")
             }
         } catch (e: Exception) {
             appendLog("[ERRO] Falha ao iniciar Free Fire: ${e.message}")
         }
     }
 
-    private fun appendLog(text: String) {
+    private fun appendLog(message: String) {
         Handler(Looper.getMainLooper()).post {
-            tvLogs.append("$text\n")
-            scrollLogs.post {
-                scrollLogs.fullScroll(View.FOCUS_DOWN)
-            }
+            val current = logConsole.text.toString()
+            logConsole.text = "$current\n> $message"
         }
     }
 }

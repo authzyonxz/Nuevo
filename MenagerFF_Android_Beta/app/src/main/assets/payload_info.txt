@@ -1,3 +1,0 @@
-# Payload de HS Pescoço - MenagerFF Android Beta
-# Contém os 6 arquivos de avatar otimizados para substituição em com.dts.freefireth
-# Estrutura de destino: /Android/data/com.dts.freefireth/files/contentcache/Optional/android/optionalavatarres/gameassetbundles/

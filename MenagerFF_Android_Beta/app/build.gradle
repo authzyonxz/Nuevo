@@ -4,7 +4,6 @@ plugins {
 }
 
 android {
-    namespace 'com.manager.ff'
     compileSdk 34
 
     defaultConfig {
