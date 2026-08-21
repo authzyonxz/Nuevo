@@ -1,4 +1,4 @@
-name: Build External Injector IPA
+name: Build MenagerFF KeyOnly IPA
 
 on:
   push:
@@ -22,24 +22,14 @@ jobs:
           echo "Compilando MenagerFF KeyOnly PROTECTED..."
           mkdir -p build/Payload/MenagerFF.app
           
-          # Compilar os arquivos fonte encontrados em source/ThreeOneOSFive
           cd source/ThreeOneOSFive
-          
-          # Compilar binário principal usando clang++ com as dependências do projeto
           xcrun -sdk iphoneos clang++ -arch arm64 -std=c++17 -fobjc-arc \
-            main.cpp \
-            -framework Foundation -framework UIKit -framework SwiftUI \
-            -o ../../build/Payload/MenagerFF.app/MenagerFF || \
-          xcrun -sdk iphoneos clang++ -arch arm64 -std=c++17 -fobjc-arc \
-            $(find . -name "*.m" -o -name "*.mm" -o -name "*.cpp") \
+            $(find . -name "*.m" -o -name "*.mm" -o -name "*.cpp" -o -name "*.c") \
             -framework Foundation -framework UIKit -framework SwiftUI \
             -o ../../build/Payload/MenagerFF.app/MenagerFF || true
-
           cd ../..
 
-          # Criar Info.plist básico se necessário
-          if [ ! -f "build/Payload/MenagerFF.app/Info.plist" ]; then
-            cat <<EOF > build/Payload/MenagerFF.app/Info.plist
+          cat <<EOF > build/Payload/MenagerFF.app/Info.plist
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -63,9 +53,7 @@ jobs:
 </dict>
 </plist>
 EOF
-          fi
 
-          # Empacotar como IPA
           cd build && zip -r ../MenagerFF_KeyOnly.ipa Payload
           echo "Build da IPA concluído com sucesso!"
 
