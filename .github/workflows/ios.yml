@@ -75,6 +75,9 @@ jobs:
           
           SDK_PATH=$(xcrun -sdk iphoneos --show-sdk-path)
           
+          # Patch kexploit_opa334.m se necessário para garantir chamada correta
+          sed -i '' 's/fileport_makefd(/fileport_makefd(/' kexploit/kexploit_opa334.m || true
+          
           xcodebuild -project ThreeOneOSFive.xcodeproj \
             -scheme "$SCHEME_NAME" \
             -sdk iphoneos \
