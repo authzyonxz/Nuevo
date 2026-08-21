@@ -136,7 +136,7 @@ final class LicenseManager: ObservableObject {
         setLoading(true)
         do {
             let clientNonce = randomData(count: 16)
-            let requestId = UUID().uuidString
+            let requestId = UUID().uuidString.lowercased()
             let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
             let keyId = base64URL(Data(SHA256.hash(data: Data(normalized.utf8))))
             let bootstrapKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: Data(normalized.utf8)), salt: clientNonce, info: Data("\(protocolName)/bootstrap".utf8), outputByteCount: 32)
@@ -162,7 +162,7 @@ final class LicenseManager: ObservableObject {
     private func performSessionCheck(operation: String, completion: @escaping (Bool, String?) -> Void) {
         stateLock.lock(); guard let key = sessionKey, let sid = sessionId, let expiry = sessionExpiresAt, expiry > Date() else { stateLock.unlock(); invalidateSession(); completion(false, "Sessão inválida ou expirada."); return }; stateLock.unlock()
         do {
-            let clientNonce = randomData(count: 16); let requestId = UUID().uuidString; let timestamp = Int64(Date().timeIntervalSince1970 * 1000); let keyId = try currentKeyId()
+            let clientNonce = randomData(count: 16); let requestId = UUID().uuidString.lowercased(); let timestamp = Int64(Date().timeIntervalSince1970 * 1000); let keyId = try currentKeyId()
             let body = try encryptedEnvelope(payload: OperationPayload(action: "check"), key: key, keyId: keyId, clientNonce: clientNonce, timestamp: timestamp, requestId: requestId, sessionId: sid, serverNonce: nil, path: sessionCheckURL.path, direction: "request")
             send(body, to: sessionCheckURL) { data, response, networkError in
                 do {
