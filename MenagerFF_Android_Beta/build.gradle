@@ -11,10 +11,7 @@ buildscript {
 }
 
 allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+    // Repositórios movidos para settings.gradle
 }
 
 task clean(type: Delete) {
