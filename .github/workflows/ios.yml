@@ -17,7 +17,7 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_15.2.app
           xcodebuild -version
 
-      - name: Create XPC Stub for Compilation
+      - name: Create Complete XPC Stub for Compilation
         run: |
           cd source
           mkdir -p xpc
@@ -27,20 +27,30 @@ jobs:
           #include <stdint.h>
           #include <stdbool.h>
           #include <stddef.h>
+
           typedef void* xpc_object_t;
           typedef void* xpc_connection_t;
+          typedef void* xpc_type_t;
           typedef void (^xpc_handler_t)(xpc_object_t object);
+
+          #define XPC_TYPE_DICTIONARY ((xpc_type_t)0)
+          #define XPC_TYPE_ARRAY ((xpc_type_t)0)
+          #define XPC_TYPE_STRING ((xpc_type_t)0)
+          #define XPC_TYPE_INT64 ((xpc_type_t)0)
+
           #ifdef __cplusplus
           extern "C" {
           #endif
+
           xpc_object_t xpc_dictionary_create(const char *const *keys, xpc_object_t *values, size_t count);
           void xpc_release(xpc_object_t object);
+
           #ifdef __cplusplus
           }
           #endif
+
           #endif
           EOF
-          pwd
 
       - name: Build Xcode Project (Unsigned)
         run: |
