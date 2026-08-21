@@ -105,45 +105,63 @@ class MainActivity : AppCompatActivity() {
                 executeAdbShell("mkdir -p \"$targetDir\"")
 
                 val tempDir = cacheDir
-                val copiedFiles = mutableListOf<File>()
+                var successCount = 0
 
                 for (fileName in modFiles) {
                     val outFile = File(tempDir, fileName)
-                    val inputStream: InputStream = assets.open("mod_files/$fileName")
-                    val outputStream = FileOutputStream(outFile)
-                    inputStream.copyTo(outputStream)
-                    inputStream.close()
-                    outputStream.close()
-                    copiedFiles.add(outFile)
-                }
+                    try {
+                        val inputStream: InputStream = assets.open("mod_files/$fileName")
+                        val outputStream = FileOutputStream(outFile)
+                        inputStream.copyTo(outputStream)
+                        inputStream.close()
+                        outputStream.close()
+                        appendLog("[ASSET] Extraído para cache: $fileName (${outFile.length()} bytes)")
+                    } catch (e: Exception) {
+                        appendLog("[ERRO ASSET] Falha ao ler $fileName dos assets: ${e.message}")
+                        continue
+                    }
 
-                for (file in copiedFiles) {
-                    val destPath = "$targetDir/${file.name}"
+                    val destPath = "$targetDir/$fileName"
+                    // Fazer backup do original se existir e não houver backup
                     executeAdbShell("if [ -f \"$destPath\" ] && [ ! -f \"$destPath.bak\" ]; then cp \"$destPath\" \"$destPath.bak\"; fi")
-                    val cpResult = executeAdbShell("cp \"${file.absolutePath}\" \"$destPath\"")
+                    
+                    // Copiar do cache para o destino do jogo
+                    val cpResult = executeAdbShell("cp \"${outFile.absolutePath}\" \"$destPath\"")
                     executeAdbShell("chmod 644 \"$destPath\"")
-                    appendLog("[COPY] ${file.name} -> $cpResult")
+
+                    // Verificar se arquivo existe no destino
+                    val checkSize = executeAdbShell("stat -c%s \"$destPath\" 2>/dev/null || echo '0'")
+                    appendLog("[INJEÇÃO] $fileName -> Tamanho no jogo: ${checkSize.trim()} bytes")
+
+                    if (checkSize.trim().toLongOrNull() ?: 0 > 0) {
+                        successCount++
+                    }
                 }
 
                 Handler(Looper.getMainLooper()).post {
-                    isModActive = true
-                    tvStatus.text = "STATUS: MOD ATIVO (HS PESCOÇO)"
-                    btnToggleMod.text = "DESATIVAR MOD (RESTAURAR)"
-                    btnToggleMod.setBackgroundColor(resources.getColor(android.R.color.holo_red_dark))
-                    appendLog("[SUCESSO] Mod ATIVADO com sucesso!")
+                    if (successCount > 0) {
+                        isModActive = true
+                        tvStatus.text = "STATUS: MOD ATIVO (HS PESCOÇO)"
+                        btnToggleMod.text = "DESATIVAR MOD (RESTAURAR)"
+                        btnToggleMod.setBackgroundColor(resources.getColor(android.R.color.holo_red_dark))
+                        appendLog("[SUCESSO] $successCount/6 arquivos injetados com sucesso!")
 
-                    val serviceIntent = Intent(this, ModService::class.java)
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
+                        val serviceIntent = Intent(this, ModService::class.java)
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            startForegroundService(serviceIntent)
+                        } else {
+                            startService(serviceIntent)
+                        }
+
+                        launchFreeFire()
                     } else {
-                        startService(serviceIntent)
+                        tvStatus.text = "STATUS: ERRO NA INJEÇÃO"
+                        appendLog("[ERRO] Nenhum arquivo foi gravado no diretório do Free Fire.")
                     }
-
-                    launchFreeFire()
                 }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post {
-                    appendLog("[ERRO] Falha na injeção: ${e.message}")
+                    appendLog("[ERRO CRÍTICO] Falha na injeção: ${e.message}")
                     tvStatus.text = "STATUS: ERRO NA INJEÇÃO"
                 }
             }
@@ -158,9 +176,14 @@ class MainActivity : AppCompatActivity() {
             try {
                 val targetDir = "/storage/emulated/0/Android/data/$packageNameTarget/files/contentcache/Optional/android/optionalavatarres/gameassetbundles"
 
+                var restoredCount = 0
                 for (fileName in modFiles) {
                     val destPath = "$targetDir/$fileName"
-                    executeAdbShell("if [ -f \"$destPath.bak\" ]; then mv \"$destPath.bak\" \"$destPath\"; fi")
+                    val mvResult = executeAdbShell("if [ -f \"$destPath.bak\" ]; then mv \"$destPath.bak\" \"$destPath\"; echo 'RESTORED'; else echo 'NO_BAK'; fi")
+                    if (mvResult.contains("RESTORED")) {
+                        restoredCount++
+                        appendLog("[RESTAURADO] $fileName")
+                    }
                 }
 
                 Handler(Looper.getMainLooper()).post {
@@ -168,7 +191,7 @@ class MainActivity : AppCompatActivity() {
                     tvStatus.text = "STATUS: MOD DESATIVADO (ORIGINAL)"
                     btnToggleMod.text = "ATIVAR HS PESCOÇO"
                     btnToggleMod.setBackgroundColor(resources.getColor(android.R.color.holo_green_dark))
-                    appendLog("[SUCESSO] Sistema restaurado para o original!")
+                    appendLog("[SUCESSO] $restoredCount arquivos restaurados para o original!")
                     Toast.makeText(this, "Original restaurado!", Toast.LENGTH_SHORT).show()
 
                     stopService(Intent(this, ModService::class.java))
