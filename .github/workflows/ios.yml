@@ -17,45 +17,38 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_15.2.app
           xcodebuild -version
 
-      - name: Build MenagerFF KeyOnly IPA
+      - name: Build Xcode Project (Unsigned)
         run: |
-          echo "Compilando MenagerFF KeyOnly PROTECTED..."
-          mkdir -p build/Payload/MenagerFF.app
+          cd source
+          xcodebuild -project ThreeOneOSFive.xcodeproj \
+            -scheme ThreeOneOSFive \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package IPA
+        run: |
+          cd source
+          # Localizar o build app gerado pelo xcodebuild
+          BUILD_DIR=$(xcodebuild -project ThreeOneOSFive.xcodeproj -scheme ThreeOneOSFive -sdk iphoneos -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR =" | awk -F ' = ' '{print $2}')
+          echo "Build dir: $BUILD_DIR"
           
-          cd source/ThreeOneOSFive
-          xcrun -sdk iphoneos clang++ -arch arm64 -std=c++17 -fobjc-arc \
-            $(find . -name "*.m" -o -name "*.mm" -o -name "*.cpp" -o -name "*.c") \
-            -framework Foundation -framework UIKit -framework SwiftUI \
-            -o ../../build/Payload/MenagerFF.app/MenagerFF || true
-          cd ../..
-
-          cat <<EOF > build/Payload/MenagerFF.app/Info.plist
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>MenagerFF</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.manager.ff.ios</string>
-    <key>CFBundleName</key>
-    <string>MenagerFF</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>LSRequiresIPhoneOS</key>
-    <true/>
-    <key>MinimumOSVersion</key>
-    <string>15.0</string>
-    <key>UILaunchStoryboardName</key>
-    <string>LaunchScreen</string>
-</dict>
-</plist>
-EOF
-
-          cd build && zip -r ../MenagerFF_KeyOnly.ipa Payload
-          echo "Build da IPA concluído com sucesso!"
+          APP_PATH="$BUILD_DIR/ThreeOneOSFive.app"
+          if [ ! -d "$APP_PATH" ]; then
+            # Fallback para derived data padrão
+            APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "ThreeOneOSFive.app" | head -n 1)
+          fi
+          
+          echo "App path: $APP_PATH"
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          
+          zip -r ../MenagerFF_KeyOnly.ipa Payload
+          cd ..
+          ls -lh MenagerFF_KeyOnly.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
