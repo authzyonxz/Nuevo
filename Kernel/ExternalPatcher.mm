@@ -37,9 +37,9 @@
     
     // Obter task port do processo alvo ou bypass de sandbox via KFD / bad_query
     // Em implementações avançadas de iOS 17-27, o task_for_pid é obtido após o escape do kernel
-    pid_t pid = [self findProcessIDByName:@"FreeFireMax"];
+    pid_t pid = [self findProcessIDByName:@"freefiremax"];
     if (pid <= 0) {
-        pid = [self findProcessIDByName:@"freefireth"];
+        pid = [self findProcessIDByName:@"FreeFireMax"];
     }
     
     if (pid <= 0) {
