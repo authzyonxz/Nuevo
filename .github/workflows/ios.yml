@@ -20,15 +20,14 @@ jobs:
       - name: Build Xcode Project (Unsigned)
         run: |
           cd source
-          echo "Listando schemes disponíveis:"
-          xcodebuild -list -project ThreeOneOSFive.xcodeproj
-          
-          # Obter o primeiro scheme disponível automaticamente
           SCHEME_NAME=$(xcodebuild -list -project ThreeOneOSFive.xcodeproj | grep -A 20 "Schemes:" | tail -n +2 | head -n 1 | xargs)
           if [ -z "$SCHEME_NAME" ]; then
             SCHEME_NAME="ThreeOneOSFive"
           fi
           echo "Usando Scheme: $SCHEME_NAME"
+          
+          # Obter SDK Path para adicionar paths privados se necessário
+          SDK_PATH=$(xcrun -sdk iphoneos --show-sdk-path)
           
           xcodebuild -project ThreeOneOSFive.xcodeproj \
             -scheme "$SCHEME_NAME" \
@@ -37,6 +36,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            OTHER_CFLAGS="-isysroot $SDK_PATH -I$SDK_PATH/usr/local/include" \
             build
 
       - name: Package IPA
