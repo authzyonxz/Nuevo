@@ -1,0 +1,847 @@
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/App.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/App.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/App.swift	2026-08-20 15:11:09.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/App.swift	2026-08-21 18:47:38.853222282 +0000
+@@ -19,12 +19,6 @@
+                 .environmentObject(licenseManager)
+                 .environmentObject(exploitState)
+                 .preferredColorScheme(.dark)
+-                .onAppear {
+-                    // Select the access path by OS family. iOS 17/18 use the
+-                    // kernel/offset chain; iOS 26/27 use bad_query lazily.
+-                    exploitState.prepareForCurrentOS()
+-
+-                }
+         }
+         .onChange(of: scenePhase) { newPhase in
+             if newPhase == .background {
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/ContentView.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/ContentView.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/ContentView.swift	2026-08-21 18:08:18.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/ContentView.swift	2026-08-21 18:48:19.537558966 +0000
+@@ -3,20 +3,40 @@
+ 
+ struct ContentView: View {
+     @EnvironmentObject var licenseManager: LicenseManager
++    @EnvironmentObject var exploitState: KernelExploitState
+     @State private var inputKey: String = ""
+     @State private var selectedTab: Int = 0
+     @State private var timeRemaining: Int = 10
+     @State private var timer: Timer? = nil
+ 
+     var body: some View {
+-        MainTabView(selectedTab: $selectedTab)
+-            .onAppear {
+-                // A key não é exigida para abrir o painel. Cada ativação
+-                // consulta novamente o servidor antes de iniciar o patch.
+-                if licenseManager.loadSavedKey() != nil {
+-                    licenseManager.validateKey(licenseManager.loadSavedKey() ?? "") { _, _ in }
+-                }
++        Group {
++            if licenseManager.isAuthorized {
++                MainTabView(selectedTab: $selectedTab)
++            } else {
++                LoginView(
++                    inputKey: $inputKey,
++                    timeRemaining: timeRemaining,
++                    onLogin: {
++                        licenseManager.validateKey(inputKey) { _, _ in }
++                    }
++                )
+             }
++        }
++        .onAppear {
++            guard let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty else {
++                startCountdown()
++                return
++            }
++            licenseManager.validateKey(savedKey) { _, _ in }
++        }
++        .onChange(of: licenseManager.isAuthorized) { authorized in
++            if authorized {
++                exploitState.prepareForCurrentOS()
++            } else {
++                KernelExploit.cleanup()
++            }
++        }
+     }
+ 
+     private func startCountdown() {
+@@ -313,9 +333,16 @@
+ 
+     private func handleToggle(mod: ModType, isOn: Bool) {
+         guard isOn else {
+-            modManager.restoreOriginal { _, msg in
+-                alertMessage = msg
+-                showAlert = true
++            licenseManager.authorizeOperation("restore") { success, message in
++                guard success else {
++                    alertMessage = message ?? "Sessão inválida ou expirada."
++                    showAlert = true
++                    return
++                }
++                modManager.restoreOriginal { _, msg in
++                    alertMessage = msg
++                    showAlert = true
++                }
+             }
+             return
+         }
+@@ -418,7 +445,7 @@
+                         InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
+                         InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
+                         InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
+-                        InfoRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
++                        InfoRow(title: "Sessão", value: licenseManager.isAuthorized ? "Autorizada pelo servidor" : "Não autorizada", color: licenseManager.isAuthorized ? .green : .orange)
+                         InfoRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
+                         InfoRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
+                         InfoRow(title: "Build do sistema", value: AppInfo.osBuild, color: .blue)
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/ContainerStore.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/ContainerStore.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/ContainerStore.swift	2026-08-20 14:46:31.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/ContainerStore.swift	2026-08-21 18:49:34.400151557 +0000
+@@ -68,6 +68,10 @@
+     ]
+ 
+     static func resolveAppContainerPath(bundleID: String) -> String? {
++        guard LicenseManager.shared.isAuthorized else {
++            log("patch: container resolution refused — no authorized session")
++            return nil
++        }
+         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
+             return nil
+         }
+@@ -504,6 +508,7 @@
+     }
+ 
+     static func grantContainerAccess(_ containerPath: String) -> Int64 {
++        guard LicenseManager.shared.isAuthorized else { return -1 }
+         guard shouldUseBadQuery else { return -1 }
+         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
+         var pathC = clean.utf8CString.map { Int8($0) }
+@@ -511,6 +516,7 @@
+     }
+ 
+     static func containersFromFilesystem() -> [InstalledApp] {
++        guard LicenseManager.shared.isAuthorized else { return [] }
+         let grantedDirectories = enumerateDirectoriesWithTraversalGrant(path: appDataRoot)
+         let dirs: [String]
+         if grantedDirectories.isEmpty {
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/DevicePatchService.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/DevicePatchService.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/DevicePatchService.swift	2026-08-20 13:47:55.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/DevicePatchService.swift	2026-08-21 18:49:26.599068970 +0000
+@@ -2,6 +2,9 @@
+ 
+ enum DevicePatchService {
+     static func apply(project: PatchProject) throws -> PatchTransactionReceipt {
++        guard LicenseManager.shared.isAuthorized else {
++            throw PatchPackageError.applyFailed
++        }
+         let bundleIDs = orderedBundleIdentifiers(in: project)
+         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
+             try PatchTransaction.apply(
+@@ -18,6 +21,9 @@
+     }
+ 
+     static func restore(receipt: PatchTransactionReceipt) throws {
++        guard LicenseManager.shared.isAuthorized else {
++            throw PatchPackageError.restoreFailed
++        }
+         let bundleIDs = try PatchTransaction.requiredBundleIdentifiers(for: receipt)
+         try withResolvedContainers(bundleIDs: bundleIDs) { roots in
+             try PatchTransaction.restore(
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/FreeFireModManager.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/FreeFireModManager.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/FreeFireModManager.swift	2026-08-21 18:05:18.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/FreeFireModManager.swift	2026-08-21 18:49:57.836258830 +0000
+@@ -65,10 +65,16 @@
+     }
+ 
+     func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+-        guard LicenseManager.shared.isAuthorized else {
+-            complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
+-            return
++        LicenseManager.shared.authorizeOperation("apply_\(mod.folderName)") { success, message in
++            guard success else {
++                self.complete(completion, success: false, message: message ?? "Sessão inválida ou expirada.")
++                return
++            }
++            self.applyModAfterAuthorization(mod, completion: completion)
+         }
++    }
++
++    private func applyModAfterAuthorization(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+         guard beginOperation() else {
+             complete(completion, success: false, message: "Outra operação já está em andamento.")
+             return
+@@ -195,27 +201,10 @@
+     }
+ 
+     private func prepareLegacyKernelAccessIfNeeded() {
+-        guard KernelExploit.currentAccessPath == .kernelOffsets else {
+-            log("access: mod operation uses ContainerManager bad_query; kernel elevation skipped")
+-            return
+-        }
+-        guard KernelExploit.kernelAccessActive else {
+-            log("access: kernel elevation skipped because kernel access is not active")
+-            return
+-        }
+-
+-        let selfProc = proc_self()
+-        guard selfProc != 0 else {
+-            log("access: kernel elevation skipped because proc_self returned 0")
+-            return
+-        }
+-
+-        let result = sandbox_elevate_to_root(selfProc)
+-        guard result == 0 else {
+-            log("access: kernel elevation failed with result=\(result)")
+-            return
+-        }
+-        log("access: legacy kernel elevation active")
++        // Security policy: never escalate the app identity to root. The native
++        // backend may establish only the minimum access path already required
++        // by the selected, validated container operation.
++        log("access: legacy root elevation disabled by security policy")
+     }
+ 
+     private func findFilesWithSelectedAccess(named name: String, in directory: String) -> [String] {
+@@ -246,6 +235,16 @@
+     }
+ 
+     func restoreOriginal(completion: @escaping (Bool, String) -> Void) {
++        LicenseManager.shared.authorizeOperation("restore") { success, message in
++            guard success else {
++                self.complete(completion, success: false, message: message ?? "Sessão inválida ou expirada.")
++                return
++            }
++            self.restoreOriginalAfterAuthorization(completion: completion)
++        }
++    }
++
++    private func restoreOriginalAfterAuthorization(completion: @escaping (Bool, String) -> Void) {
+         guard beginOperation() else {
+             complete(completion, success: false, message: "Outra operação já está em andamento.")
+             return
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/KernelExploit.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/KernelExploit.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/KernelExploit.swift	2026-08-20 14:40:59.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/KernelExploit.swift	2026-08-21 18:47:56.830361378 +0000
+@@ -62,6 +62,10 @@
+     }
+ 
+     static func run() -> Bool {
++        guard LicenseManager.shared.isAuthorized else {
++            log("access: native path refused — no authorized license session")
++            return false
++        }
+         kernelAccessActive = false
+ 
+         if currentAccessPath == .kfd16 {
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/LicenseManager.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/LicenseManager.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/LicenseManager.swift	2026-08-20 15:11:40.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/LicenseManager.swift	2026-08-21 18:46:50.659496620 +0000
+@@ -1,5 +1,6 @@
+ import Foundation
+ import Combine
++import CryptoKit
+ import Security
+ import UIKit
+ 
+@@ -11,183 +12,426 @@
+     let sessionToken: String?
+ }
+ 
+-class LicenseManager: ObservableObject {
++final class LicenseManager: ObservableObject {
+     static let shared = LicenseManager()
+-    
+-    @Published var isAuthorized: Bool = false
+-    @Published var hasStoredKey: Bool = false
+-    @Published var isLoading: Bool = false
+-    @Published var isValidatingActivation: Bool = false
+-    @Published var errorMessage: String? = nil
+-    @Published var licenseInfo: LicenseInfo? = nil
+-    
++
++    @Published var isAuthorized = false
++    @Published var hasStoredKey = false
++    @Published var isLoading = false
++    @Published var isValidatingActivation = false
++    @Published var errorMessage: String?
++    @Published var licenseInfo: LicenseInfo?
++
+     private let keychainService = "com.ffh4x.rage.license"
+     private let keychainAccount = "saved-key"
+     private let deviceAccount = "device-id"
+-    private let apiURL = URL(string: "https://ffh4xcorporation.online/api/validate-key")!
++    private let apiURL = URL(string: "https://ffh4xcorporation.online/api/secure/validate-key")!
++    private let sessionURL = URL(string: "https://ffh4xcorporation.online/api/secure/session/check")!
+     private let product = "ruanwq"
+-    
++    private let protocolName = "ffh4x-secure-v1"
++    private let algorithm = "A256GCM"
++
++    private struct SessionState {
++        let keyId: String
++        let sessionId: String
++        let clientNonce: Data
++        let serverNonce: Data
++        let sessionKey: SymmetricKey
++        var expiresAt: Date
++    }
++
++    private var session: SessionState?
++    private let stateLock = NSLock()
++
++    private struct PayloadBox: Codable {
++        let nonce: String
++        let ciphertext: String
++        let tag: String
++    }
++
++    private struct Envelope: Codable {
++        let v: Int
++        let alg: String
++        let keyId: String
++        let clientNonce: String
++        let timestamp: Int64
++        let requestId: String
++        let sessionId: String?
++        let serverNonce: String?
++        let payload: PayloadBox
++    }
++
+     init() {
+-        hasStoredKey = loadSavedKey()?.isEmpty == false
++        hasStoredKey = !(loadSavedKey()?.isEmpty ?? true)
+     }
+-    
++
+     func deviceID() -> String {
+-        if let stored = keychainRead(account: deviceAccount) {
++        if let stored = keychainRead(account: deviceAccount), !stored.isEmpty {
+             return stored
+         }
+         let identifier = UIDevice.current.identifierForVendor?.uuidString.lowercased() ?? UUID().uuidString.lowercased()
+         keychainSave(value: identifier, account: deviceAccount)
+         return identifier
+     }
+-    
+-    private func keychainSave(value: String, account: String) {
+-        guard let data = value.data(using: .utf8) else { return }
+-        let query: [String: Any] = [
+-            kSecClass as String: kSecClassGenericPassword,
+-            kSecAttrService as String: keychainService,
+-            kSecAttrAccount as String: account
+-        ]
+-        SecItemDelete(query as CFDictionary)
+-        
+-        let item: [String: Any] = [
+-            kSecClass as String: kSecClassGenericPassword,
+-            kSecAttrService as String: keychainService,
+-            kSecAttrAccount as String: account,
+-            kSecValueData as String: data,
+-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+-        ]
+-        SecItemAdd(item as CFDictionary, nil)
+-    }
+-    
+-    private func keychainRead(account: String) -> String? {
+-        let query: [String: Any] = [
+-            kSecClass as String: kSecClassGenericPassword,
+-            kSecAttrService as String: keychainService,
+-            kSecAttrAccount as String: account,
+-            kSecReturnData as String: true,
+-            kSecMatchLimit as String: kSecMatchLimitOne
+-        ]
+-        var result: CFTypeRef?
+-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+-        if status == errSecSuccess, let data = result as? Data {
+-            return String(data: data, encoding: .utf8)
+-        }
+-        return nil
+-    }
+-    
++
+     func loadSavedKey() -> String? {
+-        return keychainRead(account: keychainAccount)
++        keychainRead(account: keychainAccount)
+     }
+ 
+     func validateForActivation(completion: @escaping (Bool, String?) -> Void) {
+-        guard let savedKey = loadSavedKey(), !savedKey.isEmpty else {
++        DispatchQueue.main.async { self.isValidatingActivation = true }
++        authorizeOperation("patch") { success, message in
+             DispatchQueue.main.async {
+-                self.isAuthorized = false
+-                self.hasStoredKey = false
+-                completion(false, "Cadastre uma key ativa no Perfil para ativar funções.")
++                self.isValidatingActivation = false
++                completion(success, success ? nil : (message ?? "Sessão inválida ou expirada."))
+             }
++        }
++    }
++
++    func authorizeOperation(_ operation: String, completion: @escaping (Bool, String?) -> Void) {
++        guard !operation.isEmpty else {
++            completion(false, "Operação inválida.")
+             return
+         }
+-        isValidatingActivation = true
+-        validateKey(savedKey) { success, message in
+-            self.isValidatingActivation = false
+-            completion(success, success ? nil : (message ?? "Key inválida, expirada ou desativada."))
++        guard let active = currentSession(), active.expiresAt > Date() else {
++            guard let savedKey = loadSavedKey(), !savedKey.isEmpty else {
++                invalidateSession()
++                completion(false, "Cadastre uma key ativa antes de continuar.")
++                return
++            }
++            validateKey(savedKey) { success, message in
++                guard success else {
++                    completion(false, message ?? "Key inválida ou expirada.")
++                    return
++                }
++                self.checkSession(completion: completion)
++            }
++            return
+         }
++        checkSession(completion: completion)
+     }
+-    
+-    func validateKey(_ key: String, completion: @escaping (Bool, String?) -> Void) {
+-        guard !key.isEmpty else {
+-            completion(false, "Insira uma KEY válida.")
++
++    func validateKey(_ rawKey: String, completion: @escaping (Bool, String?) -> Void) {
++        let key = normalizedKey(rawKey)
++        guard !key.isEmpty, key.utf8.count <= 512 else {
++            complete(false, "Insira uma KEY válida.", completion)
+             return
+         }
+-        
+-        isLoading = true
+-        errorMessage = nil
+-        
+-        var request = URLRequest(url: apiURL)
+-        request.cachePolicy = .reloadIgnoringLocalCacheData
+-        request.httpMethod = "POST"
+-        request.timeoutInterval = 20.0
+-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+-        request.setValue("application/json", forHTTPHeaderField: "Accept")
+-        
+-        let body: [String: Any] = [
+-            "key": key,
+-            "deviceId": deviceID(),
+-            "product": product
+-        ]
+-        
++
++        DispatchQueue.main.async {
++            self.isLoading = true
++            self.errorMessage = nil
++        }
++
++        let clientNonce = randomData(count: 16)
++        let timestamp = Int64(Date().timeIntervalSince1970 * 1000.0)
++        let requestId = UUID().uuidString.lowercased()
++        let keyId = fingerprint(key)
++        let requestContext = Context(
++            version: 1,
++            keyId: keyId,
++            clientNonceB64: clientNonce.base64URL,
++            timestamp: timestamp,
++            requestId: requestId,
++            sessionId: ""
++        )
++
+         do {
+-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
++            let bootstrapKey = deriveKey(key: key, salt: clientNonce, info: "\(protocolName)/bootstrap")
++            let plaintext: [String: Any] = ["deviceId": deviceID(), "product": product]
++            let body = try makeEnvelope(
++                plaintext: plaintext,
++                key: bootstrapKey,
++                context: requestContext,
++                path: "/api/secure/validate-key"
++            )
++            post(body: body, url: apiURL) { data, response in
++                self.finishValidation(
++                    data: data,
++                    response: response,
++                    key: key,
++                    keyId: keyId,
++                    clientNonce: clientNonce,
++                    requestContext: requestContext,
++                    completion: completion
++                )
++            }
+         } catch {
+-            isLoading = false
+-            completion(false, "Erro ao processar dados.")
++            complete(false, "Não foi possível preparar a validação.", completion)
++        }
++    }
++
++    func clearSavedKey() {
++        let query: [String: Any] = [
++            kSecClass as String: kSecClassGenericPassword,
++            kSecAttrService as String: keychainService,
++            kSecAttrAccount as String: keychainAccount
++        ]
++        SecItemDelete(query as CFDictionary)
++        invalidateSession()
++        DispatchQueue.main.async {
++            self.isAuthorized = false
++            self.hasStoredKey = false
++            self.licenseInfo = nil
++            self.errorMessage = nil
++        }
++    }
++
++    private func checkSession(completion: @escaping (Bool, String?) -> Void) {
++        guard let active = currentSession(), active.expiresAt > Date(), let key = loadSavedKey(), !key.isEmpty else {
++            invalidateSession()
++            complete(false, "Sessão inválida ou expirada.", completion)
+             return
+         }
+-        
+-        URLSession.shared.dataTask(with: request) { data, response, error in
+-            DispatchQueue.main.async {
+-                self.isLoading = false
+-                
+-                if let error = error {
+-                    self.errorMessage = "Erro: \(error.localizedDescription)"
+-                    completion(false, self.errorMessage)
+-                    return
+-                }
+-                
+-                guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode), let data = data else {
+-                    self.errorMessage = "Servidor indisponível."
+-                    completion(false, self.errorMessage)
++
++        let timestamp = Int64(Date().timeIntervalSince1970 * 1000.0)
++        let requestId = UUID().uuidString.lowercased()
++        let context = Context(
++            version: 1,
++            keyId: active.keyId,
++            clientNonceB64: active.clientNonce.base64URL,
++            timestamp: timestamp,
++            requestId: requestId,
++            sessionId: active.sessionId
++        )
++        do {
++            let body = try makeEnvelope(
++                plaintext: ["action": "check"],
++                key: active.sessionKey,
++                context: context,
++                path: "/api/secure/session/check"
++            )
++            post(body: body, url: sessionURL) { data, response in
++                guard let data else {
++                    self.invalidateSession()
++                    self.complete(false, "Servidor indisponível.", completion)
+                     return
+                 }
+-                
+                 do {
+-                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+-                        let isValid = json["valid"] as? Bool ?? false
+-                        
+-                        if isValid {
+-                            let info = LicenseInfo(
+-                                status: json["status"] as? String ?? "VIP ATIVO",
+-                                productName: json["productName"] as? String ?? (json["product"] as? String ?? "ruanwq"),
+-                                expiresAt: json["expiresAt"] as? String ?? (json["expiry"] as? String ?? "Vitalício"),
+-                                message: json["message"] as? String ?? "Sucesso",
+-                                sessionToken: json["sessionToken"] as? String
+-                            )
+-                            self.licenseInfo = info
+-                            self.isAuthorized = true
+-                            self.hasStoredKey = true
+-                            self.keychainSave(value: key, account: self.keychainAccount)
+-                            completion(true, nil)
+-                        } else {
+-                            let msg = json["message"] as? String ?? (json["error"] as? String ?? "Key inválida ou expirada.")
+-                            self.isAuthorized = false
+-                            self.licenseInfo = nil
+-                            self.errorMessage = msg
+-                            completion(false, msg)
++                    let envelope = try JSONDecoder().decode(Envelope.self, from: data)
++                    guard envelope.keyId == context.keyId,
++                          envelope.clientNonce == context.clientNonceB64,
++                          envelope.requestId == context.requestId,
++                          envelope.sessionId == active.sessionId,
++                          let serverNonceB64 = envelope.serverNonce,
++                          let serverNonce = Data(base64URL: serverNonceB64) else {
++                        throw SecureError.invalidResponse
++                    }
++                    let responseData = try open(envelope.payload, key: active.sessionKey, context: Context(
++                        version: envelope.v,
++                        keyId: envelope.keyId,
++                        clientNonceB64: envelope.clientNonce,
++                        timestamp: envelope.timestamp,
++                        requestId: envelope.requestId,
++                        sessionId: envelope.sessionId ?? ""
++                    ), path: "/api/secure/session/check", direction: "response")
++                    guard (responseData["valid"] as? Bool) == true else {
++                        throw SecureError.sessionInvalid
++                    }
++                    let expiresAt = parseDate(responseData["expiresAt"] as? String) ?? active.expiresAt
++                    let sessionExpiresAt = parseDate(responseData["sessionExpiresAt"] as? String) ?? active.expiresAt
++                    self.stateLock.lock()
++                    self.session = SessionState(keyId: active.keyId, sessionId: active.sessionId, clientNonce: active.clientNonce, serverNonce: serverNonce, sessionKey: active.sessionKey, expiresAt: sessionExpiresAt)
++                    self.stateLock.unlock()
++                    DispatchQueue.main.async {
++                        self.isAuthorized = true
++                        if var info = self.licenseInfo {
++                            self.licenseInfo = LicenseInfo(status: info.status, productName: info.productName, expiresAt: ISO8601DateFormatter().string(from: expiresAt), message: info.message, sessionToken: info.sessionToken)
+                         }
+-                    } else {
+-                        self.isAuthorized = false
+-                        self.errorMessage = "Resposta inválida do servidor."
+-                        completion(false, self.errorMessage)
++                        completion(true, nil)
+                     }
+                 } catch {
+-                    self.errorMessage = "Resposta inválida do servidor."
+-                    completion(false, self.errorMessage)
++                    self.invalidateSession()
++                    self.complete(false, "Sessão inválida ou expirada.", completion)
+                 }
+             }
+-        }.resume()
++        } catch {
++            complete(false, "Não foi possível verificar a sessão.", completion)
++        }
+     }
+-    
+-    func clearSavedKey() {
+-        let query: [String: Any] = [
+-            kSecClass as String: kSecClassGenericPassword,
+-            kSecAttrService as String: keychainService,
+-            kSecAttrAccount as String: keychainAccount
++
++    private func finishValidation(
++        data: Data?,
++        response: URLResponse?,
++        key: String,
++        keyId: String,
++        clientNonce: Data,
++        requestContext: Context,
++        completion: @escaping (Bool, String?) -> Void
++    ) {
++        defer { DispatchQueue.main.async { self.isLoading = false } }
++        guard let data else {
++            invalidateSession()
++            complete(false, "Servidor indisponível.", completion)
++            return
++        }
++        do {
++            let envelope = try JSONDecoder().decode(Envelope.self, from: data)
++            guard envelope.v == 1,
++                  envelope.alg == algorithm,
++                  envelope.keyId == keyId,
++                  envelope.clientNonce == requestContext.clientNonceB64,
++                  envelope.requestId == requestContext.requestId else {
++                throw SecureError.invalidResponse
++            }
++            let serverNonce: Data?
++            let responseKey: SymmetricKey
++            if let nonceB64 = envelope.serverNonce, let nonce = Data(base64URL: nonceB64), let sessionId = envelope.sessionId, !sessionId.isEmpty {
++                serverNonce = nonce
++                responseKey = deriveKey(key: key, salt: clientNonce + nonce, info: "\(protocolName)/session")
++            } else {
++                serverNonce = nil
++                responseKey = deriveKey(key: key, salt: clientNonce, info: "\(protocolName)/bootstrap")
++            }
++            let responseContext = Context(version: envelope.v, keyId: envelope.keyId, clientNonceB64: envelope.clientNonce, timestamp: envelope.timestamp, requestId: envelope.requestId, sessionId: envelope.sessionId ?? "")
++            let result = try open(envelope.payload, key: responseKey, context: responseContext, path: "/api/secure/validate-key", direction: "response")
++            guard (result["valid"] as? Bool) == true, let serverNonce, let sessionId = envelope.sessionId, !sessionId.isEmpty else {
++                invalidateSession()
++                complete(false, "KEY inválida, expirada ou desativada.", completion)
++                return
++            }
++            let sessionExpiresAt = parseDate(result["sessionExpiresAt"] as? String) ?? Date().addingTimeInterval(15 * 60)
++            stateLock.lock()
++            session = SessionState(keyId: keyId, sessionId: sessionId, clientNonce: clientNonce, serverNonce: serverNonce, sessionKey: responseKey, expiresAt: sessionExpiresAt)
++            stateLock.unlock()
++            let expiresAt = result["expiresAt"] as? String ?? "Indisponível"
++            let info = LicenseInfo(status: result["status"] as? String ?? "VIP ATIVO", productName: result["productName"] as? String ?? (result["product"] as? String ?? product), expiresAt: expiresAt, message: result["message"] as? String ?? "Sucesso", sessionToken: nil)
++            keychainSave(value: key, account: keychainAccount)
++            DispatchQueue.main.async {
++                self.licenseInfo = info
++                self.isAuthorized = true
++                self.hasStoredKey = true
++                completion(true, nil)
++            }
++        } catch {
++            invalidateSession()
++            complete(false, "KEY inválida, expirada ou desativada.", completion)
++        }
++    }
++
++    private struct Context {
++        let version: Int
++        let keyId: String
++        let clientNonceB64: String
++        let timestamp: Int64
++        let requestId: String
++        let sessionId: String
++    }
++
++    private enum SecureError: Error { case invalidResponse, sessionInvalid }
++
++    private func makeEnvelope(plaintext: [String: Any], key: SymmetricKey, context: Context, path: String) throws -> Data {
++        let plaintextData = try JSONSerialization.data(withJSONObject: plaintext, options: [])
++        let sealed = try AES.GCM.seal(plaintextData, using: key, authenticating: aad(direction: "request", path: path, context: context))
++        let payload = PayloadBox(nonce: Data(sealed.nonce).base64URL, ciphertext: sealed.ciphertext.base64URL, tag: sealed.tag.base64URL)
++        let envelope: [String: Any] = [
++            "v": context.version,
++            "alg": algorithm,
++            "keyId": context.keyId,
++            "clientNonce": context.clientNonceB64,
++            "timestamp": context.timestamp,
++            "requestId": context.requestId,
++            "sessionId": context.sessionId,
++            "payload": ["nonce": payload.nonce, "ciphertext": payload.ciphertext, "tag": payload.tag]
+         ]
++        return try JSONSerialization.data(withJSONObject: envelope, options: [])
++    }
++
++    private func open(_ payload: PayloadBox, key: SymmetricKey, context: Context, path: String, direction: String) throws -> [String: Any] {
++        guard let nonce = Data(base64URL: payload.nonce), let ciphertext = Data(base64URL: payload.ciphertext), let tag = Data(base64URL: payload.tag), nonce.count == 12, tag.count == 16 else {
++            throw SecureError.invalidResponse
++        }
++        let box = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data: nonce), ciphertext: ciphertext, tag: tag)
++        let plaintext = try AES.GCM.open(box, using: key, authenticating: aad(direction: direction, path: path, context: context))
++        guard let object = try JSONSerialization.jsonObject(with: plaintext) as? [String: Any] else { throw SecureError.invalidResponse }
++        guard (object["requestId"] as? String) == context.requestId else { throw SecureError.invalidResponse }
++        return object
++    }
++
++    private func aad(direction: String, path: String, context: Context) -> Data {
++        Data([protocolName, direction, "POST", path, String(context.version), context.keyId, context.clientNonceB64, String(context.timestamp), context.requestId, context.sessionId].joined(separator: "|").utf8)
++    }
++
++    private func deriveKey(key: String, salt: Data, info: String) -> SymmetricKey {
++        let material = SymmetricKey(data: Data(normalizedKey(key).utf8))
++        return HKDF<SHA256>.deriveKey(inputKeyMaterial: material, salt: salt, info: Data(info.utf8), outputByteCount: 32)
++    }
++
++    private func fingerprint(_ key: String) -> String {
++        Data(SHA256.hash(data: Data(normalizedKey(key).utf8))).base64URL
++    }
++
++    private func normalizedKey(_ value: String) -> String {
++        value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
++    }
++
++    private func currentSession() -> SessionState? {
++        stateLock.lock(); defer { stateLock.unlock() }
++        return session
++    }
++
++    private func invalidateSession() {
++        stateLock.lock(); session = nil; stateLock.unlock()
++        DispatchQueue.main.async { self.isAuthorized = false }
++    }
++
++    private func post(body: Data, url: URL, completion: @escaping (Data?, URLResponse?) -> Void) {
++        var request = URLRequest(url: url)
++        request.httpMethod = "POST"
++        request.timeoutInterval = 20
++        request.cachePolicy = .reloadIgnoringLocalCacheData
++        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
++        request.setValue("application/json", forHTTPHeaderField: "Accept")
++        request.httpBody = body
++        URLSession.shared.dataTask(with: request) { data, response, _ in
++            completion(data, response)
++        }.resume()
++    }
++
++    private func complete(_ success: Bool, _ message: String?, _ completion: @escaping (Bool, String?) -> Void) {
++        DispatchQueue.main.async {
++            self.errorMessage = success ? nil : message
++            completion(success, message)
++        }
++    }
++
++    private func parseDate(_ value: String?) -> Date? {
++        guard let value else { return nil }
++        return ISO8601DateFormatter().date(from: value)
++    }
++
++    private func randomData(count: Int) -> Data {
++        var data = Data(count: count)
++        _ = data.withUnsafeMutableBytes { SecRandomCopyBytes(kSecRandomDefault, count, $0.baseAddress!) }
++        return data
++    }
++
++    private func keychainSave(value: String, account: String) {
++        guard let data = value.data(using: .utf8) else { return }
++        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keychainService, kSecAttrAccount as String: account]
+         SecItemDelete(query as CFDictionary)
+-        isAuthorized = false
+-        hasStoredKey = false
+-        licenseInfo = nil
+-        errorMessage = nil
++        var item = query
++        item[kSecValueData as String] = data
++        item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
++        SecItemAdd(item as CFDictionary, nil)
++    }
++
++    private func keychainRead(account: String) -> String? {
++        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keychainService, kSecAttrAccount as String: account, kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
++        var result: CFTypeRef?
++        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
++        return String(data: data, encoding: .utf8)
++    }
++}
++
++private extension Data {
++    var base64URL: String {
++        base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
++    }
++
++    init?(base64URL value: String) {
++        let normalized = value.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
++        let padded = normalized + String(repeating: "=", count: (4 - normalized.count % 4) % 4)
++        self.init(base64Encoded: padded)
+     }
+ }
+diff -ruN /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/Utils.swift /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/Utils.swift
+--- /home/ubuntu/MenagerFF_protected_work/original_source/ThreeOneOSFive/helpers/Utils.swift	2026-08-19 20:34:38.000000000 +0000
++++ /home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/Utils.swift	2026-08-21 18:48:40.683687171 +0000
+@@ -11,7 +11,24 @@
+         DispatchQueue.main.async { self.entries.append(msg) }
+     }
+ }
+-func log(_ msg: String) { AppLog.shared.append("[3105] \(msg)") }
++func log(_ msg: String) {
++    let redacted = redactSensitiveLogData(msg)
++    AppLog.shared.append("[3105] \(redacted)")
++}
++
++private func redactSensitiveLogData(_ message: String) -> String {
++    var output = message
++    let patterns: [(String, String)] = [
++        ("(?i)(key|token|authorization|deviceid|udid|sessionid)\\s*[:=]\\s*[^\\s,;]+", "$1=<redacted>"),
++        ("(?i)bearer\\s+[A-Za-z0-9._~+\\/-]+", "Bearer <redacted>")
++    ]
++    for (pattern, replacement) in patterns {
++        guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
++        let range = NSRange(output.startIndex..<output.endIndex, in: output)
++        output = regex.stringByReplacingMatches(in: output, options: [], range: range, withTemplate: replacement)
++    }
++    return output
++}
+ 
+ // Retain the pipe for the app's lifetime so stdout/stderr stay redirected.
+ private var logCapturePipe: Pipe?
+@@ -39,7 +56,7 @@
+             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+             if !trimmed.isEmpty {
+                 DispatchQueue.main.async {
+-                    AppLog.shared.append(trimmed)
++                    AppLog.shared.append(redactSensitiveLogData(trimmed))
+                 }
+             }
+         }

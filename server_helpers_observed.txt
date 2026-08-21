@@ -1,0 +1,75 @@
+import crypto from 'crypto';
+
+const PROTOCOL = 'ffh4x-secure-v1';
+const VERSION = 1;
+const ALGORITHM = 'A256GCM';
+const MAX_CLOCK_SKEW_MS = 2 * 60 * 1000;
+const REQUEST_CACHE_MS = 5 * 60 * 1000;
+const SESSION_TTL_MS = 15 * 60 * 1000;
+const sessions = new Map();
+const seenRequests = new Map();
+const rateBuckets = new Map();
+
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function toBase64Url(value) {
+  return Buffer.from(value).toString('base64url');
+}
+
+function fromBase64Url(value, name) {
+  if (typeof value !== 'string' || value.length === 0 || !/^[A-Za-z0-9_-]+$/.test(value)) {
+    throw protocolError(400, 'E_BAD_ENVELOPE', `Campo ${name} inválido.`);
+  }
+  try {
+    return Buffer.from(value, 'base64url');
+  } catch {
+    throw protocolError(400, 'E_BAD_ENVELOPE', `Campo ${name} inválido.`);
+  }
+}
+
+function normalizedKey(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function keyFingerprint(value) {
+  return crypto.createHash('sha256').update(normalizedKey(value), 'utf8').digest('base64url');
+}
+
+function deriveKeyFromLicenseKey(key, salt, info) {
+  return Buffer.from(crypto.hkdfSync(
+    'sha256',
+    Buffer.from(normalizedKey(key), 'utf8'),
+    salt,
+    Buffer.from(info, 'utf8'),
+    32
+  ));
+}
+
+function deriveBootstrapKey(key, clientNonce) {
+  return deriveKeyFromLicenseKey(key, clientNonce, `${PROTOCOL}/bootstrap`);
+}
+
+function deriveSessionKey(key, clientNonce, serverNonce) {
+  return deriveKeyFromLicenseKey(key, Buffer.concat([clientNonce, serverNonce]), `${PROTOCOL}/session`);
+}
+
+function validUuid(value) {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function validateTimestamp(value) {
+  const timestamp = Number(value);
+  if (!Number.isSafeInteger(timestamp) || Math.abs(Date.now() - timestamp) > MAX_CLOCK_SKEW_MS) {
+    throw protocolError(408, 'E_STALE_REQUEST', 'A requisição está fora da janela de tempo permitida.');
+  }
+  return timestamp;
+}
+
+function aad(direction, path, context) {
+  return Buffer.from([
+    PROTOCOL,
+    direction,
+    'POST',
+    path,

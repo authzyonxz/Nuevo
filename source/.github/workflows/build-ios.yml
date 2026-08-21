@@ -1,0 +1,92 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit-and-build:
+    name: Audit and build 3105
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          xcodebuild -showsdks
+
+      - name: Validate project metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ThreeOneOSFive.xcodeproj/project.pbxproj
+          test -f ThreeOneOSFive.xcodeproj/xcshareddata/xcschemes/3105.xcscheme
+          test -f ThreeOneOSFive/Info.plist
+          test -f ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h
+          plutil -lint ThreeOneOSFive/Info.plist
+          grep -q 'bad_query.c in Sources' ThreeOneOSFive.xcodeproj/project.pbxproj
+          grep -q 'mcm_bridge.m in Sources' ThreeOneOSFive.xcodeproj/project.pbxproj
+          grep -q 'kexploit_opa334.m in Sources' ThreeOneOSFive.xcodeproj/project.pbxproj
+          grep -q 'offsets.m in Sources' ThreeOneOSFive.xcodeproj/project.pbxproj
+          grep -q 'SWIFT_OBJC_BRIDGING_HEADER' ThreeOneOSFive.xcodeproj/project.pbxproj
+
+      - name: Inspect scheme and build settings
+        run: |
+          set -euo pipefail
+          xcodebuild -project ThreeOneOSFive.xcodeproj -scheme 3105 -showBuildSettings
+          xcodebuild -project ThreeOneOSFive.xcodeproj -scheme 3105 -list
+
+      - name: Build unsigned iOS app
+        run: |
+          set -euo pipefail
+          rm -rf build
+          xcodebuild \
+            -project ThreeOneOSFive.xcodeproj \
+            -scheme 3105 \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM= \
+            clean build | tee build/xcodebuild.log
+
+      - name: Package unsigned app
+        run: |
+          set -euo pipefail
+          APP_PATH="build/DerivedData/Build/Products/Release-iphoneos/3105.app"
+          test -d "$APP_PATH"
+          mkdir -p build/Payload
+          cp -R "$APP_PATH" build/Payload/3105.app
+          (cd build && zip -qry 3105-unsigned.zip Payload)
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 3105-ios-build-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            build/3105-unsigned.zip
+            build/DerivedData/Build/Products/Release-iphoneos/3105.app
+            build/xcodebuild.log

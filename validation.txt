@@ -1,0 +1,44 @@
+MenagerFF protected work validation
+Fri Aug 21 18:51:45 UTC 2026
+Original SHA256:
+9bcfc34abc6f8bab154844d1df23434207eafcb8e3cda8de29cb7ec470a874b4  /home/ubuntu/upload/MenagerFF_KeyOnly_iOS16Verified(2).zip
+9bcfc34abc6f8bab154844d1df23434207eafcb8e3cda8de29cb7ec470a874b4  /home/ubuntu/MenagerFF_protected_work/MenagerFF_original.zip
+Changed files:
+OK ThreeOneOSFive/App.swift
+OK ThreeOneOSFive/ContentView.swift
+OK ThreeOneOSFive/helpers/LicenseManager.swift
+OK ThreeOneOSFive/helpers/FreeFireModManager.swift
+OK ThreeOneOSFive/helpers/DevicePatchService.swift
+OK ThreeOneOSFive/helpers/ContainerStore.swift
+OK ThreeOneOSFive/helpers/KernelExploit.swift
+OK ThreeOneOSFive/helpers/Utils.swift
+Legacy endpoint references in app source:
+OK none
+Secure endpoint references:
+28:    private let apiURL = URL(string: "https://ffh4xcorporation.online/api/secure/validate-key")!
+29:    private let sessionURL = URL(string: "https://ffh4xcorporation.online/api/secure/session/check")!
+146:                path: "/api/secure/validate-key"
+202:                path: "/api/secure/session/check"
+227:                    ), path: "/api/secure/session/check", direction: "response")
+287:            let result = try open(envelope.payload, key: responseKey, context: responseContext, path: "/api/secure/validate-key", direction: "response")
+Operation gate references:
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/LicenseManager.swift:83:        authorizeOperation("patch") { success, message in
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/LicenseManager.swift:91:    func authorizeOperation(_ operation: String, completion: @escaping (Bool, String?) -> Void) {
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/FreeFireModManager.swift:68:        LicenseManager.shared.authorizeOperation("apply_\(mod.folderName)") { success, message in
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/FreeFireModManager.swift:186:                let receipt = try DevicePatchService.apply(project: project)
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/FreeFireModManager.swift:238:        LicenseManager.shared.authorizeOperation("restore") { success, message in
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/helpers/FreeFireModManager.swift:270:                    try DevicePatchService.restore(receipt: receipt)
+Launch exploit call sites:
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/App.swift:35:    func prepareForCurrentOS() {
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/App.swift:63:            let ok = KernelExploit.run()
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/ContentView.swift:35:                exploitState.prepareForCurrentOS()
+Root elevation call sites:
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/kexploit/sandbox_escape.m:249:int sandbox_elevate_to_root(uint64_t self_proc) {
+/home/ubuntu/MenagerFF_protected_work/source/ThreeOneOSFive/kexploit/sandbox_escape.h:8:int sandbox_elevate_to_root(uint64_t self_proc);
+Sensitive log call sites:
+15:    let redacted = redactSensitiveLogData(msg)
+16:    AppLog.shared.append("[3105] \(redacted)")
+19:private func redactSensitiveLogData(_ message: String) -> String {
+59:                    AppLog.shared.append(redactSensitiveLogData(trimmed))
+Project file count:
+118
