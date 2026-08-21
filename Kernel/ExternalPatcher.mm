@@ -15,3 +15,9 @@ __attribute__((constructor)) static void initialize_mod() {
         // Aqui você pode adicionar a lógica de menu flutuante ImGui
     });
 }
+
+int main(int argc, char * argv[]) {
+    @autoreleasepool {
+        return UIApplicationMain(argc, argv, nil, nil);
+    }
+}
