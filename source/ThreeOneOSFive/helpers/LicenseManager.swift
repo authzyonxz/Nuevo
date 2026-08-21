@@ -31,6 +31,7 @@ private struct SecureEnvelope: Codable {
 }
 
 private struct ValidationPayload: Codable {
+    let keyId: String
     let deviceId: String
     let product: String
 }
@@ -139,7 +140,7 @@ final class LicenseManager: ObservableObject {
             let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
             let keyId = base64URL(Data(SHA256.hash(data: Data(normalized.utf8))))
             let bootstrapKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: Data(normalized.utf8)), salt: clientNonce, info: Data("\(protocolName)/bootstrap".utf8), outputByteCount: 32)
-            let body = try encryptedEnvelope(payload: ValidationPayload(deviceId: deviceID(), product: product), key: bootstrapKey, keyId: keyId, clientNonce: clientNonce, timestamp: timestamp, requestId: requestId, sessionId: nil, serverNonce: nil, path: validateURL.path, direction: "request")
+            let body = try encryptedEnvelope(payload: ValidationPayload(keyId: keyId, deviceId: deviceID(), product: product), key: bootstrapKey, keyId: keyId, clientNonce: clientNonce, timestamp: timestamp, requestId: requestId, sessionId: nil, serverNonce: nil, path: validateURL.path, direction: "request")
             send(body, to: validateURL) { data, response, networkError in
                 do {
                     if let networkError { throw networkError }
