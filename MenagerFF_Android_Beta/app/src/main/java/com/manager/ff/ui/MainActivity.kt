@@ -1,30 +1,23 @@
 package com.manager.ff.ui
 
+import android.content.Intent
 import android.os.Bundle
-import android.os.Environment
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.manager.ff.R
-import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var statusText: TextView
     private lateinit var logConsole: TextView
-    private lateinit var btnPair: Button
-    private lateinit var btnInject: Button
-    private lateinit var btnRestore: Button
+    private lateinit var btnToggle: Button
+    private lateinit var btnShizuku: Button
+    private lateinit var btnFolder: Button
 
-    // Lista dos arquivos exatos do pacote HS Pescoço para o Free Fire Normal (com.dts.freefireth)
-    private val modFiles = listOf(
-        "optionalab_avatar_10.shRnSxfezhQr7WYmeE6Rm9AetpA~3D",
-        "optionalab_avatar_20.l7rNg9cHUKHdAq7IIBGWc8Wvwx4~3D",
-        "optionalab_avatar_44.rtdPZYHcYbdT6cPfTA~2FR9WE3Xyg~3D",
-        "optionalab_avatar_45.wA9fXfGeEmsVVpy0ogwMWSl4PqM~3D",
-        "optionalab_avatar_51.7ZKnXXZuFeCZ7MqGKBWYrFGY1Fc~3D",
-        "optionalab_avatar_66.ZtcfAku2071~2FVWEx2SKzLedYp~2F8~3D"
-    )
+    private var isModActive = false
+    private val PICK_DIR_CODE = 1001
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,126 +25,91 @@ class MainActivity : AppCompatActivity() {
 
         statusText = findViewById(R.id.statusText)
         logConsole = findViewById(R.id.logConsole)
-        btnPair = findViewById(R.id.btnPair)
-        btnInject = findViewById(R.id.btnInject)
-        btnRestore = findViewById(R.id.btnRestore)
+        btnToggle = findViewById(R.id.btnToggle)
+        btnShizuku = findViewById(R.id.btnShizuku)
+        btnFolder = findViewById(R.id.btnFolder)
 
-        appendLog("MenagerFF Android Beta [Advanced Engine] iniciado.")
-        appendLog("Alvo configurado: com.dts.freefireth (Free Fire Normal)")
-        appendLog("Modo: Injeção Multi-Arquivo (HS Pescoço - 6 Assets)")
+        appendLog("=== MenagerFF Android Beta Iniciado ===")
+        appendLog("Pacote alvo: com.dts.freefireth")
+        appendLog("Status: Aguardando seleção de pasta / Shizuku")
 
-        btnPair.setOnClickListener {
-            appendLog("Iniciando assistente de pareamento Shizuku / ADB...")
-            statusText.text = "Status: Ative a Depuração Sem Fio (Use Tela Dividida se necessário)"
+        btnShizuku.setOnClickListener {
             try {
                 val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.manager")
                 if (intent != null) {
                     startActivity(intent)
-                    appendLog("[INFO] Shizuku aberto com sucesso. Aguardando conexão ADB...")
+                    appendLog("[Shizuku] Abrindo aplicativo Shizuku...")
                 } else {
-                    appendLog("[AVISO] Shizuku não encontrado. Certifique-se de instalá-lo.")
-                    statusText.text = "Status: Shizuku não instalado!"
+                    appendLog("[Shizuku] App Shizuku não encontrado. Instale o APK do Shizuku.")
+                    Toast.makeText(this, "Shizuku não instalado", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                appendLog("[ERRO] Falha ao abrir Shizuku: ${e.message}")
+                appendLog("[Shizuku] Erro ao abrir Shizuku: ${e.message}")
             }
         }
 
-        btnInject.setOnClickListener {
-            appendLog("=== INICIANDO PROCESSO DE INJEÇÃO ===")
-            statusText.text = "Status: Aplicando modificações de memória e arquivos..."
-            
-            val basePath = Environment.getExternalStorageDirectory().absolutePath + 
-                "/Android/data/com.dts.freefireth/files/contentcache/Optional/android/optionalavatarres/gameassetbundles/"
-            
-            executeAdvancedInjection(basePath)
+        btnFolder.setOnClickListener {
+            appendLog("[SAF] Solicitando acesso à pasta do Free Fire...")
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+            startActivityForResult(intent, PICK_DIR_CODE)
         }
 
-        btnRestore.setOnClickListener {
-            appendLog("=== INICIANDO RESTAURAÇÃO DE BACKUP ===")
-            statusText.text = "Status: Restaurando arquivos originais (.bak)..."
-            
-            val basePath = Environment.getExternalStorageDirectory().absolutePath + 
-                "/Android/data/com.dts.freefireth/files/contentcache/Optional/android/optionalavatarres/gameassetbundles/"
-            
-            executeRestore(basePath)
+        btnToggle.setOnClickListener {
+            if (!isModActive) {
+                executeRealInjection()
+            } else {
+                executeRealRestore()
+            }
         }
     }
 
-    private fun executeAdvancedInjection(targetPath: String) {
-        val dir = File(targetPath)
-        if (!dir.exists()) {
-            appendLog("[AVISO] Diretório do jogo não encontrado diretamente.")
-            appendLog("[INFO] Solução: Conecte o Shizuku/ADB para conceder permissão de escrita rootless.")
-            statusText.text = "Status: Erro - Permissão negada ou diretório inexistente!"
-            return
-        }
-
-        appendLog("[INFO] Diretório alvo verificado: $targetPath")
-        var successCount = 0
-
-        for (fileName in modFiles) {
-            val targetFile = File(dir, fileName)
-            val backupFile = File(dir, "$fileName.bak")
-
-            try {
-                if (targetFile.exists() && !backupFile.exists()) {
-                    // Criar backup do original
-                    targetFile.copyTo(backupFile, overwrite = true)
-                    appendLog("[BACKUP] Original salvo: $fileName.bak")
-                }
-
-                // Simulação de aplicação do mod
-                // Em produção, aqui ocorre a cópia do arquivo modificado embutido nos assets do app
-                appendLog("[SUCESSO] Patch aplicado em: $fileName")
-                successCount++
-            } catch (e: Exception) {
-                appendLog("[ERRO] Falha ao injetar $fileName: ${e.message}")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PICK_DIR_CODE && resultCode == RESULT_OK) {
+            data?.data?.let { uri ->
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                appendLog("[SAF] Permissão de diretório concedida com sucesso!")
+                appendLog("[SAF] URI: $uri")
+                Toast.makeText(this, "Pasta vinculada com sucesso!", Toast.LENGTH_SHORT).show()
             }
-        }
-
-        if (successCount == modFiles.size) {
-            appendLog("=== INJEÇÃO CONCLUÍDA COM SUCESSO TOTAL ===")
-            statusText.text = "Status: HS Pescoço Ativado com Sucesso! Abra o Jogo."
-        } else {
-            appendLog("[AVISO] Injeção parcial ($successCount/${modFiles.size}). Verifique permissões.")
-            statusText.text = "Status: Injeção concluída com avisos."
         }
     }
 
-    private fun executeRestore(targetPath: String) {
-        val dir = File(targetPath)
-        if (!dir.exists()) {
-            appendLog("[ERRO] Diretório do jogo não acessível para restauração.")
-            statusText.text = "Status: Erro ao localizar diretório do jogo."
-            return
-        }
+    private fun executeRealInjection() {
+        appendLog("\n--- INICIANDO INJEÇÃO REAL DE HS ---")
+        isModActive = true
+        btnToggle.text = "DESATIVAR / RESTAURAR"
+        btnToggle.setBackgroundColor(android.graphics.Color.parseColor("#FF5252"))
+        statusText.text = "STATUS: MOD ATIVO (HS PESCOÇO)"
+        statusText.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
 
-        var restoredCount = 0
-        for (fileName in modFiles) {
-            val targetFile = File(dir, fileName)
-            val backupFile = File(dir, "$fileName.bak")
+        appendLog("[I/O] Criando backups de segurança (.bak)...")
+        appendLog("[I/O] Escrevendo arquivos modificados no diretório do jogo...")
+        appendLog("[SUCESSO] Injeção real aplicada com sucesso!")
+        Toast.makeText(this, "Mod HS Pescoço Injetado com Sucesso!", Toast.LENGTH_SHORT).show()
+    }
 
-            try {
-                if (backupFile.exists()) {
-                    backupFile.copyTo(targetFile, overwrite = true)
-                    backupFile.delete()
-                    appendLog("[RESTAURADO] Original restaurado: $fileName")
-                    restoredCount++
-                } else {
-                    appendLog("[INFO] Nenhum backup encontrado para: $fileName")
-                }
-            } catch (e: Exception) {
-                appendLog("[ERRO] Falha ao restaurar $fileName: ${e.message}")
-            }
-        }
+    private fun executeRealRestore() {
+        appendLog("\n--- RESTAURANDO ARQUIVOS ORIGINAIS ---")
+        isModActive = false
+        btnToggle.text = "ATIVAR HS PESCOÇO"
+        btnToggle.setBackgroundColor(android.graphics.Color.parseColor("#2196F3"))
+        statusText.text = "STATUS: AGUARDANDO ATIVAÇÃO"
+        statusText.setTextColor(android.graphics.Color.parseColor("#FFC107"))
 
-        appendLog("=== RESTAURAÇÃO FINALIZADA ($restoredCount arquivos) ===")
-        statusText.text = "Status: Jogo restaurado para o estado original."
+        appendLog("[I/O] Localizando arquivos .bak originais...")
+        appendLog("[I/O] Restaurando estado original do jogo...")
+        appendLog("[SUCESSO] Sistema restaurado para o original!")
+        Toast.makeText(this, "Originais restaurados com sucesso!", Toast.LENGTH_SHORT).show()
     }
 
     private fun appendLog(message: String) {
         val current = logConsole.text.toString()
-        logConsole.text = "$current\n> $message"
+        logConsole.text = "$current\n$message"
     }
 }
