@@ -46,8 +46,8 @@ class MainActivity : AppCompatActivity() {
         editCode = findViewById(R.id.editCode)
         logConsole = findViewById(R.id.logConsole)
 
-        appendLog("=== MenagerFF Android [Persistent I/O] ===")
-        appendLog("Alvo: com.dts.freefireth")
+        appendLog("=== MenagerFF Android [Real Assets I/O] ===")
+        appendLog("Alvo: com.dts.freefireth (Optional Assets)")
 
         tabInicio.setOnClickListener {
             tabInicioContent.visibility = View.VISIBLE
@@ -92,63 +92,72 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (!isModActive) {
-                executeRealInjectionAndLaunch()
+                executeRealAssetInjectionAndLaunch()
             } else {
                 executeRestore()
             }
         }
     }
 
-    private fun executeRealInjectionAndLaunch() {
+    private fun executeRealAssetInjectionAndLaunch() {
         isModActive = true
         btnToggleMod.text = "DESATIVAR MOD (RESTAURAR)"
         btnToggleMod.setBackgroundColor(android.graphics.Color.parseColor("#EF4444"))
         
-        appendLog("[MOD] Iniciando escrita real de assets...")
+        appendLog("[MOD] Iniciando cópia real dos arquivos do mod...")
         
-        val targetPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files/contentcache/compulsory/android/gameassetbundles/"
+        // Caminho correto no Android para Optional Avatar Res
+        val targetPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files/contentcache/Optional/android/optionalavatarres/gameassetbundles/"
         val targetDir = File(targetPath)
 
         try {
             if (!targetDir.exists()) {
                 targetDir.mkdirs()
-                appendLog("[I/O] Criando diretório de assets do jogo...")
+                appendLog("[I/O] Criando diretório Optional no Free Fire...")
             }
 
-            val avatarFiles = listOf(
-                "optionalab_avatar_10.shRnSxfezhQr7WYmeE6Rm9AetpA~3D",
-                "optionalab_avatar_20.l7rNg9cHUKHdAq7IIBGWc8Wvwx4~3D",
-                "optionalab_avatar_44.rtdPZYHcYbdT6cPfTA~2FR9WE3Xyg~3D",
-                "optionalab_avatar_45.wA9fXfGeEmsVVpy0ogwMWSl4PqM~3D",
-                "optionalab_avatar_51.7ZKnXXZuFeCZ7MqGKBWYrFGY1Fc~3D",
-                "optionalab_avatar_66.ZtcfAku2071~2FVWEx2SKzLedYp~2F8~3D"
-            )
+            // Ler assets copiados para o APK
+            val assetManager = assets
+            val modFiles = assetManager.list("mod_files")
 
-            for (fileName in avatarFiles) {
+            if (modFiles.isNullOrEmpty()) {
+                appendLog("[ERRO] Nenhum arquivo de mod encontrado nos assets do app!")
+                Toast.makeText(this, "Erro: Mod files ausentes no APK", Toast.LENGTH_LONG).show()
+                return
+            }
+
+            for (fileName in modFiles) {
                 val destFile = File(targetDir, fileName)
                 val backupFile = File(targetDir, "$fileName.bak")
+
+                // Fazer backup do original se existir e não houver backup anterior
                 if (destFile.exists() && !backupFile.exists()) {
                     destFile.copyTo(backupFile, overwrite = true)
-                    appendLog("[BACKUP] Backup criado para: $fileName")
+                    appendLog("[BACKUP] Backup criado: $fileName")
                 }
 
-                FileOutputStream(destFile).use { fos ->
-                    fos.write("MODDED_HS_PESCOCO_DATA_STREAM".toByteArray())
+                // Copiar do asset para o destino do jogo
+                assetManager.open("mod_files/$fileName").use { input ->
+                    FileOutputStream(destFile).use { output ->
+                        input.copyTo(output)
+                    }
                 }
-                appendLog("[INJETADO] $fileName")
+                appendLog("[INJETADO] $fileName (Real Bytes)")
             }
 
+            // Iniciar serviço persistente em segundo plano
             val serviceIntent = Intent(this, ModService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent)
             } else {
                 startService(serviceIntent)
             }
-            appendLog("[PERSISTÊNCIA] ModService iniciado em segundo plano.")
+            appendLog("[PERSISTÊNCIA] ModService ativo em segundo plano.")
 
             appendLog("[SUCESSO] Injeção real concluída com sucesso!")
             Toast.makeText(this, "HS Pescoço Injetado com Sucesso!", Toast.LENGTH_SHORT).show()
 
+            // Abrir Free Fire automaticamente
             appendLog("[LAUNCH] Abrindo Free Fire...")
             val intent = packageManager.getLaunchIntentForPackage("com.dts.freefireth")
             if (intent != null) {
@@ -159,8 +168,8 @@ class MainActivity : AppCompatActivity() {
             }
 
         } catch (e: Exception) {
-            appendLog("[ERRO] Falha na injeção: ${e.message}")
-            Toast.makeText(this, "Erro na injeção: ${e.message}", Toast.LENGTH_LONG).show()
+            appendLog("[ERRO] Falha na injeção real: ${e.message}")
+            Toast.makeText(this, "Erro: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -171,7 +180,7 @@ class MainActivity : AppCompatActivity() {
         appendLog("[MOD] Restaurando backups originais (.bak)...")
 
         try {
-            val targetPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files/contentcache/compulsory/android/gameassetbundles/"
+            val targetPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files/contentcache/Optional/android/optionalavatarres/gameassetbundles/"
             val targetDir = File(targetPath)
 
             if (targetDir.exists()) {
