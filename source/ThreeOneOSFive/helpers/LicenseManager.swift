@@ -137,8 +137,8 @@ final class LicenseManager: ObservableObject {
             let clientNonce = randomData(count: 16)
             let requestId = UUID().uuidString
             let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
-            let keyId = base64URL(SHA256.hash(data: Data(normalized.utf8)))
-            let bootstrapKey = SymmetricKey(data: Data(normalized.utf8)).hkdfDerivedKey(using: SHA256.self, salt: clientNonce, sharedInfo: Data("\(protocolName)/bootstrap".utf8), outputByteCount: 32)
+            let keyId = base64URL(Data(SHA256.hash(data: Data(normalized.utf8))))
+            let bootstrapKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: Data(normalized.utf8)), salt: clientNonce, info: Data("\(protocolName)/bootstrap".utf8), outputByteCount: 32)
             let body = try encryptedEnvelope(payload: ValidationPayload(deviceId: deviceID(), product: product), key: bootstrapKey, keyId: keyId, clientNonce: clientNonce, timestamp: timestamp, requestId: requestId, sessionId: nil, serverNonce: nil, path: validateURL.path, direction: "request")
             send(body, to: validateURL) { data, response, networkError in
                 do {
@@ -147,7 +147,7 @@ final class LicenseManager: ObservableObject {
                     let envelope = try self.decodeEnvelope(data)
                     guard self.isFresh(envelope.timestamp) else { throw SecureLicenseError.unauthorized }
                     guard envelope.v == 1, envelope.alg == self.algorithm, envelope.keyId == keyId, envelope.clientNonce == base64URL(clientNonce), envelope.requestId == requestId, let sid = envelope.sessionId, let serverNonceText = envelope.serverNonce, let serverNonce = self.decodeBase64URL(serverNonceText), serverNonce.count == 16 else { throw SecureLicenseError.invalidResponse }
-                    let sessionKey = SymmetricKey(data: Data(normalized.utf8)).hkdfDerivedKey(using: SHA256.self, salt: clientNonce + serverNonce, sharedInfo: Data("\(self.protocolName)/session".utf8), outputByteCount: 32)
+                    let sessionKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: Data(normalized.utf8)), salt: clientNonce + serverNonce, info: Data("\(self.protocolName)/session".utf8), outputByteCount: 32)
                     let decoded: ValidationResponse = try self.decryptPayload(envelope, key: sessionKey, path: self.validateURL.path, direction: "response", keyId: keyId, sessionId: sid)
                     guard decoded.valid, decoded.sessionId == sid else { throw SecureLicenseError.unauthorized }
                     self.stateLock.lock(); self.sessionKey = sessionKey; self.sessionId = sid; self.sessionExpiresAt = self.parseDate(decoded.sessionExpiresAt) ?? Date().addingTimeInterval(900); self.stateLock.unlock()
@@ -175,7 +175,7 @@ final class LicenseManager: ObservableObject {
 
     private func invalidateSession() { stateLock.lock(); sessionKey = nil; sessionId = nil; sessionExpiresAt = nil; stateLock.unlock(); DispatchQueue.main.async { self.isAuthorized = false; self.isValidatingActivation = false } }
     private func setLoading(_ value: Bool) { DispatchQueue.main.async { self.isLoading = value } }
-    private func currentKeyId() throws -> String { guard let key = loadSavedKey(), !key.isEmpty else { throw SecureLicenseError.unauthorized }; return base64URL(SHA256.hash(data: Data(key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().utf8))) }
+    private func currentKeyId() throws -> String { guard let key = loadSavedKey(), !key.isEmpty else { throw SecureLicenseError.unauthorized }; return base64URL(Data(SHA256.hash(data: Data(key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().utf8)))) }
 
     private func encryptedEnvelope<T: Encodable>(payload: T, key: SymmetricKey, keyId: String, clientNonce: Data, timestamp: Int64, requestId: String, sessionId: String?, serverNonce: String?, path: String, direction: String) throws -> Data { let plain = try JSONEncoder().encode(payload); let nonce = AES.GCM.Nonce(); let aad = Data("\(protocolName)|\(direction)|POST|\(path)|1|\(keyId)|\(base64URL(clientNonce))|\(timestamp)|\(requestId)|\(sessionId ?? "")".utf8); let sealed = try AES.GCM.seal(plain, using: key, nonce: nonce, authenticating: aad); let envelope = SecureEnvelope(v: 1, alg: algorithm, keyId: keyId, clientNonce: base64URL(clientNonce), timestamp: timestamp, requestId: requestId, sessionId: sessionId, serverNonce: serverNonce, payload: SecurePayload(nonce: base64URL(Data(sealed.nonce)), ciphertext: base64URL(sealed.ciphertext), tag: base64URL(sealed.tag))); return try JSONEncoder().encode(envelope) }
 
