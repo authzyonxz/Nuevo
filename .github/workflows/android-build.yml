@@ -1,0 +1,36 @@
+name: Build MenagerFF Android Beta
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x MenagerFF_Android_Beta/gradlew || true
+
+      - name: Build with Gradle
+        run: |
+          cd MenagerFF_Android_Beta
+          # Criar wrapper se não existir
+          gradle wrapper --gradle-version 8.1.2
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MenagerFF-Android-Beta-APK
+          path: MenagerFF_Android_Beta/app/build/outputs/apk/debug/app-debug.apk
