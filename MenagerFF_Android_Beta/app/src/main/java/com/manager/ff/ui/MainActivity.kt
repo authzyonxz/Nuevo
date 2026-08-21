@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun activateMod() {
-        appendLog("[MOD] Aplicando HS Pescoço via ADB Shell...")
+        appendLog("[MOD] Aplicando HS Pescoço via Shell Avançado...")
         tvStatus.text = "STATUS: INJETANDO..."
 
         Thread {
@@ -115,25 +115,27 @@ class MainActivity : AppCompatActivity() {
                         inputStream.copyTo(outputStream)
                         inputStream.close()
                         outputStream.close()
-                        appendLog("[ASSET] Extraído para cache: $fileName (${outFile.length()} bytes)")
+                        appendLog("[ASSET] Extraído: $fileName (${outFile.length()} bytes)")
                     } catch (e: Exception) {
-                        appendLog("[ERRO ASSET] Falha ao ler $fileName dos assets: ${e.message}")
+                        appendLog("[ERRO ASSET] Falha ao ler $fileName: ${e.message}")
                         continue
                     }
 
                     val destPath = "$targetDir/$fileName"
-                    // Fazer backup do original se existir e não houver backup
+                    
+                    // Fazer backup usando cat se o original existe e não tem .bak
                     executeAdbShell("if [ -f \"$destPath\" ] && [ ! -f \"$destPath.bak\" ]; then cp \"$destPath\" \"$destPath.bak\"; fi")
                     
-                    // Copiar do cache para o destino do jogo
-                    val cpResult = executeAdbShell("cp \"${outFile.absolutePath}\" \"$destPath\"")
+                    // Copiar usando cat ou dd para burlar restrições de storage do Android 11+
+                    executeAdbShell("cat \"${outFile.absolutePath}\" > \"$destPath\"")
                     executeAdbShell("chmod 644 \"$destPath\"")
 
-                    // Verificar se arquivo existe no destino
-                    val checkSize = executeAdbShell("stat -c%s \"$destPath\" 2>/dev/null || echo '0'")
-                    appendLog("[INJEÇÃO] $fileName -> Tamanho no jogo: ${checkSize.trim()} bytes")
+                    // Verificar tamanho gravado no destino
+                    val checkSize = executeAdbShell("stat -c%s \"$destPath\" 2>/dev/null || wc -c < \"$destPath\" 2>/dev/null || echo '0'")
+                    val fileSize = checkSize.trim().toLongOrNull() ?: 0
+                    appendLog("[INJEÇÃO] $fileName -> Gravados: $fileSize bytes")
 
-                    if (checkSize.trim().toLongOrNull() ?: 0 > 0) {
+                    if (fileSize > 0) {
                         successCount++
                     }
                 }
@@ -156,12 +158,12 @@ class MainActivity : AppCompatActivity() {
                         launchFreeFire()
                     } else {
                         tvStatus.text = "STATUS: ERRO NA INJEÇÃO"
-                        appendLog("[ERRO] Nenhum arquivo foi gravado no diretório do Free Fire.")
+                        appendLog("[ERRO] Falha ao gravar arquivos na pasta protegida do Free Fire.")
                     }
                 }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post {
-                    appendLog("[ERRO CRÍTICO] Falha na injeção: ${e.message}")
+                    appendLog("[ERRO CRÍTICO] ${e.message}")
                     tvStatus.text = "STATUS: ERRO NA INJEÇÃO"
                 }
             }
@@ -191,7 +193,7 @@ class MainActivity : AppCompatActivity() {
                     tvStatus.text = "STATUS: MOD DESATIVADO (ORIGINAL)"
                     btnToggleMod.text = "ATIVAR HS PESCOÇO"
                     btnToggleMod.setBackgroundColor(resources.getColor(android.R.color.holo_green_dark))
-                    appendLog("[SUCESSO] $restoredCount arquivos restaurados para o original!")
+                    appendLog("[SUCESSO] $restoredCount arquivos restaurados!")
                     Toast.makeText(this, "Original restaurado!", Toast.LENGTH_SHORT).show()
 
                     stopService(Intent(this, ModService::class.java))
@@ -218,7 +220,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchFreeFire() {
-        appendLog("[LAUNCH] Abrindo Free Fire automaticamente...")
+        appendLog("[LAUNCH] Abrindo Free Fire...")
         try {
             val intent = packageManager.getLaunchIntentForPackage(packageNameTarget)
             if (intent != null) {
