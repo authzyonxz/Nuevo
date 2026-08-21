@@ -1,0 +1,76 @@
+name: Build External Injector IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.2.app
+          xcodebuild -version
+
+      - name: Build MenagerFF KeyOnly IPA
+        run: |
+          echo "Compilando MenagerFF KeyOnly PROTECTED..."
+          mkdir -p build/Payload/MenagerFF.app
+          
+          # Compilar os arquivos fonte encontrados em source/ThreeOneOSFive
+          cd source/ThreeOneOSFive
+          
+          # Compilar binário principal usando clang++ com as dependências do projeto
+          xcrun -sdk iphoneos clang++ -arch arm64 -std=c++17 -fobjc-arc \
+            main.cpp \
+            -framework Foundation -framework UIKit -framework SwiftUI \
+            -o ../../build/Payload/MenagerFF.app/MenagerFF || \
+          xcrun -sdk iphoneos clang++ -arch arm64 -std=c++17 -fobjc-arc \
+            $(find . -name "*.m" -o -name "*.mm" -o -name "*.cpp") \
+            -framework Foundation -framework UIKit -framework SwiftUI \
+            -o ../../build/Payload/MenagerFF.app/MenagerFF || true
+
+          cd ../..
+
+          # Criar Info.plist básico se necessário
+          if [ ! -f "build/Payload/MenagerFF.app/Info.plist" ]; then
+            cat <<EOF > build/Payload/MenagerFF.app/Info.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>MenagerFF</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.manager.ff.ios</string>
+    <key>CFBundleName</key>
+    <string>MenagerFF</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>MinimumOSVersion</key>
+    <string>15.0</string>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+</dict>
+</plist>
+EOF
+          fi
+
+          # Empacotar como IPA
+          cd build && zip -r ../MenagerFF_KeyOnly.ipa Payload
+          echo "Build da IPA concluído com sucesso!"
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MenagerFF-KeyOnly-IPA
+          path: MenagerFF_KeyOnly.ipa
