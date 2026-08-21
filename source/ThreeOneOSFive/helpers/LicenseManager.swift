@@ -146,7 +146,7 @@ final class LicenseManager: ObservableObject {
                     guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode), let data else { throw SecureLicenseError.invalidResponse }
                     let envelope = try self.decodeEnvelope(data)
                     guard self.isFresh(envelope.timestamp) else { throw SecureLicenseError.unauthorized }
-                    guard envelope.v == 1, envelope.alg == self.algorithm, envelope.keyId == keyId, envelope.clientNonce == base64URL(clientNonce), envelope.requestId == requestId, let sid = envelope.sessionId, let serverNonceText = envelope.serverNonce, let serverNonce = self.decodeBase64URL(serverNonceText), serverNonce.count == 16 else { throw SecureLicenseError.invalidResponse }
+                    guard envelope.v == 1, envelope.alg == self.algorithm, envelope.keyId == keyId, envelope.clientNonce == self.base64URL(clientNonce), envelope.requestId == requestId, let sid = envelope.sessionId, let serverNonceText = envelope.serverNonce, let serverNonce = self.decodeBase64URL(serverNonceText), serverNonce.count == 16 else { throw SecureLicenseError.invalidResponse }
                     let sessionKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: Data(normalized.utf8)), salt: clientNonce + serverNonce, info: Data("\(self.protocolName)/session".utf8), outputByteCount: 32)
                     let decoded: ValidationResponse = try self.decryptPayload(envelope, key: sessionKey, path: self.validateURL.path, direction: "response", keyId: keyId, sessionId: sid)
                     guard decoded.valid, decoded.sessionId == sid else { throw SecureLicenseError.unauthorized }
