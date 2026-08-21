@@ -65,7 +65,7 @@ class FreeFireModManager: ObservableObject {
     }
 
     func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
-        LicenseManager.shared.authorizeOperation("apply_\(mod.folderName)") { success, message in
+        LicenseManager.shared.authorizeOperation("apply_\(mod.rawValue)") { success, message in
             guard success else {
                 self.complete(completion, success: false, message: message ?? "Sessão inválida ou expirada.")
                 return
@@ -75,6 +75,10 @@ class FreeFireModManager: ObservableObject {
     }
 
     private func applyModAfterAuthorization(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+        guard LicenseManager.shared.isAuthorized else {
+            complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
+            return
+        }
         guard beginOperation() else {
             complete(completion, success: false, message: "Outra operação já está em andamento.")
             return
@@ -201,10 +205,27 @@ class FreeFireModManager: ObservableObject {
     }
 
     private func prepareLegacyKernelAccessIfNeeded() {
-        // Security policy: never escalate the app identity to root. The native
-        // backend may establish only the minimum access path already required
-        // by the selected, validated container operation.
-        log("access: legacy root elevation disabled by security policy")
+        guard KernelExploit.currentAccessPath == .kernelOffsets else {
+            log("access: mod operation uses ContainerManager bad_query; kernel elevation skipped")
+            return
+        }
+        guard KernelExploit.kernelAccessActive else {
+            log("access: kernel elevation skipped because kernel access is not active")
+            return
+        }
+
+        let selfProc = proc_self()
+        guard selfProc != 0 else {
+            log("access: kernel elevation skipped because proc_self returned 0")
+            return
+        }
+
+        let result = sandbox_elevate_to_root(selfProc)
+        guard result == 0 else {
+            log("access: kernel elevation failed with result=\(result)")
+            return
+        }
+        log("access: legacy kernel elevation active")
     }
 
     private func findFilesWithSelectedAccess(named name: String, in directory: String) -> [String] {

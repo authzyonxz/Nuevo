@@ -3,40 +3,20 @@ import UIKit
 
 struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @EnvironmentObject var exploitState: KernelExploitState
     @State private var inputKey: String = ""
     @State private var selectedTab: Int = 0
     @State private var timeRemaining: Int = 10
     @State private var timer: Timer? = nil
 
     var body: some View {
-        Group {
-            if licenseManager.isAuthorized {
-                MainTabView(selectedTab: $selectedTab)
-            } else {
-                LoginView(
-                    inputKey: $inputKey,
-                    timeRemaining: timeRemaining,
-                    onLogin: {
-                        licenseManager.validateKey(inputKey) { _, _ in }
-                    }
-                )
+        MainTabView(selectedTab: $selectedTab)
+            .onAppear {
+                // A key não é exigida para abrir o painel. Cada ativação
+                // consulta novamente o servidor antes de iniciar o patch.
+                if licenseManager.loadSavedKey() != nil {
+                    licenseManager.validateKey(licenseManager.loadSavedKey() ?? "") { _, _ in }
+                }
             }
-        }
-        .onAppear {
-            guard let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty else {
-                startCountdown()
-                return
-            }
-            licenseManager.validateKey(savedKey) { _, _ in }
-        }
-        .onChange(of: licenseManager.isAuthorized) { authorized in
-            if authorized {
-                exploitState.prepareForCurrentOS()
-            } else {
-                KernelExploit.cleanup()
-            }
-        }
     }
 
     private func startCountdown() {
@@ -222,7 +202,7 @@ struct HomeView: View {
                     // Terminal Log Toggle Header
                     HStack {
                         Circle()
-                            .fill(!modManager.activeMods.isEmpty ? Color.green : Color.blue)
+                            .fill(modManager.activeMod != nil ? Color.green : Color.blue)
                             .frame(width: 8, height: 8)
                         Text(modManager.statusMessage)
                             .font(.system(size: 13, weight: .medium))
@@ -333,16 +313,9 @@ struct HomeView: View {
 
     private func handleToggle(mod: ModType, isOn: Bool) {
         guard isOn else {
-            licenseManager.authorizeOperation("restore") { success, message in
-                guard success else {
-                    alertMessage = message ?? "Sessão inválida ou expirada."
-                    showAlert = true
-                    return
-                }
-                modManager.restoreOriginal { _, msg in
-                    alertMessage = msg
-                    showAlert = true
-                }
+            modManager.restoreOriginal { _, msg in
+                alertMessage = msg
+                showAlert = true
             }
             return
         }
@@ -445,7 +418,7 @@ struct ProfileView: View {
                         InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
                         InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
                         InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
-                        InfoRow(title: "Sessão", value: licenseManager.isAuthorized ? "Autorizada pelo servidor" : "Não autorizada", color: licenseManager.isAuthorized ? .green : .orange)
+                        InfoRow(title: "Autorização", value: licenseManager.isAuthorized ? "Sessão autorizada pelo servidor" : "Não autorizada", color: licenseManager.isAuthorized ? .green : .orange)
                         InfoRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
                         InfoRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
                         InfoRow(title: "Build do sistema", value: AppInfo.osBuild, color: .blue)

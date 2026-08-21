@@ -68,10 +68,7 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
-        guard LicenseManager.shared.isAuthorized else {
-            log("patch: container resolution refused — no authorized session")
-            return nil
-        }
+        guard LicenseManager.shared.isAuthorized else { return nil }
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
         }

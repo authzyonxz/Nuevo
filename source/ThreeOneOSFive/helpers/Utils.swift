@@ -11,24 +11,27 @@ class AppLog: ObservableObject {
         DispatchQueue.main.async { self.entries.append(msg) }
     }
 }
-func log(_ msg: String) {
-    let redacted = redactSensitiveLogData(msg)
-    AppLog.shared.append("[3105] \(redacted)")
+func redactLog(_ raw: String) -> String {
+    var message = raw
+    message = message.replacingOccurrences(
+        of: #"(?i)(key|token|authorization|bearer|sessionId|deviceId|udid)\\s*[:=]\\s*[^\\s,;]+"#,
+        with: "$1=<redacted>",
+        options: .regularExpression
+    )
+    message = message.replacingOccurrences(
+        of: #"(?i)/var/mobile/Containers/(Data|Bundle)/Application/[^\\s]+"#,
+        with: "<container-redacted>",
+        options: .regularExpression
+    )
+    message = message.replacingOccurrences(
+        of: #"(?i)(nonce|ciphertext)\\s*[:=]\\s*[^\\s,;]+"#,
+        with: "$1=<redacted>",
+        options: .regularExpression
+    )
+    return message
 }
 
-private func redactSensitiveLogData(_ message: String) -> String {
-    var output = message
-    let patterns: [(String, String)] = [
-        ("(?i)(key|token|authorization|deviceid|udid|sessionid)\\s*[:=]\\s*[^\\s,;]+", "$1=<redacted>"),
-        ("(?i)bearer\\s+[A-Za-z0-9._~+\\/-]+", "Bearer <redacted>")
-    ]
-    for (pattern, replacement) in patterns {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
-        let range = NSRange(output.startIndex..<output.endIndex, in: output)
-        output = regex.stringByReplacingMatches(in: output, options: [], range: range, withTemplate: replacement)
-    }
-    return output
-}
+func log(_ msg: String) { AppLog.shared.append("[3105] \(redactLog(msg))") }
 
 // Retain the pipe for the app's lifetime so stdout/stderr stay redirected.
 private var logCapturePipe: Pipe?
@@ -53,10 +56,10 @@ func setupLogCapture() {
         let data = handle.availableData
         guard !data.isEmpty else { return }
         if let text = String(data: data, encoding: .utf8) {
-            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmed = redactLog(text.trimmingCharacters(in: .whitespacesAndNewlines))
             if !trimmed.isEmpty {
                 DispatchQueue.main.async {
-                    AppLog.shared.append(redactSensitiveLogData(trimmed))
+                    AppLog.shared.append(trimmed)
                 }
             }
         }

@@ -19,6 +19,19 @@ struct ThreeOneOSFiveApp: App {
                 .environmentObject(licenseManager)
                 .environmentObject(exploitState)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    if licenseManager.isAuthorized {
+                        exploitState.prepareForCurrentOS()
+                    }
+                }
+                .onChange(of: licenseManager.isAuthorized) { authorized in
+                    if authorized {
+                        exploitState.prepareForCurrentOS()
+                    } else {
+                        KernelExploit.cleanup()
+                        exploitState.exploitStatus = .notStarted
+                    }
+                }
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .background {
