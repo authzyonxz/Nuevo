@@ -51,10 +51,13 @@ jobs:
           #ifndef SYS_FILEPORT_H
           #define SYS_FILEPORT_H
           #include <sys/types.h>
+          #include <mach/mach.h>
+          typedef mach_port_t fileport_t;
           #ifdef __cplusplus
           extern "C" {
           #endif
           int fileport_makeport(int fd, mach_port_t *user_port);
+          int fileport_makefd(fileport_t port, int *fd);
           #ifdef __cplusplus
           }
           #endif
