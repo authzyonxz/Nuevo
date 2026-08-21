@@ -23,3 +23,10 @@ A proteção não torna o cliente inviolável. Em um dispositivo comprometido, o
 ## Verificação
 
 Não foi executado build porque o ambiente atual não possui Xcode/macOS. O projeto deve ser compilado em Release no Xcode, mantendo o dSYM fora do IPA. Depois do build, testar login válido, KEY inválida, sessão expirada, replay, ciphertext/AAD adulterados, troca de produto, troca de device ID, operação offline, restauração sem sessão e versões iOS não suportadas.
+
+## Correções de compilação posteriores
+
+8. `ContentView.swift`: substituída a referência inexistente `modManager.activeMod` por `!modManager.activeMods.isEmpty`.
+9. `LicenseManager.swift`: adicionados usos explícitos de `self.open(...)` e `self.parseDate(...)` dentro das closures assíncronas, conforme exigido pelo compilador Swift.
+
+A revisão estática confirmou que `activeMod` não aparece mais no código do app e que a rota legada não aparece no código-fonte do cliente.

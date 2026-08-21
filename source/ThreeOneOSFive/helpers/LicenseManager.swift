@@ -217,7 +217,7 @@ final class LicenseManager: ObservableObject {
                           let serverNonce = Data(base64URL: serverNonceB64) else {
                         throw SecureError.invalidResponse
                     }
-                    let responseData = try open(envelope.payload, key: active.sessionKey, context: Context(
+                    let responseData = try self.open(envelope.payload, key: active.sessionKey, context: Context(
                         version: envelope.v,
                         keyId: envelope.keyId,
                         clientNonceB64: envelope.clientNonce,
@@ -228,8 +228,8 @@ final class LicenseManager: ObservableObject {
                     guard (responseData["valid"] as? Bool) == true else {
                         throw SecureError.sessionInvalid
                     }
-                    let expiresAt = parseDate(responseData["expiresAt"] as? String) ?? active.expiresAt
-                    let sessionExpiresAt = parseDate(responseData["sessionExpiresAt"] as? String) ?? active.expiresAt
+                    let expiresAt = self.parseDate(responseData["expiresAt"] as? String) ?? active.expiresAt
+                    let sessionExpiresAt = self.parseDate(responseData["sessionExpiresAt"] as? String) ?? active.expiresAt
                     self.stateLock.lock()
                     self.session = SessionState(keyId: active.keyId, sessionId: active.sessionId, clientNonce: active.clientNonce, serverNonce: serverNonce, sessionKey: active.sessionKey, expiresAt: sessionExpiresAt)
                     self.stateLock.unlock()
@@ -284,13 +284,13 @@ final class LicenseManager: ObservableObject {
                 responseKey = deriveKey(key: key, salt: clientNonce, info: "\(protocolName)/bootstrap")
             }
             let responseContext = Context(version: envelope.v, keyId: envelope.keyId, clientNonceB64: envelope.clientNonce, timestamp: envelope.timestamp, requestId: envelope.requestId, sessionId: envelope.sessionId ?? "")
-            let result = try open(envelope.payload, key: responseKey, context: responseContext, path: "/api/secure/validate-key", direction: "response")
+            let result = try self.open(envelope.payload, key: responseKey, context: responseContext, path: "/api/secure/validate-key", direction: "response")
             guard (result["valid"] as? Bool) == true, let serverNonce, let sessionId = envelope.sessionId, !sessionId.isEmpty else {
                 invalidateSession()
                 complete(false, "KEY inválida, expirada ou desativada.", completion)
                 return
             }
-            let sessionExpiresAt = parseDate(result["sessionExpiresAt"] as? String) ?? Date().addingTimeInterval(15 * 60)
+            let sessionExpiresAt = self.parseDate(result["sessionExpiresAt"] as? String) ?? Date().addingTimeInterval(15 * 60)
             stateLock.lock()
             session = SessionState(keyId: keyId, sessionId: sessionId, clientNonce: clientNonce, serverNonce: serverNonce, sessionKey: responseKey, expiresAt: sessionExpiresAt)
             stateLock.unlock()
