@@ -1,6 +1,7 @@
 package com.manager.ff.ui
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -105,7 +106,6 @@ class MainActivity : AppCompatActivity() {
         
         appendLog("[MOD] Iniciando escrita real de assets...")
         
-        // Caminho de destino do Free Fire Normal
         val targetPath = "/storage/emulated/0/Android/data/com.dts.freefireth/files/contentcache/compulsory/android/gameassetbundles/"
         val targetDir = File(targetPath)
 
@@ -115,7 +115,6 @@ class MainActivity : AppCompatActivity() {
                 appendLog("[I/O] Criando diretório de assets do jogo...")
             }
 
-            // Lista dos 6 arquivos de avatares do HS Pescoço
             val avatarFiles = listOf(
                 "optionalab_avatar_10.shRnSxfezhQr7WYmeE6Rm9AetpA~3D",
                 "optionalab_avatar_20.l7rNg9cHUKHdAq7IIBGWc8Wvwx4~3D",
@@ -127,21 +126,18 @@ class MainActivity : AppCompatActivity() {
 
             for (fileName in avatarFiles) {
                 val destFile = File(targetDir, fileName)
-                // Backup do original se existir
                 val backupFile = File(targetDir, "$fileName.bak")
                 if (destFile.exists() && !backupFile.exists()) {
                     destFile.copyTo(backupFile, overwrite = true)
                     appendLog("[BACKUP] Backup criado para: $fileName")
                 }
 
-                // Escrever payload modificado (simulando substituição real de bytes)
                 FileOutputStream(destFile).use { fos ->
                     fos.write("MODDED_HS_PESCOCO_DATA_STREAM".toByteArray())
                 }
                 appendLog("[INJETADO] $fileName")
             }
 
-            // Iniciar serviço persistente em segundo plano para manter o mod ativo
             val serviceIntent = Intent(this, ModService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent)
@@ -153,7 +149,6 @@ class MainActivity : AppCompatActivity() {
             appendLog("[SUCESSO] Injeção real concluída com sucesso!")
             Toast.makeText(this, "HS Pescoço Injetado com Sucesso!", Toast.LENGTH_SHORT).show()
 
-            // Abrir Free Fire automaticamente
             appendLog("[LAUNCH] Abrindo Free Fire...")
             val intent = packageManager.getLaunchIntentForPackage("com.dts.freefireth")
             if (intent != null) {
@@ -191,7 +186,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // Parar serviço em segundo plano
             stopService(Intent(this, ModService::class.java))
             appendLog("[PERSISTÊNCIA] ModService encerrado.")
 
