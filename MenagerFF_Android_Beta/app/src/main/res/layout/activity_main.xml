@@ -2,134 +2,200 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F172A"
-    android:orientation="vertical"
-    android:padding="16jp"
-    android:padding="16dp">
+    android:background="#0B0F19"
+    android:orientation="vertical">
 
-    <!-- Título do Topo -->
+    <!-- Topo / Header -->
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="60dp"
+        android:background="#111827"
         android:gravity="center"
-        android:text="MenagerFF Android Beta"
+        android:text="MenagerFF Android"
         android:textColor="#38BDF8"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:paddingBottom="4dp" />
+        android:textSize="20sp"
+        android:textStyle="bold" />
 
-    <!-- Status Atual -->
-    <TextView
-        android:id="@+id/statusText"
+    <!-- Container dos Conteúdos (Abas) -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="STATUS: AGUARDANDO PAREAMENTO ADB"
-        android:textColor="#FBBF24"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:paddingBottom="10dp" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp">
 
-    <!-- Seção de Pareamento ADB Wireless (Sem Shizuku) -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#1E293B"
-        android:padding="10dp"
-        android:layout_marginBottom="10dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Pareamento ADB Wireless (Sem Shizuku)"
-            android:textColor="#38BDF8"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:paddingBottom="6dp" />
-
+        <!-- ABA INÍCIO (Mods & Injeção) -->
         <LinearLayout
+            android:id="@+id/tabInicioContent"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2"
-            android:paddingBottom="6dp">
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Escolha Seu Mod"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:paddingBottom="12dp" />
+
+            <!-- Card do Mod: HS Pescoço -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#1E293B"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="HS PESCOÇO"
+                    android:textColor="#38BDF8"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:paddingBottom="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Aplica patch automático nos assets de avatar do Free Fire."
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp"
+                    android:paddingBottom="12dp" />
+
+                <Button
+                    android:id="@+id/btnToggleMod"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:backgroundTint="#0284C7"
+                    android:text="ATIVAR MOD"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Console de Logs -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Logs do Sistema:"
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:paddingBottom="4dp" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#111827"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/logConsole"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="[Iniciado] MenagerFF pronto. Configure o ADB na aba ADB."
+                    android:textColor="#38BDF8"
+                    android:fontFamily="monospace"
+                    android:textSize="11sp" />
+            </ScrollView>
+        </LinearLayout>
+
+        <!-- ABA ADB (Conexão Wireless) -->
+        <LinearLayout
+            android:id="@+id/tabAdbContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Conexão ADB Wireless"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ative a 'Depuração Sem Fio' nas Opções de Desenvolvedor e insira os dados abaixo (funciona em tela dividida):"
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:paddingBottom="16dp" />
 
             <EditText
                 android:id="@+id/editPort"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginRight="4dp"
-                android:background="#0F172A"
-                android:hint="Porta (Ex: 37482)"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="12dp"
+                android:background="#1E293B"
+                android:hint="Porta ADB (Ex: 37482)"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#64748B"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:inputType="number"
-                android:padding="8dp" />
+                android:padding="12dp" />
 
             <EditText
                 android:id="@+id/editCode"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginLeft="4dp"
-                android:background="#0F172A"
-                android:hint="Código (6 Dígitos)"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="16dp"
+                android:background="#1E293B"
+                android:hint="Código de Pareamento (6 Dígitos)"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#64748B"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:inputType="number"
-                android:padding="8dp" />
+                android:padding="12dp" />
+
+            <Button
+                android:id="@+id/btnConnectAdb"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:backgroundTint="#059669"
+                android:text="PAREAR E CONECTAR ADB"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
+    </FrameLayout>
+
+    <!-- Barra de Navegação Inferior (Abas: Início | ADB) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:background="#111827"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
         <Button
-            android:id="@+id/btnConnectAdb"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:backgroundTint="#0284C7"
-            android:text="CONECTAR E PAREAR ADB"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:id="@+id/tabInicio"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:backgroundTint="#111827"
+            android:text="INÍCIO"
+            android:textColor="#38BDF8"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/tabAdb"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:backgroundTint="#111827"
+            android:text="ADB / PAREAMENTO"
+            android:textColor="#94A3B8"
+            android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
-
-    <!-- Botão Principal de Ativação / Injeção -->
-    <Button
-        android:id="@+id/btnToggle"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:backgroundTint="#059669"
-        android:text="ATIVAR HS PESCOÇO"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="10dp" />
-
-    <!-- Console de Logs Detalhado -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Console de Logs e Atividades:"
-        android:textColor="#94A3B8"
-        android:textSize="11sp"
-        android:paddingBottom="2dp" />
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#1E293B"
-        android:padding="8dp">
-
-        <TextView
-            android:id="@+id/logConsole"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="[Iniciado] MenagerFF pronto. Insira porta e código ADB para conectar..."
-            android:textColor="#38BDF8"
-            android:fontFamily="monospace"
-            android:textSize="11sp" />
-    </ScrollView>
 
 </LinearLayout>

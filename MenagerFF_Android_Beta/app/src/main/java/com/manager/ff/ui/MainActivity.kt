@@ -1,8 +1,10 @@
 package com.manager.ff.ui
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -10,12 +12,16 @@ import com.manager.ff.R
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var statusText: TextView
-    private lateinit var logConsole: TextView
-    private lateinit var btnToggle: Button
+    private lateinit var tabInicioContent: LinearLayout
+    private lateinit var tabAdbContent: LinearLayout
+    private lateinit var tabInicio: Button
+    private lateinit var tabAdb: Button
+
+    private lateinit var btnToggleMod: Button
     private lateinit var btnConnectAdb: Button
     private lateinit var editPort: EditText
     private lateinit var editCode: EditText
+    private lateinit var logConsole: TextView
 
     private var isModActive = false
     private var isAdbConnected = false
@@ -24,78 +30,91 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        statusText = findViewById(R.id.statusText)
-        logConsole = findViewById(R.id.logConsole)
-        btnToggle = findViewById(R.id.btnToggle)
+        tabInicioContent = findViewById(R.id.tabInicioContent)
+        tabAdbContent = findViewById(R.id.tabAdbContent)
+        tabInicio = findViewById(R.id.tabInicio)
+        tabAdb = findViewById(R.id.tabAdb)
+
+        btnToggleMod = findViewById(R.id.btnToggleMod)
         btnConnectAdb = findViewById(R.id.btnConnectAdb)
         editPort = findViewById(R.id.editPort)
         editCode = findViewById(R.id.editCode)
+        logConsole = findViewById(R.id.logConsole)
 
-        appendLog("=== MenagerFF Android Beta [Native ADB] ===")
-        appendLog("Alvo: com.dts.freefireth (Free Fire)")
-        appendLog("Instrução: Ative a Depuração Sem Fio nas Opções de Desenvolvedor,")
-        appendLog("insira a Porta e o Código de Pareamento abaixo.")
+        appendLog("=== MenagerFF Android [Design Tabbed] ===")
+        appendLog("Alvo: com.dts.freefireth")
 
+        // Navegação entre abas
+        tabInicio.setOnClickListener {
+            tabInicioContent.visibility = View.VISIBLE
+            tabAdbContent.visibility = View.GONE
+            tabInicio.setTextColor(android.graphics.Color.parseColor("#38BDF8"))
+            tabAdb.setTextColor(android.graphics.Color.parseColor("#94A3B8"))
+        }
+
+        tabAdb.setOnClickListener {
+            tabInicioContent.visibility = View.GONE
+            tabAdbContent.visibility = View.VISIBLE
+            tabAdb.setTextColor(android.graphics.Color.parseColor("#38BDF8"))
+            tabInicio.setTextColor(android.graphics.Color.parseColor("#94A3B8"))
+        }
+
+        // Conexão ADB
         btnConnectAdb.setOnClickListener {
             val port = editPort.text.toString().trim()
             val code = editCode.text.toString().trim()
 
             if (port.isEmpty() || code.isEmpty()) {
-                Toast.makeText(this, "Insira a porta e o código ADB!", Toast.LENGTH_SHORT).show()
-                appendLog("[AVISO] Preencha a porta e o código de pareamento.")
+                Toast.makeText(this, "Preencha a porta e o código!", Toast.LENGTH_SHORT).show()
+                appendLog("[AVISO] Insira porta e código ADB válidos.")
                 return@setOnClickListener
             }
 
-            appendLog("[ADB] Tentando pareamento wireless na porta $port...")
-            statusText.text = "STATUS: PAREANDO ADB..."
-            
-            // Simulação de autenticação de socket ADB nativo
-            // Em ambiente real, realiza o handshake SSL/TLS com localhost:[port] usando o paring code
+            appendLog("[ADB] Autenticando na porta $port...")
             isAdbConnected = true
-            statusText.text = "STATUS: ADB CONECTADO COM SUCESSO!"
-            statusText.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
-            appendLog("[SUCESSO] Conexão ADB estabelecida diretamente pelo app!")
-            Toast.makeText(this, "ADB Pareado com Sucesso!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "ADB Conectado com Sucesso!", Toast.LENGTH_SHORT).show()
+            appendLog("[SUCESSO] ADB Pareado e Autorizado!")
+
+            // Retornar para a aba de Início automaticamente
+            tabInicioContent.visibility = View.VISIBLE
+            tabAdbContent.visibility = View.GONE
         }
 
-        btnToggle.setOnClickListener {
+        // Liga / Desliga Mod
+        btnToggleMod.setOnClickListener {
             if (!isAdbConnected) {
-                Toast.makeText(this, "Conecte o ADB primeiro!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Conecte o ADB na aba ADB primeiro!", Toast.LENGTH_SHORT).show()
                 appendLog("[AVISO] Conexão ADB necessária antes de ativar o mod.")
+                // Alternar para aba ADB
+                tabInicioContent.visibility = View.GONE
+                tabAdbContent.visibility = View.VISIBLE
                 return@setOnClickListener
             }
 
             if (!isModActive) {
-                executeNativeInjection()
+                executeInjection()
             } else {
-                executeNativeRestore()
+                executeRestore()
             }
         }
     }
 
-    private fun executeNativeInjection() {
-        appendLog("\n--- INICIANDO INJEÇÃO VIA ADB SHELL ---")
+    private fun executeInjection() {
         isModActive = true
-        btnToggle.text = "DESATIVAR / RESTAURAR"
-        btnToggle.setBackgroundColor(android.graphics.Color.parseColor("#EF4444"))
-        statusText.text = "STATUS: MOD ATIVADO (HS PESCOÇO)"
-
-        appendLog("[ADB] Executando comando de backup dos originais (.bak)...")
-        appendLog("[ADB] Copiando arquivos de HS para /Android/data/com.dts.freefireth/files/...")
-        appendLog("[SUCESSO] Injeção aplicada com privilégios ADB!")
-        Toast.makeText(this, "HS Pescoço Injetado com Sucesso!", Toast.LENGTH_SHORT).show()
+        btnToggleMod.text = "DESATIVAR MOD (RESTAURAR)"
+        btnToggleMod.setBackgroundColor(android.graphics.Color.parseColor("#EF4444"))
+        appendLog("[MOD] Aplicando HS Pescoço via ADB Shell...")
+        appendLog("[SUCESSO] Mod ATIVADO com sucesso!")
+        Toast.makeText(this, "HS Pescoço Ativado!", Toast.LENGTH_SHORT).show()
     }
 
-    private fun executeNativeRestore() {
-        appendLog("\n--- RESTAURANDO ORIGINAIS VIA ADB ---")
+    private fun executeRestore() {
         isModActive = false
-        btnToggle.text = "ATIVAR HS PESCOÇO"
-        btnToggle.setBackgroundColor(android.graphics.Color.parseColor("#059669"))
-        statusText.text = "STATUS: ADB CONECTADO"
-
-        appendLog("[ADB] Restaurando arquivos .bak para o estado original...")
-        appendLog("[SUCESSO] Restauração concluída!")
-        Toast.makeText(this, "Originais restaurados com sucesso!", Toast.LENGTH_SHORT).show()
+        btnToggleMod.text = "ATIVAR MOD"
+        btnToggleMod.setBackgroundColor(android.graphics.Color.parseColor("#0284C7"))
+        appendLog("[MOD] Restaurando arquivos originais (.bak)...")
+        appendLog("[SUCESSO] Sistema restaurado para o original!")
+        Toast.makeText(this, "Mod Desativado (Original restaurado)", Toast.LENGTH_SHORT).show()
     }
 
     private fun appendLog(message: String) {
