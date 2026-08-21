@@ -20,24 +20,24 @@ jobs:
       - name: Build Unsigned App
         run: |
           echo "Compilando FreeFire External Injector..."
-          mkdir -p Payload/FreeFireInjector.app
+          mkdir -p build/Payload/FFInjector.app
           
-          # Compilar a Dylib como o binário principal do App para este exemplo de injeção externa
+          # Compilar o binário principal do App (ExternalPatcher agora atua como entry point)
           xcrun -sdk iphoneos clang++ -arch arm64 -std=c++17 -fobjc-arc \
             Kernel/ExternalPatcher.mm \
             -framework Foundation -framework UIKit \
-            -dynamiclib -o Payload/FreeFireInjector.app/FreeFireInjector
+            -o build/Payload/FFInjector.app/FFInjector
           
           # Criar Info.plist básico
-          cat <<EOF > Payload/FreeFireInjector.app/Info.plist
+          cat <<EOF > build/Payload/FFInjector.app/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
               <key>CFBundleExecutable</key>
-              <string>FreeFireInjector</string>
+              <string>FFInjector</string>
               <key>CFBundleIdentifier</key>
-              <string>com.auth.FreeFireInjector</string>
+              <string>com.auth.FFInjector</string>
               <key>CFBundleName</key>
               <string>FFInjector</string>
               <key>CFBundlePackageType</key>
@@ -48,12 +48,14 @@ jobs:
               <true/>
               <key>MinimumOSVersion</key>
               <string>15.0</string>
+              <key>UILaunchStoryboardName</key>
+              <string>LaunchScreen</string>
           </dict>
           </plist>
           EOF
 
           # Empacotar como IPA
-          zip -r FreeFireInjector.ipa Payload
+          cd build && zip -r ../FreeFireInjector.ipa Payload
           echo "Build da IPA concluído com sucesso!"
       
       - name: Upload Artifact
