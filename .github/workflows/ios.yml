@@ -17,6 +17,31 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_15.2.app
           xcodebuild -version
 
+      - name: Create XPC Stub for Compilation
+        run: |
+          cd source
+          mkdir -p xpc
+          cat <<EOF > xpc/xpc.h
+          #ifndef XPC_XPC_H
+          #define XPC_XPC_H
+          #include <stdint.h>
+          #include <stdbool.h>
+          #include <stddef.h>
+          typedef void* xpc_object_t;
+          typedef void* xpc_connection_t;
+          typedef void (^xpc_handler_t)(xpc_object_t object);
+          #ifdef __cplusplus
+          extern "C" {
+          #endif
+          xpc_object_t xpc_dictionary_create(const char *const *keys, xpc_object_t *values, size_t count);
+          void xpc_release(xpc_object_t object);
+          #ifdef __cplusplus
+          }
+          #endif
+          #endif
+          EOF
+          pwd
+
       - name: Build Xcode Project (Unsigned)
         run: |
           cd source
@@ -26,7 +51,6 @@ jobs:
           fi
           echo "Usando Scheme: $SCHEME_NAME"
           
-          # Obter SDK Path para adicionar paths privados se necessário
           SDK_PATH=$(xcrun -sdk iphoneos --show-sdk-path)
           
           xcodebuild -project ThreeOneOSFive.xcodeproj \
@@ -36,7 +60,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            OTHER_CFLAGS="-isysroot $SDK_PATH -I$SDK_PATH/usr/local/include" \
+            OTHER_CFLAGS="-isysroot $SDK_PATH -I$(pwd)" \
             build
 
       - name: Package IPA
