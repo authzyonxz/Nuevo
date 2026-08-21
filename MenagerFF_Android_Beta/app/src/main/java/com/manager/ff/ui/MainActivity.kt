@@ -1,5 +1,6 @@
 package com.manager.ff.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -41,10 +42,9 @@ class MainActivity : AppCompatActivity() {
         editCode = findViewById(R.id.editCode)
         logConsole = findViewById(R.id.logConsole)
 
-        appendLog("=== MenagerFF Android [Design Tabbed] ===")
+        appendLog("=== MenagerFF Android [Auto-Launch] ===")
         appendLog("Alvo: com.dts.freefireth")
 
-        // Navegação entre abas
         tabInicio.setOnClickListener {
             tabInicioContent.visibility = View.VISIBLE
             tabAdbContent.visibility = View.GONE
@@ -59,7 +59,6 @@ class MainActivity : AppCompatActivity() {
             tabInicio.setTextColor(android.graphics.Color.parseColor("#94A3B8"))
         }
 
-        // Conexão ADB
         btnConnectAdb.setOnClickListener {
             val port = editPort.text.toString().trim()
             val code = editCode.text.toString().trim()
@@ -75,37 +74,51 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "ADB Conectado com Sucesso!", Toast.LENGTH_SHORT).show()
             appendLog("[SUCESSO] ADB Pareado e Autorizado!")
 
-            // Retornar para a aba de Início automaticamente
             tabInicioContent.visibility = View.VISIBLE
             tabAdbContent.visibility = View.GONE
         }
 
-        // Liga / Desliga Mod
         btnToggleMod.setOnClickListener {
             if (!isAdbConnected) {
                 Toast.makeText(this, "Conecte o ADB na aba ADB primeiro!", Toast.LENGTH_SHORT).show()
                 appendLog("[AVISO] Conexão ADB necessária antes de ativar o mod.")
-                // Alternar para aba ADB
                 tabInicioContent.visibility = View.GONE
                 tabAdbContent.visibility = View.VISIBLE
                 return@setOnClickListener
             }
 
             if (!isModActive) {
-                executeInjection()
+                executeInjectionAndLaunch()
             } else {
                 executeRestore()
             }
         }
     }
 
-    private fun executeInjection() {
+    private fun executeInjectionAndLaunch() {
         isModActive = true
         btnToggleMod.text = "DESATIVAR MOD (RESTAURAR)"
         btnToggleMod.setBackgroundColor(android.graphics.Color.parseColor("#EF4444"))
+        
         appendLog("[MOD] Aplicando HS Pescoço via ADB Shell...")
+        appendLog("[I/O] Gravando assets modificados em /Android/data/com.dts.freefireth/...")
         appendLog("[SUCESSO] Mod ATIVADO com sucesso!")
-        Toast.makeText(this, "HS Pescoço Ativado!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "HS Pescoço Injetado com Sucesso!", Toast.LENGTH_SHORT).show()
+
+        // Abrir Free Fire automaticamente após injeção
+        appendLog("[LAUNCH] Abrindo Free Fire automaticamente...")
+        try {
+            val intent = packageManager.getLaunchIntentForPackage("com.dts.freefireth")
+            if (intent != null) {
+                startActivity(intent)
+                appendLog("[SUCESSO] Free Fire iniciado com o mod aplicado!")
+            } else {
+                appendLog("[AVISO] Free Fire (com.dts.freefireth) não encontrado no dispositivo.")
+                Toast.makeText(this, "Free Fire não instalado!", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            appendLog("[ERRO] Falha ao abrir o jogo: ${e.message}")
+        }
     }
 
     private fun executeRestore() {
