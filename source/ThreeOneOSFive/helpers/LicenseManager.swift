@@ -76,6 +76,7 @@ final class LicenseManager: ObservableObject {
     private let algorithm = "A256GCM"
     private var sessionKey: SymmetricKey?
     private var sessionId: String?
+    private var sessionClientNonce: Data?
     private var sessionExpiresAt: Date?
     private let stateLock = NSLock()
 
@@ -151,7 +152,7 @@ final class LicenseManager: ObservableObject {
                     let sessionKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: Data(normalized.utf8)), salt: clientNonce + serverNonce, info: Data("\(self.protocolName)/session".utf8), outputByteCount: 32)
                     let decoded: ValidationResponse = try self.decryptPayload(envelope, key: sessionKey, path: self.validateURL.path, direction: "response", keyId: keyId, sessionId: sid)
                     guard decoded.valid, decoded.sessionId == sid else { throw SecureLicenseError.unauthorized }
-                    self.stateLock.lock(); self.sessionKey = sessionKey; self.sessionId = sid; self.sessionExpiresAt = self.parseDate(decoded.sessionExpiresAt) ?? Date().addingTimeInterval(900); self.stateLock.unlock()
+                    self.stateLock.lock(); self.sessionKey = sessionKey; self.sessionId = sid; self.sessionClientNonce = clientNonce; self.sessionExpiresAt = self.parseDate(decoded.sessionExpiresAt) ?? Date().addingTimeInterval(900); self.stateLock.unlock()
                     let info = LicenseInfo(status: decoded.status ?? "VIP ATIVO", productName: decoded.productName ?? decoded.product ?? self.product, expiresAt: decoded.expiresAt ?? "Não informado", message: decoded.message ?? "Sucesso", sessionExpiresAt: decoded.sessionExpiresAt)
                     DispatchQueue.main.async { self.isAuthorized = true; self.hasStoredKey = true; self.licenseInfo = info; self.errorMessage = nil; self.setLoading(false); self.keychainSave(value: normalized, account: self.keychainAccount); completion(true, nil) }
                 } catch { self.failSecurely(completion, message: self.genericMessage(for: error)) }
@@ -160,9 +161,9 @@ final class LicenseManager: ObservableObject {
     }
 
     private func performSessionCheck(operation: String, completion: @escaping (Bool, String?) -> Void) {
-        stateLock.lock(); guard let key = sessionKey, let sid = sessionId, let expiry = sessionExpiresAt, expiry > Date() else { stateLock.unlock(); invalidateSession(); completion(false, "Sessão inválida ou expirada."); return }; stateLock.unlock()
+        stateLock.lock(); guard let key = sessionKey, let sid = sessionId, let clientNonce = sessionClientNonce, let expiry = sessionExpiresAt, expiry > Date() else { stateLock.unlock(); invalidateSession(); completion(false, "Sessão inválida ou expirada."); return }; stateLock.unlock()
         do {
-            let clientNonce = randomData(count: 16); let requestId = UUID().uuidString.lowercased(); let timestamp = Int64(Date().timeIntervalSince1970 * 1000); let keyId = try currentKeyId()
+            let requestId = UUID().uuidString.lowercased(); let timestamp = Int64(Date().timeIntervalSince1970 * 1000); let keyId = try currentKeyId()
             let body = try encryptedEnvelope(payload: OperationPayload(action: "check"), key: key, keyId: keyId, clientNonce: clientNonce, timestamp: timestamp, requestId: requestId, sessionId: sid, serverNonce: nil, path: sessionCheckURL.path, direction: "request")
             send(body, to: sessionCheckURL) { data, response, networkError in
                 do {
@@ -174,7 +175,7 @@ final class LicenseManager: ObservableObject {
 
     func clearSavedKey() { let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keychainService, kSecAttrAccount as String: keychainAccount]; SecItemDelete(query as CFDictionary); invalidateSession(); DispatchQueue.main.async { self.hasStoredKey = false; self.licenseInfo = nil; self.errorMessage = nil } }
 
-    private func invalidateSession() { stateLock.lock(); sessionKey = nil; sessionId = nil; sessionExpiresAt = nil; stateLock.unlock(); DispatchQueue.main.async { self.isAuthorized = false; self.isValidatingActivation = false } }
+    private func invalidateSession() { stateLock.lock(); sessionKey = nil; sessionId = nil; sessionClientNonce = nil; sessionExpiresAt = nil; stateLock.unlock(); DispatchQueue.main.async { self.isAuthorized = false; self.isValidatingActivation = false } }
     private func setLoading(_ value: Bool) { DispatchQueue.main.async { self.isLoading = value } }
     private func currentKeyId() throws -> String { guard let key = loadSavedKey(), !key.isEmpty else { throw SecureLicenseError.unauthorized }; return base64URL(Data(SHA256.hash(data: Data(key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().utf8)))) }
 
