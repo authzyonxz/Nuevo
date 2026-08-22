@@ -35,7 +35,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Login View (MenagerFF)
+// MARK: - Login View (GRANJEIRO FF)
 struct LoginView: View {
     @Binding var inputKey: String
     var timeRemaining: Int
@@ -62,7 +62,7 @@ struct LoginView: View {
                             .foregroundColor(.white)
                     }
 
-                    Text("MenagerFF")
+                    Text("GRANJEIRO FF")
                         .font(.system(size: 28, weight: .black))
                         .foregroundColor(.white)
                 }
@@ -415,7 +415,7 @@ struct ProfileView: View {
 
                     VStack(spacing: 16) {
                         InfoRow(title: "Status da Licença", value: licenseManager.licenseInfo?.status ?? "Sem key registrada", color: licenseManager.isAuthorized ? .green : .orange)
-                        InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
+                        InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "granjeiro", color: .blue)
                         InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
                         InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
                         InfoRow(title: "Autorização", value: licenseManager.isAuthorized ? "Sessão autorizada pelo servidor" : "Não autorizada", color: licenseManager.isAuthorized ? .green : .orange)

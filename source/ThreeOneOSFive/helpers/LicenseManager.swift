@@ -71,7 +71,7 @@ final class LicenseManager: ObservableObject {
     private let deviceAccount = "device-id"
     private let validateURL = URL(string: "https://ffh4xcorporation.online/api/secure/validate-key")!
     private let sessionCheckURL = URL(string: "https://ffh4xcorporation.online/api/secure/session/check")!
-    private let product = "ruanwq"
+    private let product = "granjeiro"
     private let protocolName = "ffh4x-secure-v1"
     private let algorithm = "A256GCM"
     private var sessionKey: SymmetricKey?
