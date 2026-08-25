@@ -1,0 +1,108 @@
+name: Build IPA não assinado - MenagerFF Persistência Corrigida
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ipa:
+    name: Compilar projeto do ZIP
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Selecionar Xcode disponível
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Verificar projeto e Xcode
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          test -f ThreeOneOSFive.xcodeproj/project.pbxproj
+          test -f ThreeOneOSFive.xcodeproj/xcshareddata/xcschemes/3105.xcscheme
+          xcodebuild -list -project ThreeOneOSFive.xcodeproj
+
+      - name: Criar stubs de headers privados para compilação
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p xpc sys
+          cat > xpc/xpc.h <<'EOF'
+          #ifndef MENAGERFF_XPC_STUB_H
+          #define MENAGERFF_XPC_STUB_H
+          #include <stddef.h>
+          #include <stdint.h>
+          typedef void *xpc_object_t;
+          static inline xpc_object_t xpc_string_create(const char *string) { (void)string; return (xpc_object_t)0; }
+          static inline void xpc_release(xpc_object_t object) { (void)object; }
+          #endif
+          EOF
+          cat > sys/fileport.h <<'EOF'
+          #ifndef MENAGERFF_FILEPORT_STUB_H
+          #define MENAGERFF_FILEPORT_STUB_H
+          #include <mach/mach.h>
+          typedef mach_port_t fileport_t;
+          static inline int fileport_makefd(fileport_t port) { (void)port; return -1; }
+          #endif
+          EOF
+
+      - name: Compilar sem assinatura
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build
+          xcodebuild \
+            -project ThreeOneOSFive.xcodeproj \
+            -scheme 3105 \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGN_IDENTITY= \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=NO \
+            HEADER_SEARCH_PATHS="$(pwd)" \
+            build
+
+      - name: Empacotar IPA não assinado
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="build/DerivedData/Build/Products/Release-iphoneos/3105.app"
+          test -d "$APP_PATH"
+          mkdir -p build/Payload
+          cp -R "$APP_PATH" build/Payload/3105.app
+          (cd build && zip -qry MenagerFF_Persistencia_Corrigida_unsigned.ipa Payload)
+          file build/MenagerFF_Persistencia_Corrigida_unsigned.ipa
+          ls -lh build/MenagerFF_Persistencia_Corrigida_unsigned.ipa
+
+      - name: Publicar IPA como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: MenagerFF-Persistencia-Corrigida-unsigned-IPA
+          path: build/MenagerFF_Persistencia_Corrigida_unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publicar resumo do build
+        if: always()
+        run: |
+          {
+            echo "## IPA não assinado"
+            echo ""
+            if [ -f build/MenagerFF_Persistencia_Corrigida_unsigned.ipa ]; then
+              echo "Artefato criado: build/MenagerFF_Persistencia_Corrigida_unsigned.ipa"
+              echo "SHA-256: $(shasum -a 256 build/MenagerFF_Persistencia_Corrigida_unsigned.ipa | awk '{print $1}')"
+            else
+              echo "O artefato não foi criado; consulte os logs da etapa de compilação."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

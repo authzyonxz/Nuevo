@@ -68,7 +68,6 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
-        guard LicenseManager.shared.isAuthorized else { return nil }
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
         }
@@ -505,7 +504,6 @@ enum ContainerStore {
     }
 
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
-        guard LicenseManager.shared.isAuthorized else { return -1 }
         guard shouldUseBadQuery else { return -1 }
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
         var pathC = clean.utf8CString.map { Int8($0) }
@@ -513,7 +511,6 @@ enum ContainerStore {
     }
 
     static func containersFromFilesystem() -> [InstalledApp] {
-        guard LicenseManager.shared.isAuthorized else { return [] }
         let grantedDirectories = enumerateDirectoriesWithTraversalGrant(path: appDataRoot)
         let dirs: [String]
         if grantedDirectories.isEmpty {

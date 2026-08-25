@@ -11,27 +11,7 @@ class AppLog: ObservableObject {
         DispatchQueue.main.async { self.entries.append(msg) }
     }
 }
-func redactLog(_ raw: String) -> String {
-    var message = raw
-    message = message.replacingOccurrences(
-        of: #"(?i)(key|token|authorization|bearer|sessionId|deviceId|udid)\\s*[:=]\\s*[^\\s,;]+"#,
-        with: "$1=<redacted>",
-        options: .regularExpression
-    )
-    message = message.replacingOccurrences(
-        of: #"(?i)/var/mobile/Containers/(Data|Bundle)/Application/[^\\s]+"#,
-        with: "<container-redacted>",
-        options: .regularExpression
-    )
-    message = message.replacingOccurrences(
-        of: #"(?i)(nonce|ciphertext)\\s*[:=]\\s*[^\\s,;]+"#,
-        with: "$1=<redacted>",
-        options: .regularExpression
-    )
-    return message
-}
-
-func log(_ msg: String) { AppLog.shared.append("[3105] \(redactLog(msg))") }
+func log(_ msg: String) { AppLog.shared.append("[3105] \(msg)") }
 
 // Retain the pipe for the app's lifetime so stdout/stderr stay redirected.
 private var logCapturePipe: Pipe?
@@ -56,7 +36,7 @@ func setupLogCapture() {
         let data = handle.availableData
         guard !data.isEmpty else { return }
         if let text = String(data: data, encoding: .utf8) {
-            let trimmed = redactLog(text.trimmingCharacters(in: .whitespacesAndNewlines))
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty {
                 DispatchQueue.main.async {
                     AppLog.shared.append(trimmed)

@@ -20,17 +20,10 @@ struct ThreeOneOSFiveApp: App {
                 .environmentObject(exploitState)
                 .preferredColorScheme(.dark)
                 .onAppear {
-                    if licenseManager.isAuthorized {
-                        exploitState.prepareForCurrentOS()
-                    }
-                }
-                .onChange(of: licenseManager.isAuthorized) { authorized in
-                    if authorized {
-                        exploitState.prepareForCurrentOS()
-                    } else {
-                        KernelExploit.cleanup()
-                        exploitState.exploitStatus = .notStarted
-                    }
+                    // Select the access path by OS family. iOS 17/18 use the
+                    // kernel/offset chain; iOS 26/27 use bad_query lazily.
+                    exploitState.prepareForCurrentOS()
+
                 }
         }
         .onChange(of: scenePhase) { newPhase in

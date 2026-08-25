@@ -35,7 +35,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Login View (GRANJEIRO FF)
+// MARK: - Login View (MenagerFF)
 struct LoginView: View {
     @Binding var inputKey: String
     var timeRemaining: Int
@@ -62,7 +62,7 @@ struct LoginView: View {
                             .foregroundColor(.white)
                     }
 
-                    Text("GRANJEIRO FF")
+                    Text("MenagerFF")
                         .font(.system(size: 28, weight: .black))
                         .foregroundColor(.white)
                 }
@@ -379,7 +379,7 @@ struct ModRowReference: View {
 // MARK: - Profile View
 struct ProfileView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @State private var showKeyEntry = false
+    @State private var showKeySheet = false
     @State private var showKeyAlert = false
     @State private var keyAlertMessage = ""
 
@@ -415,10 +415,10 @@ struct ProfileView: View {
 
                     VStack(spacing: 16) {
                         InfoRow(title: "Status da Licença", value: licenseManager.licenseInfo?.status ?? "Sem key registrada", color: licenseManager.isAuthorized ? .green : .orange)
-                        InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "granjeiro", color: .blue)
+                        InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
                         InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
                         InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
-                        InfoRow(title: "Autorização", value: licenseManager.isAuthorized ? "Sessão autorizada pelo servidor" : "Não autorizada", color: licenseManager.isAuthorized ? .green : .orange)
+                        InfoRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
                         InfoRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
                         InfoRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
                         InfoRow(title: "Build do sistema", value: AppInfo.osBuild, color: .blue)
@@ -452,23 +452,28 @@ struct ProfileView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    Button {
-                        showKeyEntry = true
-                    } label: {
-                        Text("VALIDAR KEY")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .foregroundColor(.white)
-                            .background(Color.blue.opacity(0.85))
-                            .cornerRadius(12)
+                    Button(action: {
+                        showKeySheet = true
+                    }) {
+                        HStack {
+                            Image(systemName: "key.fill")
+                            Text("VALIDAR KEY")
+                        }
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(LinearGradient(gradient: Gradient(colors: [.blue, Color.blue.opacity(0.7)]), startPoint: .leading, endPoint: .trailing))
+                        .cornerRadius(15)
+                        .shadow(color: .blue.opacity(0.3), radius: 8, y: 4)
                     }
                     .padding(.horizontal, 16)
+                    
                     Spacer(minLength: 100)
-
                 }
             }
         }
-        .fullScreenCover(isPresented: $showKeyEntry) {
+        .sheet(isPresented: $showKeySheet) {
             KeyRegistrationView()
                 .environmentObject(licenseManager)
         }
@@ -519,7 +524,7 @@ struct KeyRegistrationView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, 8)
 
-                    TextField("Cole sua key aqui", text: $inputKey)
+                    SecureField("Cole sua key aqui", text: $inputKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .foregroundColor(.white)

@@ -9,6 +9,17 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
+    /// ID estável usado para reencontrar o backup/journal desta função depois
+    /// que o processo do app é encerrado e iniciado novamente.
+    var persistentProjectID: UUID {
+        switch self {
+        case .hsAlto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A01")!
+        case .hsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A02")!
+        case .hsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A03")!
+        case .hologramaArmas: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A04")!
+        }
+    }
+
     var folderName: String {
         switch self {
         case .hsAlto: return "HS_ALTO"
@@ -54,6 +65,32 @@ class FreeFireModManager: ObservableObject {
     
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
 
+    init() {
+        restorePersistedState()
+    }
+
+    /// Os arquivos/journals do patch ficam no Application Support e sobrevivem
+    /// ao encerramento do processo. Ao criar o manager novamente, reconstruímos
+    /// apenas o estado das transações ainda marcadas como aplicadas/preparadas.
+    private func restorePersistedState() {
+        var restored: [ModType: PatchTransactionReceipt] = [:]
+        for mod in ModType.allCases {
+            if let receipt = DevicePatchService.latestReceipt(projectID: mod.persistentProjectID) {
+                restored[mod] = receipt
+            }
+        }
+
+        activeReceipts = restored
+        activeMods = Set(restored.keys)
+        statusMessage = activeMods.isEmpty
+            ? "Pronto para injetar"
+            : activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
+
+        if !activeMods.isEmpty {
+            addLog("Estado restaurado: \(activeMods.map(\.rawValue).sorted().joined(separator: ", "))")
+        }
+    }
+
     func addLog(_ msg: String) {
         DispatchQueue.main.async {
             let formatter = DateFormatter()
@@ -65,16 +102,6 @@ class FreeFireModManager: ObservableObject {
     }
 
     func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
-        LicenseManager.shared.authorizeOperation("apply_\(mod.rawValue)") { success, message in
-            guard success else {
-                self.complete(completion, success: false, message: message ?? "Sessão inválida ou expirada.")
-                return
-            }
-            self.applyModAfterAuthorization(mod, completion: completion)
-        }
-    }
-
-    private func applyModAfterAuthorization(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
         guard LicenseManager.shared.isAuthorized else {
             complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
             return
@@ -123,37 +150,15 @@ class FreeFireModManager: ObservableObject {
             }
         }
         
-        if isHolo {
-            // Não reutilizar um resultado global para o holograma: o alvo oficial
-            // fica exclusivamente em Documents/contentcache/optional/ios/gameassetbundles.
-            targetPaths.removeAll()
-            for bid in bundleIds {
-                if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid) {
-                    let exactHologramPath = (rootPath as NSString).appendingPathComponent(
-                        "Documents/contentcache/optional/ios/gameassetbundles/\(currentTarget)"
-                    )
-                    targetPaths.append(exactHologramPath)
-                    addLog("Alvo holograma: \(exactHologramPath)")
-                }
-            }
-        }
-
         if targetPaths.isEmpty {
             addLog("AVISO: Busca global vazia, usando caminhos padrão")
             for bid in bundleIds {
                 if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid) {
-                    let standardPaths: [String]
-                    if isHolo {
-                        // O holograma usa um diretório diferente dos arquivos HS.
-                        standardPaths = [
-                            "Documents/contentcache/optional/ios/gameassetbundles/\(currentTarget)"
-                        ]
-                    } else {
-                        standardPaths = [
-                            "Documents/contentcache/compulsory/ios/gameassetbundles/\(currentTarget)",
-                            "Documents/ContentCache/Compulsory/ios/gameassetbundles/\(currentTarget)"
-                        ]
-                    }
+                    let subPath = isHolo ? "optional" : "compulsory"
+                    let standardPaths = [
+                        "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
+                        "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
+                    ]
                     for sp in standardPaths {
                         targetPaths.append((rootPath as NSString).appendingPathComponent(sp))
                     }
@@ -183,7 +188,11 @@ class FreeFireModManager: ObservableObject {
             return
         }
 
-        let project = PatchProject(name: "MenagerFF_V21_\(mod.folderName)", rules: rules)
+        let project = PatchProject(
+            id: mod.persistentProjectID,
+            name: "MenagerFF_V21_\(mod.folderName)",
+            rules: rules
+        )
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
@@ -256,16 +265,6 @@ class FreeFireModManager: ObservableObject {
     }
 
     func restoreOriginal(completion: @escaping (Bool, String) -> Void) {
-        LicenseManager.shared.authorizeOperation("restore") { success, message in
-            guard success else {
-                self.complete(completion, success: false, message: message ?? "Sessão inválida ou expirada.")
-                return
-            }
-            self.restoreOriginalAfterAuthorization(completion: completion)
-        }
-    }
-
-    private func restoreOriginalAfterAuthorization(completion: @escaping (Bool, String) -> Void) {
         guard beginOperation() else {
             complete(completion, success: false, message: "Outra operação já está em andamento.")
             return

@@ -2,7 +2,6 @@ import Foundation
 
 enum DevicePatchService {
     static func apply(project: PatchProject) throws -> PatchTransactionReceipt {
-        guard LicenseManager.shared.isAuthorized else { throw PatchPackageError.authorizationRequired }
         let bundleIDs = orderedBundleIdentifiers(in: project)
         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
             try PatchTransaction.apply(
@@ -19,7 +18,6 @@ enum DevicePatchService {
     }
 
     static func restore(receipt: PatchTransactionReceipt) throws {
-        guard LicenseManager.shared.isAuthorized else { throw PatchPackageError.authorizationRequired }
         let bundleIDs = try PatchTransaction.requiredBundleIdentifiers(for: receipt)
         try withResolvedContainers(bundleIDs: bundleIDs) { roots in
             try PatchTransaction.restore(
