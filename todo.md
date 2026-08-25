@@ -13,4 +13,4 @@
 O build de IPA exige runner macOS/Xcode. O ambiente local Linux não consegue executar `xcodebuild`; a compilação será realizada pelo GitHub Actions.
 
 - [x] Corrigir o erro "Two rules point to the same app file" ao ativar uma função
-- [ ] Gerar e verificar nova build após a correção
+- [x] Gerar e verificar nova build após a correção
