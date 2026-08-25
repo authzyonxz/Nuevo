@@ -1,16 +1,13 @@
 # Build iOS - TODO
 
-- [x] Substituir a árvore `source` pelo projeto enviado no ZIP
-- [x] Preservar os arquivos de documentação e histórico do repositório
-- [x] Configurar workflow macOS para compilar IPA não assinado
-- [x] Enviar o projeto atualizado ao GitHub
-- [x] Executar o workflow de GitHub Actions
-- [x] Verificar o status do workflow e o artefato final
-- [x] Documentar o procedimento de execução e download
+- [x] Substituir todo o conteúdo do repositório pelo projeto `MenagerFF_Updated_Source(3).zip`
+- [x] Preservar o histórico Git do repositório
+- [x] Persistir funções ativas após fechar e reabrir o IPA
+- [x] Manter a restauração exclusivamente na ação manual do usuário
+- [x] Evitar alterações no fluxo de ativação existente
+- [ ] Enviar a nova versão ao GitHub
+- [ ] Executar o workflow e verificar o IPA
 
-## Observações
+## Escopo da alteração
 
-O build de IPA exige runner macOS/Xcode. O ambiente local Linux não consegue executar `xcodebuild`; a compilação será realizada pelo GitHub Actions.
-
-- [x] Corrigir o erro "Two rules point to the same app file" ao ativar uma função
-- [x] Gerar e verificar nova build após a correção
+Esta versão deve alterar somente o ciclo de vida do estado local e dos receipts. A aplicação, a descoberta dos destinos e a lógica de patch do ZIP devem permanecer inalteradas.

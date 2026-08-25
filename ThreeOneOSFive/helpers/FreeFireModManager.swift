@@ -9,8 +9,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
-    /// ID estável usado para reencontrar o backup/journal desta função depois
-    /// que o processo do app é encerrado e iniciado novamente.
+    /// ID estável usado para localizar o journal da função depois que o IPA
+    /// é encerrado e aberto novamente.
     var persistentProjectID: UUID {
         switch self {
         case .hsAlto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A01")!
@@ -69,9 +69,9 @@ class FreeFireModManager: ObservableObject {
         restorePersistedState()
     }
 
-    /// Os arquivos/journals do patch ficam no Application Support e sobrevivem
-    /// ao encerramento do processo. Ao criar o manager novamente, reconstruímos
-    /// apenas o estado das transações ainda marcadas como aplicadas/preparadas.
+    /// Reconstitui somente o estado das transações ainda aplicadas/preparadas.
+    /// O patch permanece no arquivo do app alvo; fechar o IPA não deve restaurar
+    /// nada automaticamente. A restauração continua exclusiva de restoreOriginal.
     private func restorePersistedState() {
         var restored: [ModType: PatchTransactionReceipt] = [:]
         for mod in ModType.allCases {
@@ -167,46 +167,17 @@ class FreeFireModManager: ObservableObject {
         }
 
         var rules: [PatchRule] = []
-        var seenTargetPaths = Set<String>()
-        var resolvedRoots: [String: String] = [:]
-        for bid in bundleIds {
-            if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), !root.isEmpty {
-                resolvedRoots[bid] = URL(fileURLWithPath: root).standardizedFileURL.path
-            }
-        }
-
         for fullPath in targetPaths {
-            let standardizedFullPath = URL(fileURLWithPath: fullPath).standardizedFileURL.path
             for bid in bundleIds {
-                guard let rootPath = resolvedRoots[bid] else { continue }
-                let rootPrefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
-                guard standardizedFullPath.hasPrefix(rootPrefix) else { continue }
-
-                let relative = String(standardizedFullPath.dropFirst(rootPrefix.count))
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                guard !relative.isEmpty else { continue }
-
-                // iOS app-container paths are case-insensitive in practice. The
-                // fallback search can therefore return the same file twice (for
-                // example, ContentCache vs. contentcache). Normalize the full
-                // destination before creating a rule so PatchTransaction never
-                // receives two rules for one physical app file.
-                let targetKey = URL(fileURLWithPath: rootPrefix)
-                    .appendingPathComponent(relative)
-                    .standardizedFileURL
-                    .path
-                    .lowercased()
-                guard seenTargetPaths.insert(targetKey).inserted else {
-                    addLog("Destino duplicado ignorado: ...\(relative.suffix(40))")
-                    continue
+                if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), fullPath.hasPrefix(root) {
+                    let relative = String(fullPath.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                    rules.append(PatchRule(
+                        bundleID: bid,
+                        relativePath: relative,
+                        replacementFilename: currentTarget,
+                        replacementData: modData
+                    ))
                 }
-
-                rules.append(PatchRule(
-                    bundleID: bid,
-                    relativePath: relative,
-                    replacementFilename: currentTarget,
-                    replacementData: modData
-                ))
             }
         }
         

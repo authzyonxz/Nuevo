@@ -115,15 +115,3 @@ The project also builds on work from Pocket Poster/Nugget, CrazyMind90, forcequi
 ## License
 
 Original portions of 3105 are distributed under the [GNU General Public License v3.0](LICENSE). Third-party components remain subject to their respective upstream copyright and license terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-
-## Build do IPA não assinado
-
-O workflow `.github/workflows/main.yml` compila o projeto presente neste ZIP usando o scheme compartilhado `3105` em um runner macOS do GitHub Actions. Ele cria os headers de compatibilidade necessários para a compilação, executa o build para `iphoneos` com a assinatura desativada, empacota `MenagerFF_Persistencia_Corrigida_unsigned.ipa` e publica o arquivo como artefato da execução.
-
-Para iniciar manualmente, abra a aba **Actions**, selecione **Build IPA não assinado - MenagerFF Persistência Corrigida** e use **Run workflow** na branch `main`. O arquivo IPA fica disponível em **Artifacts** por 14 dias. Um IPA não assinado não instala diretamente em um iPhone comum: ele ainda precisa ser assinado e instalado por um método compatível com o dispositivo.
-
-
-## Correção de destinos duplicados
-
-A montagem das regras de ativação agora normaliza os caminhos dos containers e elimina destinos repetidos antes de criar `PatchRule`. Isso evita o erro `Two rules point to the same app file` quando a busca encontra o mesmo arquivo por caminhos com diferenças de capitalização ou mais de uma vez no fallback. A operação continua rejeitando conflitos reais em projetos importados, mas as funções internas deixam de enviar duplicatas ao transacionador.
