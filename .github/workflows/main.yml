@@ -1,4 +1,4 @@
-name: Build IPA não assinado - MenagerFF Persistência
+name: Build IPA original do ZIP
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-ipa:
-    name: Compilar projeto do ZIP
+    name: Compilar projeto original do ZIP
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -74,7 +74,7 @@ jobs:
             HEADER_SEARCH_PATHS="$(pwd)" \
             build
 
-      - name: Empacotar IPA não assinado
+      - name: Empacotar IPA original não assinado
         shell: bash
         run: |
           set -euo pipefail
@@ -82,15 +82,15 @@ jobs:
           test -d "$APP_PATH"
           mkdir -p build/Payload
           cp -R "$APP_PATH" build/Payload/3105.app
-          (cd build && zip -qry MenagerFF_Persistencia_unsigned.ipa Payload)
-          file build/MenagerFF_Persistencia_unsigned.ipa
-          ls -lh build/MenagerFF_Persistencia_unsigned.ipa
+          (cd build && zip -qry MenagerFF_Updated_Source3_original_unsigned.ipa Payload)
+          file build/MenagerFF_Updated_Source3_original_unsigned.ipa
+          ls -lh build/MenagerFF_Updated_Source3_original_unsigned.ipa
 
-      - name: Publicar IPA como artefato
+      - name: Publicar IPA original como artefato
         uses: actions/upload-artifact@v4
         with:
-          name: MenagerFF-Persistencia-unsigned-IPA
-          path: build/MenagerFF_Persistencia_unsigned.ipa
+          name: MenagerFF-Updated-Source3-original-IPA
+          path: build/MenagerFF_Updated_Source3_original_unsigned.ipa
           if-no-files-found: error
           retention-days: 14
 
@@ -98,11 +98,11 @@ jobs:
         if: always()
         run: |
           {
-            echo "## IPA não assinado"
+            echo "## IPA original do ZIP"
             echo ""
-            if [ -f build/MenagerFF_Persistencia_unsigned.ipa ]; then
-              echo "Artefato criado: build/MenagerFF_Persistencia_unsigned.ipa"
-              echo "SHA-256: $(shasum -a 256 build/MenagerFF_Persistencia_unsigned.ipa | awk '{print $1}')"
+            if [ -f build/MenagerFF_Updated_Source3_original_unsigned.ipa ]; then
+              echo "Artefato criado: build/MenagerFF_Updated_Source3_original_unsigned.ipa"
+              echo "SHA-256: $(shasum -a 256 build/MenagerFF_Updated_Source3_original_unsigned.ipa | awk '{print $1}')"
             else
               echo "O artefato não foi criado; consulte os logs da etapa de compilação."
             fi

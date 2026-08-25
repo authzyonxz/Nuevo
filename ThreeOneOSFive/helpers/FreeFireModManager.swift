@@ -9,17 +9,6 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
-    /// ID estável usado para localizar o journal da função depois que o IPA
-    /// é encerrado e aberto novamente.
-    var persistentProjectID: UUID {
-        switch self {
-        case .hsAlto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A01")!
-        case .hsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A02")!
-        case .hsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A03")!
-        case .hologramaArmas: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A04")!
-        }
-    }
-
     var folderName: String {
         switch self {
         case .hsAlto: return "HS_ALTO"
@@ -64,32 +53,6 @@ class FreeFireModManager: ObservableObject {
     private let bundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
     
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
-
-    init() {
-        restorePersistedState()
-    }
-
-    /// Reconstitui somente o estado das transações ainda aplicadas/preparadas.
-    /// O patch permanece no arquivo do app alvo; fechar o IPA não deve restaurar
-    /// nada automaticamente. A restauração continua exclusiva de restoreOriginal.
-    private func restorePersistedState() {
-        var restored: [ModType: PatchTransactionReceipt] = [:]
-        for mod in ModType.allCases {
-            if let receipt = DevicePatchService.latestReceipt(projectID: mod.persistentProjectID) {
-                restored[mod] = receipt
-            }
-        }
-
-        activeReceipts = restored
-        activeMods = Set(restored.keys)
-        statusMessage = activeMods.isEmpty
-            ? "Pronto para injetar"
-            : activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
-
-        if !activeMods.isEmpty {
-            addLog("Estado restaurado: \(activeMods.map(\.rawValue).sorted().joined(separator: ", "))")
-        }
-    }
 
     func addLog(_ msg: String) {
         DispatchQueue.main.async {
@@ -188,11 +151,7 @@ class FreeFireModManager: ObservableObject {
             return
         }
 
-        let project = PatchProject(
-            id: mod.persistentProjectID,
-            name: "MenagerFF_V21_\(mod.folderName)",
-            rules: rules
-        )
+        let project = PatchProject(name: "MenagerFF_V21_\(mod.folderName)", rules: rules)
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
