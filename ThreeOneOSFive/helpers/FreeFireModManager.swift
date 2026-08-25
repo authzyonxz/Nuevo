@@ -167,17 +167,46 @@ class FreeFireModManager: ObservableObject {
         }
 
         var rules: [PatchRule] = []
+        var seenTargetPaths = Set<String>()
+        var resolvedRoots: [String: String] = [:]
+        for bid in bundleIds {
+            if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), !root.isEmpty {
+                resolvedRoots[bid] = URL(fileURLWithPath: root).standardizedFileURL.path
+            }
+        }
+
         for fullPath in targetPaths {
+            let standardizedFullPath = URL(fileURLWithPath: fullPath).standardizedFileURL.path
             for bid in bundleIds {
-                if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), fullPath.hasPrefix(root) {
-                    let relative = String(fullPath.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                    rules.append(PatchRule(
-                        bundleID: bid,
-                        relativePath: relative,
-                        replacementFilename: currentTarget,
-                        replacementData: modData
-                    ))
+                guard let rootPath = resolvedRoots[bid] else { continue }
+                let rootPrefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+                guard standardizedFullPath.hasPrefix(rootPrefix) else { continue }
+
+                let relative = String(standardizedFullPath.dropFirst(rootPrefix.count))
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                guard !relative.isEmpty else { continue }
+
+                // iOS app-container paths are case-insensitive in practice. The
+                // fallback search can therefore return the same file twice (for
+                // example, ContentCache vs. contentcache). Normalize the full
+                // destination before creating a rule so PatchTransaction never
+                // receives two rules for one physical app file.
+                let targetKey = URL(fileURLWithPath: rootPrefix)
+                    .appendingPathComponent(relative)
+                    .standardizedFileURL
+                    .path
+                    .lowercased()
+                guard seenTargetPaths.insert(targetKey).inserted else {
+                    addLog("Destino duplicado ignorado: ...\(relative.suffix(40))")
+                    continue
                 }
+
+                rules.append(PatchRule(
+                    bundleID: bid,
+                    relativePath: relative,
+                    replacementFilename: currentTarget,
+                    replacementData: modData
+                ))
             }
         }
         
