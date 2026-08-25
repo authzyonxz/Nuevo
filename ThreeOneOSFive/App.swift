@@ -11,8 +11,6 @@ struct ThreeOneOSFiveApp: App {
         log("app: MenagerFF launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
     }
 
-    @Environment(\.scenePhase) var scenePhase
-
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -25,11 +23,6 @@ struct ThreeOneOSFiveApp: App {
                     exploitState.prepareForCurrentOS()
 
                 }
-        }
-        .onChange(of: scenePhase) { newPhase in
-            if newPhase == .background {
-                KernelExploit.cleanup()
-            }
         }
     }
 }
