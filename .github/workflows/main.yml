@@ -52,6 +52,7 @@ jobs:
           #define MENAGERFF_FILEPORT_STUB_H
           #include <mach/mach.h>
           typedef mach_port_t fileport_t;
+          static inline int fileport_makeport(int fd, mach_port_t *port) { (void)fd; if (port) *port = MACH_PORT_NULL; return -1; }
           static inline int fileport_makefd(fileport_t port) { (void)port; return -1; }
           #endif
           EOF
