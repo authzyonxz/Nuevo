@@ -1,8 +1,10 @@
 # Build iOS - TODO
 
-- [x] Substituir o repositório pelo ZIP Updated Source 3 sem modificar o código do aplicativo
-- [ ] Gerar uma build original separada para comparação
+- [x] Limpar o conteúdo anterior do repositório
+- [x] Subir somente o projeto `MenagerFF_Updated_Source(4).zip`
+- [ ] Gerar a build sem modificar o projeto
+- [ ] Verificar e entregar o IPA gerado
 
-## Observação
+## Escopo
 
-A árvore `ThreeOneOSFive` e o projeto Xcode desta revisão devem permanecer idênticos ao ZIP fornecido. Somente o workflow pode ser ajustado para o runner de build.
+A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP fornecido. O workflow original do ZIP será mantido; nenhum arquivo do aplicativo será editado.
