@@ -42,6 +42,7 @@ jobs:
           #include <stddef.h>
           #include <stdint.h>
           typedef void *xpc_object_t;
+          typedef void *xpc_type_t;
           static inline xpc_object_t xpc_string_create(const char *string) { (void)string; return (xpc_object_t)0; }
           static inline void xpc_release(xpc_object_t object) { (void)object; }
           #endif
