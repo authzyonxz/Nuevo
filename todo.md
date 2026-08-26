@@ -56,4 +56,4 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Gerar e verificar nova build unsigned
 
 - [x] Exibir “Produtos - Ruanwq” na aba CONFIG
-- [ ] Verificar e gerar nova build unsigned
+- [x] Verificar e gerar nova build unsigned
