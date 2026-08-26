@@ -17,6 +17,10 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Manter a função aplicada até restauração manual
 - [x] Gerar e verificar nova build corrigida
 
-- [ ] Conferir o destino atual do Holograma de Armas
-- [ ] Corrigir o destino para `Documents/contentcache/optional/ios/gameassetbundles`
-- [ ] Gerar e verificar nova build sem alterar as outras funções
+- [x] Conferir o destino atual do Holograma de Armas
+- [x] Corrigir o destino para `Documents/contentcache/optional/ios/gameassetbundles`
+- [x] Gerar e verificar nova build sem alterar as outras funções
+
+- [x] Restaurar `KernelExploit.cleanup()` ao entrar em background/fechar o IPA
+- [x] Confirmar que `restoreOriginal()` continua somente manual
+- [ ] Gerar e verificar nova build
