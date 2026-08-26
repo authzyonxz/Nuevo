@@ -625,7 +625,7 @@ struct ProfileView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
 
-                        configRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
+                        configRow(title: "Revendedor", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
                         configRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
                         configRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
                         configRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)

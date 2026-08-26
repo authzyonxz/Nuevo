@@ -36,3 +36,6 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Modernizar visualmente a aba CONFIG mantendo seus dados e ações existentes
 - [x] Remover o botão VALIDAR KEY da aba CONFIG
 - [x] Gerar e verificar nova build unsigned
+
+- [x] Alterar o rótulo “Produto” para “Revendedor” na aba CONFIG
+- [ ] Gerar e verificar nova build unsigned
