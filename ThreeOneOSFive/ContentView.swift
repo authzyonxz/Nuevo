@@ -127,12 +127,15 @@ struct LoginView: View {
     }
 }
 
-// MARK: - Main Tab View (Custom Floating Bar)
+// MARK: - Main Tab View
 struct MainTabView: View {
     @Binding var selectedTab: Int
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            Color.black
+                .ignoresSafeArea()
+
             Group {
                 if selectedTab == 0 {
                     HomeView()
@@ -142,19 +145,17 @@ struct MainTabView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Custom Floating Tab Bar
-            HStack(spacing: 60) {
-                TabButton(index: 0, icon: "house.fill", title: "INÍCIO", selectedTab: $selectedTab)
-                TabButton(index: 1, icon: "person.fill", title: "PERFIL", selectedTab: $selectedTab)
+            HStack(spacing: 8) {
+                TabButton(index: 0, icon: "square.grid.2x2.fill", title: "FUNÇÕES", selectedTab: $selectedTab)
+                TabButton(index: 1, icon: "person.crop.circle", title: "CONFIG", selectedTab: $selectedTab)
             }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 30)
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.08))
-                    .background(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
-            )
-            .padding(.bottom, 30)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Color(red: 0.055, green: 0.055, blue: 0.065))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.14), lineWidth: 1))
+            .shadow(color: .black.opacity(0.6), radius: 18, y: 8)
+            .padding(.bottom, 18)
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
@@ -166,132 +167,121 @@ struct TabButton: View {
     let title: String
     @Binding var selectedTab: Int
 
+    var isSelected: Bool { selectedTab == index }
+
     var body: some View {
-        Button(action: {
-            withAnimation(.spring()) {
+        Button {
+            withAnimation(.easeOut(duration: 0.2)) {
                 selectedTab = index
             }
-        }) {
-            VStack(spacing: 4) {
+        } label: {
+            VStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(.system(size: 17, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
             }
-            .foregroundColor(selectedTab == index ? .blue : .white.opacity(0.4))
+            .foregroundColor(isSelected ? .white : .white.opacity(0.42))
+            .frame(width: 92, height: 48)
+            .background(isSelected ? Color.white.opacity(0.12) : .clear)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Home View
+private enum GameChoice: String, CaseIterable, Identifiable {
+    case freeFire = "Free Fire"
+    case freeFireMax = "Free Fire Max"
+
+    var id: String { rawValue }
+    var logoName: String {
+        switch self {
+        case .freeFire: return "FreeFireLogo"
+        case .freeFireMax: return "FreeFireMaxLogo"
         }
     }
 }
 
-// MARK: - Home View (Exact Reference Layout)
 struct HomeView: View {
     @EnvironmentObject var licenseManager: LicenseManager
     @StateObject private var modManager = FreeFireModManager.shared
+    @State private var selectedGame: GameChoice = .freeFire
     @State private var alertMessage: String = ""
     @State private var showAlert: Bool = false
     @State private var showLogs: Bool = false
     @State private var showKeySheet: Bool = false
 
+    private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
+    private let secondaryText = Color.white.opacity(0.48)
+
     var body: some View {
         ZStack {
-            Color(red: 0.02, green: 0.02, blue: 0.04)
-                .ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Terminal Log Toggle Header
-                    HStack {
-                        Circle()
-                            .fill(!modManager.activeMods.isEmpty ? Color.green : Color.blue)
-                            .frame(width: 8, height: 8)
-                        Text(modManager.statusMessage)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
-                        
-                        Spacer()
-                        
-                        Button(action: { showLogs.toggle() }) {
-                            Image(systemName: "terminal.fill")
-                                .foregroundColor(.white.opacity(0.5))
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("FUNÇÕES")
+                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                            Text("MenagerFF")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(secondaryText)
                         }
+
+                        Spacer()
+
+                        Button { showLogs.toggle() } label: {
+                            Image(systemName: "waveform.path.ecg")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.7))
+                                .frame(width: 40, height: 40)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
+
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(!modManager.activeMods.isEmpty ? Color.green : Color.white.opacity(0.35))
+                            .frame(width: 7, height: 7)
+                        Text(modManager.statusMessage)
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundColor(secondaryText)
+                        Spacer()
+                    }
+
+                    gamePicker
 
                     if showLogs {
-                        VStack(alignment: .leading) {
-                            Text("DIAGNÓSTICO EM TEMPO REAL")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.blue)
+                        VStack(alignment: .leading, spacing: 9) {
+                            Text("DIAGNÓSTICO")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.55))
                             ScrollView {
-                                Text(modManager.debugLogs)
-                                    .font(.system(size: 9, design: .monospaced))
+                                Text(modManager.debugLogs.isEmpty ? "Nenhum registro ainda." : modManager.debugLogs)
+                                    .font(.system(size: 10, design: .monospaced))
                                     .foregroundColor(.green.opacity(0.8))
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .frame(height: 100)
                         }
-                        .padding()
-                        .background(Color.black.opacity(0.4))
-                        .cornerRadius(12)
-                        .padding(.horizontal, 16)
+                        .padding(14)
+                        .background(panel)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
 
-                    // Seção de Aimbots (HS Alto, Pescoço, Peito)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("FUNÇÕES DE AIMBOT")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 20)
+                    modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
+                    modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
 
-                        VStack(spacing: 0) {
-                            ForEach(Array(aimbotMods.enumerated()), id: \.element.id) { index, mod in
-                                ModRowReference(
-                                    mod: mod,
-                                    isActive: modManager.activeMods.contains(mod),
-                                    isProcessing: modManager.isProcessing,
-                                    onToggle: { isOn in
-                                        handleToggle(mod: mod, isOn: isOn)
-                                    }
-                                )
-                                if index < aimbotMods.count - 1 {
-                                    Divider()
-                                        .background(Color.white.opacity(0.08))
-                                        .padding(.leading, 16)
-                                }
-                            }
-                        }
-                        .background(Color(#colorLiteral(red: 0.08, green: 0.08, blue: 0.12, alpha: 1)))
-                        .cornerRadius(16)
-                        .padding(.horizontal, 16)
-                    }
-
-                    // Seção de Holograma
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("FUNÇÕES DE HOLOGRAMA")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 20)
-
-                        VStack(spacing: 0) {
-                            ForEach(hologramMods, id: \.id) { mod in
-                                ModRowReference(
-                                    mod: mod,
-                                    isActive: modManager.activeMods.contains(mod),
-                                    isProcessing: modManager.isProcessing,
-                                    onToggle: { isOn in
-                                        handleToggle(mod: mod, isOn: isOn)
-                                    }
-                                )
-                            }
-                        }
-                        .background(Color(#colorLiteral(red: 0.08, green: 0.08, blue: 0.12, alpha: 1)))
-                        .cornerRadius(16)
-                        .padding(.horizontal, 16)
-                    }
-
-                    Spacer(minLength: 100)
+                    Spacer(minLength: 92)
                 }
+                .padding(.horizontal, 18)
+                .padding(.top, 24)
             }
         }
         .alert(isPresented: $showAlert) {
@@ -303,13 +293,76 @@ struct HomeView: View {
         }
     }
 
-    private var aimbotMods: [ModType] {
-        [.hsAlto, .hsPescoco, .hsPeito]
+    private var gamePicker: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("SELECIONE O JOGO")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(secondaryText)
+
+            HStack(spacing: 10) {
+                ForEach(GameChoice.allCases) { game in
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) { selectedGame = game }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(game.logoName)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 42, height: 42)
+                                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(game == .freeFire ? "FREE FIRE" : "FREE FIRE MAX")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+                                Text(selectedGame == game ? "Selecionado" : "Toque para selecionar")
+                                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                                    .foregroundColor(selectedGame == game ? .white.opacity(0.7) : secondaryText)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(selectedGame == game ? Color.white.opacity(0.14) : Color.white.opacity(0.055))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(selectedGame == game ? Color.white.opacity(0.85) : Color.white.opacity(0.1), lineWidth: selectedGame == game ? 1.2 : 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
     }
 
-    private var hologramMods: [ModType] {
-        [.hologramaArmas]
+    private func modSection(title: String, mods: [ModType]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(secondaryText)
+
+            VStack(spacing: 0) {
+                ForEach(Array(mods.enumerated()), id: \.element.id) { index, mod in
+                    ModRowReference(
+                        mod: mod,
+                        isActive: modManager.activeMods.contains(mod),
+                        isProcessing: modManager.isProcessing,
+                        onToggle: { isOn in handleToggle(mod: mod, isOn: isOn) }
+                    )
+                    if index < mods.count - 1 {
+                        Divider().overlay(Color.white.opacity(0.1)).padding(.leading, 16)
+                    }
+                }
+            }
+            .background(panel)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        }
     }
+
+    private var aimbotMods: [ModType] { [.hsAlto, .hsPescoco, .hsPeito] }
+    private var hologramMods: [ModType] { [.hologramaArmas] }
 
     private func handleToggle(mod: ModType, isOn: Bool) {
         guard isOn else {
@@ -336,7 +389,7 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Mod Row Reference Component (Exact Image Match)
+// MARK: - Mod Row
 struct ModRowReference: View {
     let mod: ModType
     let isActive: Bool
@@ -344,35 +397,44 @@ struct ModRowReference: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 14) {
+            Image(systemName: mod == .hologramaArmas ? "sparkles" : "scope")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(isActive ? .white : .white.opacity(0.38))
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 4) {
                 Text(mod.rawValue)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                 Text(mod.subtitle)
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.42))
+                    .lineLimit(2)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
             if isProcessing {
-                ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
+                ProgressView()
+                    .tint(.white)
+                    .frame(width: 51, height: 31)
             } else {
-                    Toggle("", isOn: Binding(
-                        get: { isActive },
-                        set: { value in
-                            guard !isProcessing else { return }
-                            onToggle(value)
-                        }
-                    ))
-                    .labelsHidden()
-                    .disabled(isProcessing)
-                    .toggleStyle(SwitchToggleStyle(tint: .blue))
+                Toggle("", isOn: Binding(
+                    get: { isActive },
+                    set: { value in
+                        guard !isProcessing else { return }
+                        onToggle(value)
+                    }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(.green)
+                .disabled(isProcessing)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.vertical, 15)
     }
 }
 
