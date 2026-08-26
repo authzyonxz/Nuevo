@@ -23,4 +23,4 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 
 - [x] Restaurar `KernelExploit.cleanup()` ao entrar em background/fechar o IPA
 - [x] Confirmar que `restoreOriginal()` continua somente manual
-- [ ] Gerar e verificar nova build
+- [x] Gerar e verificar nova build
