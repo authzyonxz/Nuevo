@@ -39,3 +39,7 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 
 - [x] Alterar o rótulo “Produto” para “Revendedor” na aba CONFIG
 - [x] Gerar e verificar nova build unsigned
+
+- [x] Alterar o produto enviado à API para `granjeiro`
+- [x] Exibir `GRANJEIRO - FF` como produto na aba CONFIG
+- [ ] Gerar e verificar nova build unsigned
