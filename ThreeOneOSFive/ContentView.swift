@@ -3,33 +3,147 @@ import UIKit
 
 struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @State private var inputKey: String = ""
     @State private var selectedTab: Int = 0
-    @State private var timeRemaining: Int = 10
-    @State private var timer: Timer? = nil
+    @State private var showKeyGate = false
+    @State private var didCheckEntry = false
 
     var body: some View {
-        MainTabView(selectedTab: $selectedTab)
-            .onAppear {
-                // A key não é exigida para abrir o painel. Cada ativação
-                // consulta novamente o servidor antes de iniciar o patch.
-                if licenseManager.loadSavedKey() != nil {
-                    licenseManager.validateKey(licenseManager.loadSavedKey() ?? "") { _, _ in }
+        ZStack {
+            MainTabView(selectedTab: $selectedTab)
+
+            if showKeyGate {
+                KeyGateOverlay(isPresented: $showKeyGate)
+                    .environmentObject(licenseManager)
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
+        }
+        .onAppear {
+            validateEntryKey()
+        }
+        .onChange(of: licenseManager.isAuthorized) { authorized in
+            if !authorized && didCheckEntry {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    showKeyGate = true
                 }
             }
+        }
     }
 
-    private func startCountdown() {
-        timeRemaining = 10
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { t in
-            if timeRemaining > 1 {
-                timeRemaining -= 1
-            } else {
-                t.invalidate()
-                if !licenseManager.isAuthorized {
-                    licenseManager.errorMessage = "Tempo de autenticação expirado. Insira sua key para continuar."
+    private func validateEntryKey() {
+        guard !didCheckEntry else { return }
+        didCheckEntry = true
+        showKeyGate = true
+
+        guard let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty else {
+            return
+        }
+
+        // A API é consultada somente ao entrar no app, usando a mesma
+        // rotina protegida e o mesmo payload já existente.
+        licenseManager.validateKey(savedKey) { success, _ in
+            withAnimation(.easeOut(duration: 0.2)) {
+                showKeyGate = !success
+            }
+        }
+    }
+}
+
+// MARK: - Entry Key Gate
+struct KeyGateOverlay: View {
+    @EnvironmentObject var licenseManager: LicenseManager
+    @Binding var isPresented: Bool
+    @State private var inputKey = ""
+    @State private var message = ""
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.82)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 12) {
+                    Image(systemName: "lock.shield.fill")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 38, height: 38)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("INSIRA SUA KEY")
+                            .font(.system(size: 17, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                        Text("Valide seu acesso para continuar")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(.white.opacity(0.48))
+                    }
                 }
+
+                SecureField("Cole sua key aqui", text: $inputKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .foregroundColor(.white)
+                    .tint(.white)
+                    .padding(.horizontal, 14)
+                    .frame(height: 50)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                    )
+
+                if !message.isEmpty {
+                    Text(message)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(.red.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Button(action: validate) {
+                    HStack(spacing: 8) {
+                        if licenseManager.isLoading {
+                            ProgressView().tint(.black)
+                        } else {
+                            Image(systemName: "arrow.right.circle.fill")
+                            Text("CONTINUAR")
+                        }
+                    }
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
+            }
+            .padding(22)
+            .frame(maxWidth: 390)
+            .background(Color(red: 0.035, green: 0.035, blue: 0.045))
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.7), radius: 32, y: 16)
+            .padding(.horizontal, 24)
+        }
+    }
+
+    private func validate() {
+        let key = inputKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { return }
+        message = ""
+        licenseManager.validateKey(key) { success, error in
+            if success {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    isPresented = false
+                }
+            } else {
+                message = error ?? "Key inválida ou expirada."
             }
         }
     }
@@ -211,7 +325,6 @@ struct HomeView: View {
     @State private var alertMessage: String = ""
     @State private var showAlert: Bool = false
     @State private var showLogs: Bool = false
-    @State private var showKeySheet: Bool = false
 
     private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
     private let secondaryText = Color.white.opacity(0.48)
@@ -286,10 +399,6 @@ struct HomeView: View {
         }
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-        }
-        .sheet(isPresented: $showKeySheet) {
-            KeyRegistrationView()
-                .environmentObject(licenseManager)
         }
     }
 
@@ -373,18 +482,11 @@ struct HomeView: View {
             return
         }
 
-        guard !licenseManager.isValidatingActivation else { return }
-        licenseManager.validateForActivation { success, message in
-            guard success else {
-                alertMessage = message ?? "Key inválida ou expirada."
-                showAlert = true
-                showKeySheet = true
-                return
-            }
-            modManager.applyMod(mod) { _, msg in
-                alertMessage = msg
-                showAlert = true
-            }
+        // A key é validada na entrada do IPA. Aqui o switch mantém apenas
+        // o fluxo original de aplicação do patch, sem nova chamada à API.
+        modManager.applyMod(mod) { _, msg in
+            alertMessage = msg
+            showAlert = true
         }
     }
 }
@@ -438,12 +540,13 @@ struct ModRowReference: View {
     }
 }
 
-// MARK: - Profile View
+// MARK: - Config View
 struct ProfileView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @State private var showKeySheet = false
     @State private var showKeyAlert = false
     @State private var keyAlertMessage = ""
+
+    private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
 
     private var compatibilityStatus: (text: String, color: Color) {
         switch KernelExploit.currentAccessPath {
@@ -465,84 +568,127 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.02, green: 0.02, blue: 0.04)
-                .ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 25) {
-                    Text("MEU PERFIL")
-                        .font(.system(size: 26, weight: .black))
-                        .foregroundColor(.white)
-                        .padding(.top, 20)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 42, height: 42)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
-                    VStack(spacing: 16) {
-                        InfoRow(title: "Status da Licença", value: licenseManager.licenseInfo?.status ?? "Sem key registrada", color: licenseManager.isAuthorized ? .green : .orange)
-                        InfoRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
-                        InfoRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
-                        InfoRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
-                        InfoRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
-                        InfoRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
-                        InfoRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
-                        InfoRow(title: "Build do sistema", value: AppInfo.osBuild, color: .blue)
-                        InfoRow(title: "Modelo do Aparelho", value: UIDevice.current.model, color: .white)
-                        InfoRow(title: "Versão do iOS", value: UIDevice.current.systemVersion, color: .blue.opacity(0.8))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("CONFIG")
+                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                            Text("Informações e proteção do dispositivo")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(.white.opacity(0.45))
+                        }
+                        Spacer()
                     }
-                    .padding(20)
-                    .background(Color(#colorLiteral(red: 0.08, green: 0.08, blue: 0.12, alpha: 1)))
-                    .cornerRadius(20)
-                    .padding(.horizontal, 16)
+                    .padding(.top, 24)
+
+                    HStack(spacing: 14) {
+                        Image(systemName: licenseManager.isAuthorized ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(licenseManager.isAuthorized ? .green : .orange)
+                            .frame(width: 52, height: 52)
+                            .background((licenseManager.isAuthorized ? Color.green : Color.orange).opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("STATUS DA LICENÇA")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.45))
+                            Text(licenseManager.licenseInfo?.status ?? "Sem key registrada")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundColor(licenseManager.isAuthorized ? .green : .orange)
+                        }
+                        Spacer()
+                        Circle()
+                            .fill(licenseManager.isAuthorized ? Color.green : Color.orange)
+                            .frame(width: 8, height: 8)
+                    }
+                    .padding(16)
+                    .background(panel)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("DETALHES DO SISTEMA")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundColor(.white.opacity(0.45))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+
+                        configRow(title: "Produto", value: licenseManager.licenseInfo?.productName ?? "ruanwq", color: .blue)
+                        configRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
+                        configRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
+                        configRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
+                        configRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
+                        configRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
+                        configRow(title: "Build do sistema", value: AppInfo.osBuild, color: .blue)
+                        configRow(title: "Modelo do Aparelho", value: UIDevice.current.model, color: .white)
+                        configRow(title: "Versão do iOS", value: UIDevice.current.systemVersion, color: .blue.opacity(0.8))
+                    }
+                    .background(panel)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
 
                     Button(action: {
                         licenseManager.clearSavedKey()
-                        keyAlertMessage = "Key removida. Agora você pode validar outra key."
+                        keyAlertMessage = "Key removida. A janela de key aparecerá novamente na próxima entrada."
                         showKeyAlert = true
                     }) {
-                        HStack {
+                        HStack(spacing: 10) {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
                             Text("LIMPAR / TROCAR KEY")
                         }
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 12, weight: .heavy, design: .rounded))
                         .foregroundColor(.red)
-                        .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(15)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(Color.red.opacity(0.3), lineWidth: 1.5)
-                        )
+                        .frame(height: 48)
+                        .background(Color.red.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(Color.red.opacity(0.28), lineWidth: 1))
                     }
-                    .padding(.horizontal, 16)
+                    .buttonStyle(.plain)
 
-                    Button(action: {
-                        showKeySheet = true
-                    }) {
-                        HStack {
-                            Image(systemName: "key.fill")
-                            Text("VALIDAR KEY")
-                        }
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(LinearGradient(gradient: Gradient(colors: [.blue, Color.blue.opacity(0.7)]), startPoint: .leading, endPoint: .trailing))
-                        .cornerRadius(15)
-                        .shadow(color: .blue.opacity(0.3), radius: 8, y: 4)
-                    }
-                    .padding(.horizontal, 16)
-                    
-                    Spacer(minLength: 100)
+                    Spacer(minLength: 92)
                 }
+                .padding(.horizontal, 18)
             }
-        }
-        .sheet(isPresented: $showKeySheet) {
-            KeyRegistrationView()
-                .environmentObject(licenseManager)
         }
         .alert("Status da key", isPresented: $showKeyAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(keyAlertMessage)
+        }
+    }
+
+    private func configRow(title: String, value: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(title)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundColor(.white.opacity(0.48))
+            Spacer(minLength: 10)
+            Text(value)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundColor(color)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.white.opacity(0.07))
+                .frame(height: 1)
+                .padding(.leading, 16)
         }
     }
 }
@@ -561,84 +707,6 @@ struct InfoRow: View {
             Text(value)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(color)
-        }
-    }
-}
-
-
-// MARK: - Key Registration
-struct KeyRegistrationView: View {
-    @EnvironmentObject var licenseManager: LicenseManager
-    @Environment(\.dismiss) private var dismiss
-    @State private var inputKey = ""
-    @State private var message = ""
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Color.black
-                    .ignoresSafeArea()
-
-                VStack(spacing: 18) {
-                    Text("INSIRA SUA KEY")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 8)
-
-                    SecureField("Cole sua key aqui", text: $inputKey)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .foregroundColor(.white)
-                        .tint(.white)
-                        .padding()
-                        .background(Color.white.opacity(0.12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                        )
-                        .cornerRadius(10)
-
-                    if !message.isEmpty {
-                        Text(message)
-                            .font(.footnote)
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    Button {
-                        licenseManager.validateKey(inputKey.trimmingCharacters(in: .whitespacesAndNewlines)) { success, error in
-                            if success {
-                                message = "Key ativa e vinculada a este aparelho."
-                                dismiss()
-                            } else {
-                                message = error ?? "Key inválida ou expirada."
-                            }
-                        }
-                    } label: {
-                        Group {
-                            if licenseManager.isLoading { ProgressView() }
-                            else { Text("VALIDAR KEY").fontWeight(.bold) }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .foregroundColor(.white)
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                    }
-                    .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    Spacer()
-                }
-                .padding(24)
-            }
-            .preferredColorScheme(.dark)
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fechar") { dismiss() }
-                }
-            }
         }
     }
 }

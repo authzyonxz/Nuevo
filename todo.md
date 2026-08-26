@@ -30,3 +30,9 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Usar o Toggle padrão do iOS para ligar/desligar cada função
 - [x] Validar que cada switch continua chamando a mesma lógica atual
 - [x] Gerar e verificar nova build unsigned
+
+- [x] Validar a key ao entrar no IPA com janela flutuante preta
+- [x] Remover a validação de API do acionamento dos switches sem alterar a proteção da API
+- [x] Modernizar visualmente a aba CONFIG mantendo seus dados e ações existentes
+- [x] Remover o botão VALIDAR KEY da aba CONFIG
+- [ ] Gerar e verificar nova build unsigned
