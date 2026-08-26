@@ -46,4 +46,7 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 
 - [x] Corrigir falha ao restaurar função ativa após fechar e reabrir o IPA
 - [x] Validar reabertura do exploit e restauração manual sem alterar cleanup ao fechar
-- [ ] Gerar e verificar nova build unsigned
+- [x] Gerar e verificar nova build unsigned
+
+- [x] Alterar o identificador do produto da API de `ruanwq` para `revendedores`
+- [x] Verificar que endpoint, proteção e funcionamento permanecem inalterados
