@@ -300,6 +300,11 @@ class FreeFireModManager: ObservableObject {
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
+                guard KernelExploit.ensureAccessForRestore() else {
+                    self.endOperation()
+                    self.complete(completion, success: false, message: "Falha ao reativar o acesso para restauração.")
+                    return
+                }
                 self.prepareLegacyKernelAccessIfNeeded()
                 for receipt in receipts {
                     try DevicePatchService.restore(receipt: receipt)
