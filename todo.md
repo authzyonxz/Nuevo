@@ -38,4 +38,4 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Gerar e verificar nova build unsigned
 
 - [x] Alterar o rótulo “Produto” para “Revendedor” na aba CONFIG
-- [ ] Gerar e verificar nova build unsigned
+- [x] Gerar e verificar nova build unsigned
