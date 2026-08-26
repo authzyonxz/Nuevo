@@ -137,45 +137,61 @@ class FreeFireModManager: ObservableObject {
 
         prepareLegacyKernelAccessIfNeeded()
 
-        var targetPaths: [String] = []
-        for bid in bundleIds {
-            if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
-                addLog("Escaneando container: \(bid)")
-                let found = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
-                targetPaths.append(contentsOf: found)
-                for p in found {
-                    addLog("Alvo encontrado: ...\(p.suffix(40))")
-                }
-            }
-        }
-        
-        if targetPaths.isEmpty {
-            addLog("AVISO: Busca global vazia, usando caminhos padrão")
+        var rules: [PatchRule] = []
+        if isHolo {
+            // O holograma tem um destino conhecido dentro do container do jogo.
+            // Usamos o caminho relativo diretamente para não depender da enumeração
+            // recursiva, que pode não atravessar contentcache em algumas versões.
+            let relativePath = "Documents/contentcache/optional/ios/gameassetbundles/\(currentTarget)"
             for bid in bundleIds {
-                if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid) {
-                    let subPath = isHolo ? "optional" : "compulsory"
-                    let standardPaths = [
-                        "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
-                        "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
-                    ]
-                    for sp in standardPaths {
-                        targetPaths.append((rootPath as NSString).appendingPathComponent(sp))
+                guard ContainerStore.resolveAppContainerPath(bundleID: bid) != nil else { continue }
+                rules.append(PatchRule(
+                    bundleID: bid,
+                    relativePath: relativePath,
+                    replacementFilename: currentTarget,
+                    replacementData: modData
+                ))
+            }
+            addLog("Destino holograma: \(relativePath)")
+        } else {
+            var targetPaths: [String] = []
+            for bid in bundleIds {
+                if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
+                    addLog("Escaneando container: \(bid)")
+                    let found = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
+                    targetPaths.append(contentsOf: found)
+                    for p in found {
+                        addLog("Alvo encontrado: ...\(p.suffix(40))")
                     }
                 }
             }
-        }
+            if targetPaths.isEmpty {
+                addLog("AVISO: Busca global vazia, usando caminhos padrão")
+                for bid in bundleIds {
+                    if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid) {
+                        let subPath = isHolo ? "optional" : "compulsory"
+                        let standardPaths = [
+                            "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
+                            "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
+                        ]
+                        for sp in standardPaths {
+                            targetPaths.append((rootPath as NSString).appendingPathComponent(sp))
+                        }
+                    }
+                }
+            }
 
-        var rules: [PatchRule] = []
-        for fullPath in targetPaths {
-            for bid in bundleIds {
-                if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), fullPath.hasPrefix(root) {
-                    let relative = String(fullPath.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                    rules.append(PatchRule(
-                        bundleID: bid,
-                        relativePath: relative,
-                        replacementFilename: currentTarget,
-                        replacementData: modData
-                    ))
+            for fullPath in targetPaths {
+                for bid in bundleIds {
+                    if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), fullPath.hasPrefix(root) {
+                        let relative = String(fullPath.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                        rules.append(PatchRule(
+                            bundleID: bid,
+                            relativePath: relative,
+                            replacementFilename: currentTarget,
+                            replacementData: modData
+                        ))
+                    }
                 }
             }
         }
