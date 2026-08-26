@@ -35,4 +35,4 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Remover a validação de API do acionamento dos switches sem alterar a proteção da API
 - [x] Modernizar visualmente a aba CONFIG mantendo seus dados e ações existentes
 - [x] Remover o botão VALIDAR KEY da aba CONFIG
-- [ ] Gerar e verificar nova build unsigned
+- [x] Gerar e verificar nova build unsigned
