@@ -53,4 +53,7 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 
 - [x] Restaurar o identificador do produto da API para `ruanwq`
 - [x] Verificar que endpoint, proteção e funcionamento permanecem inalterados
-- [ ] Gerar e verificar nova build unsigned
+- [x] Gerar e verificar nova build unsigned
+
+- [x] Exibir “Produtos - Ruanwq” na aba CONFIG
+- [ ] Verificar e gerar nova build unsigned
