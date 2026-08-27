@@ -61,4 +61,9 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Ocultar visualmente o nome do produto na aba CONFIG sem alterar a API
 - [x] Corrigir a injeção do HOLOGRAMA ARMAS
 - [x] Validar holograma e preservar as demais funções
+- [x] Gerar e verificar nova build unsigned
+
+- [x] Investigar por que o holograma reporta 1 local, mas não tem efeito no jogo
+- [x] Validar nome, conteúdo, caminho e bundle do asset do holograma
+- [x] Corrigir somente a confirmação/aplicação efetiva do holograma
 - [ ] Gerar e verificar nova build unsigned

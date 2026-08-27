@@ -148,20 +148,25 @@ class FreeFireModManager: ObservableObject {
                 guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid),
                       !rootPath.isEmpty else { continue }
 
-                let existingTarget = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
-                    .first { path in
-                        let normalized = path.replacingOccurrences(of: "\\\\", with: "/")
-                        return normalized.contains("/\(requiredDirectory)/")
-                    }
-                let relativePath: String
-                if let existingTarget,
-                   existingTarget.hasPrefix(rootPath) {
-                    relativePath = String(existingTarget.dropFirst(rootPath.count))
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                    addLog("Holograma existente: ...\(existingTarget.suffix(56))")
+                let candidates = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
+                let normalizedDirectory = "/\(requiredDirectory)/"
+                let existingTarget = candidates.first { path in
+                    path.replacingOccurrences(of: "\\\\", with: "/")
+                        .contains(normalizedDirectory)
+                } ?? candidates.first
+
+                guard let existingTarget,
+                      existingTarget.hasPrefix(rootPath) else {
+                    addLog("ERRO: Holograma não encontrado no container \(bid); nenhuma regra criada")
+                    continue
+                }
+
+                let relativePath = String(existingTarget.dropFirst(rootPath.count))
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                if relativePath != requiredRelativePath {
+                    addLog("AVISO: Holograma encontrado em caminho alternativo: \(relativePath)")
                 } else {
-                    relativePath = requiredRelativePath
-                    addLog("Holograma usando destino padrão: \(relativePath)")
+                    addLog("Holograma encontrado no caminho exigido: \(relativePath)")
                 }
 
                 rules.append(PatchRule(
