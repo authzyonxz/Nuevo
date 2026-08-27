@@ -365,9 +365,16 @@ enum PatchTransaction {
             )
 
             if requirePatchedDigest {
-                guard fileManager.fileExists(atPath: target.path),
-                      try digestFile(target) == record.replacementDigest else {
+                guard fileManager.fileExists(atPath: target.path) else {
                     throw PatchPackageError.restoreFailed
+                }
+                if try digestFile(target) != record.replacementDigest {
+                    // O jogo pode reescrever ou normalizar o asset enquanto o
+                    // app está fechado. O alvo continua seguro porque o
+                    // container, o caminho contido e o backup íntegro já foram
+                    // verificados acima; nesse caso restauramos o backup
+                    // validado em vez de deixar a função presa como ativa.
+                    log("restore: alvo alterado pelo jogo; restaurando backup verificado")
                 }
             }
             if record.originalExisted {

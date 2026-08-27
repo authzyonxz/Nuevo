@@ -25,7 +25,7 @@ class LicenseManager: ObservableObject {
     private let keychainAccount = "saved-key"
     private let deviceAccount = "device-id"
     private let apiURL = URL(string: "https://ffh4xcorporation.online/api/validate-key")!
-    private let product = "granjeiro"
+    private let product = "ruanwq"
     
     init() {
         hasStoredKey = loadSavedKey()?.isEmpty == false
@@ -148,7 +148,7 @@ class LicenseManager: ObservableObject {
                         if isValid {
                             let info = LicenseInfo(
                                 status: json["status"] as? String ?? "VIP ATIVO",
-                                productName: json["productName"] as? String ?? (json["product"] as? String ?? "granjeiro"),
+                                productName: json["productName"] as? String ?? (json["product"] as? String ?? "ruanwq"),
                                 expiresAt: json["expiresAt"] as? String ?? (json["expiry"] as? String ?? "Vitalício"),
                                 message: json["message"] as? String ?? "Sucesso",
                                 sessionToken: json["sessionToken"] as? String

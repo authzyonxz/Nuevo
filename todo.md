@@ -71,4 +71,10 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Alterar o produto da API de `ruanwq` para `granjeiro`
 - [x] Exibir `GRANJEIRO - FF` na aba CONFIG
 - [x] Confirmar que a correção do holograma permanece intacta
+- [x] Gerar e verificar nova build unsigned
+
+- [ ] Restaurar o produto da API para `ruanwq`
+- [ ] Ocultar o nome do produto na aba CONFIG
+- [ ] Corrigir falha de restauração segura após fechar e reabrir o IPA
+- [ ] Validar persistência, restauração e holograma
 - [ ] Gerar e verificar nova build unsigned
