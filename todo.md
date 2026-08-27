@@ -73,8 +73,16 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Confirmar que a correção do holograma permanece intacta
 - [x] Gerar e verificar nova build unsigned
 
-- [ ] Restaurar o produto da API para `ruanwq`
-- [ ] Ocultar o nome do produto na aba CONFIG
-- [ ] Corrigir falha de restauração segura após fechar e reabrir o IPA
-- [ ] Validar persistência, restauração e holograma
-- [ ] Gerar e verificar nova build unsigned
+- [x] Restaurar o produto da API para `ruanwq`
+- [x] Ocultar o nome do produto na aba CONFIG
+- [x] Corrigir falha de restauração segura após fechar e reabrir o IPA
+- [x] Validar persistência, restauração e holograma
+- [x] Gerar e verificar nova build unsigned
+
+- [x] Alterar novamente o produto da API para `granjeiro`
+- [x] Verificar que as correções de restauração e holograma permanecem intactas
+- [x] Compactar e validar o ZIP do projeto atualizado
+
+- [ ] Gerar build unsigned do projeto com produto `granjeiro`
+- [ ] Baixar e validar o IPA gerado
+- [ ] Entregar o IPA ao usuário
