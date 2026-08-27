@@ -66,4 +66,9 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Investigar por que o holograma reporta 1 local, mas não tem efeito no jogo
 - [x] Validar nome, conteúdo, caminho e bundle do asset do holograma
 - [x] Corrigir somente a confirmação/aplicação efetiva do holograma
+- [x] Gerar e verificar nova build unsigned
+
+- [x] Alterar o produto da API de `ruanwq` para `granjeiro`
+- [x] Exibir `GRANJEIRO - FF` na aba CONFIG
+- [x] Confirmar que a correção do holograma permanece intacta
 - [ ] Gerar e verificar nova build unsigned
