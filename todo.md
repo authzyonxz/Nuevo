@@ -57,3 +57,8 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 
 - [x] Exibir “Produtos - Ruanwq” na aba CONFIG
 - [x] Verificar e gerar nova build unsigned
+
+- [x] Ocultar visualmente o nome do produto na aba CONFIG sem alterar a API
+- [x] Corrigir a injeção do HOLOGRAMA ARMAS
+- [x] Validar holograma e preservar as demais funções
+- [ ] Gerar e verificar nova build unsigned

@@ -139,12 +139,31 @@ class FreeFireModManager: ObservableObject {
 
         var rules: [PatchRule] = []
         if isHolo {
-            // O holograma tem um destino conhecido dentro do container do jogo.
-            // Usamos o caminho relativo diretamente para não depender da enumeração
-            // recursiva, que pode não atravessar contentcache em algumas versões.
-            let relativePath = "Documents/contentcache/optional/ios/gameassetbundles/\(currentTarget)"
+            // O holograma deve usar este diretório relativo. Quando o arquivo já
+            // existe em uma variação do container, usamos a localização real para
+            // não criar um destino paralelo que o jogo não lê.
+            let requiredDirectory = "Documents/contentcache/optional/ios/gameassetbundles"
+            let requiredRelativePath = "\(requiredDirectory)/\(currentTarget)"
             for bid in bundleIds {
-                guard ContainerStore.resolveAppContainerPath(bundleID: bid) != nil else { continue }
+                guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid),
+                      !rootPath.isEmpty else { continue }
+
+                let existingTarget = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
+                    .first { path in
+                        let normalized = path.replacingOccurrences(of: "\\\\", with: "/")
+                        return normalized.contains("/\(requiredDirectory)/")
+                    }
+                let relativePath: String
+                if let existingTarget,
+                   existingTarget.hasPrefix(rootPath) {
+                    relativePath = String(existingTarget.dropFirst(rootPath.count))
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                    addLog("Holograma existente: ...\(existingTarget.suffix(56))")
+                } else {
+                    relativePath = requiredRelativePath
+                    addLog("Holograma usando destino padrão: \(relativePath)")
+                }
+
                 rules.append(PatchRule(
                     bundleID: bid,
                     relativePath: relativePath,
@@ -152,7 +171,6 @@ class FreeFireModManager: ObservableObject {
                     replacementData: modData
                 ))
             }
-            addLog("Destino holograma: \(relativePath)")
         } else {
             var targetPaths: [String] = []
             for bid in bundleIds {
