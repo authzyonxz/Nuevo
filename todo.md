@@ -114,6 +114,11 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Manter o fundo estático e preservar proteção, API e demais elementos
 - [x] Gerar e verificar nova IPA unsigned
 
-- [ ] Remover o fundo animado também da `LoginView` legada
-- [ ] Confirmar que nenhuma tela de login usa `SpiderWebBackground`
+- [x] Remover o fundo animado também da `LoginView` legada
+- [x] Confirmar que nenhuma tela de login usa `SpiderWebBackground`
+- [x] Gerar e verificar nova IPA unsigned
+
+- [ ] Remover o fundo animado das abas FUNÇÕES e CONFIG após o login
+- [ ] Deixar as telas pós-login com fundo preto estático
+- [ ] Preservar proteção, API e ações das funções
 - [ ] Gerar e verificar nova IPA unsigned

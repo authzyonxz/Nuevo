@@ -356,9 +356,6 @@ struct HomeView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            SpiderWebBackground()
-                .ignoresSafeArea()
-
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
                     HStack(alignment: .center) {
@@ -593,9 +590,6 @@ struct ProfileView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-
-            SpiderWebBackground()
-                .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
