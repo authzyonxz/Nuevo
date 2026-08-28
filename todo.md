@@ -104,12 +104,16 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [ ] Remover os bastões/pauzinhos retos das partículas
 - [ ] Adicionar conexões elásticas orgânicas entre algumas bolinhas
 - [ ] Manter login, proteção e demais funções inalterados
-- [ ] Gerar e verificar nova IPA unsigned
+- [x] Gerar e verificar nova IPA unsigned
 
 - [x] Alterar o produto enviado à API de `granjeiro` para `ruanwq`
 - [x] Preservar proteção, endpoint e demais fluxos
 - [x] Gerar e verificar nova IPA unsigned
 
-- [ ] Remover completamente a animação do fundo da tela de login
-- [ ] Manter o fundo estático e preservar proteção, API e demais elementos
+- [x] Remover completamente a animação do fundo da tela de login
+- [x] Manter o fundo estático e preservar proteção, API e demais elementos
+- [x] Gerar e verificar nova IPA unsigned
+
+- [ ] Remover o fundo animado também da `LoginView` legada
+- [ ] Confirmar que nenhuma tela de login usa `SpiderWebBackground`
 - [ ] Gerar e verificar nova IPA unsigned

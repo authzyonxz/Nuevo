@@ -167,9 +167,6 @@ struct LoginView: View {
             Color.black
                 .ignoresSafeArea()
 
-            SpiderWebBackground()
-                .ignoresSafeArea()
-
             VStack(spacing: 0) {
                 Spacer()
 
