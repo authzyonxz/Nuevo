@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
+		3105SEC02 /* FFH4XSecureClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105SEC01; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
 		3105A204 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A024; };
 		3105A205 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A025; };
@@ -159,6 +160,7 @@
 		3105B123 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 
     3105LM01 /* LicenseManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
+    3105SEC01 /* FFH4XSecureClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FFH4XSecureClient.swift; sourceTree = "<group>"; };
     3105MM01 /* FreeFireModManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FreeFireModManager.swift; sourceTree = "<group>"; };
     3105MODS /* Mods */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Mods; sourceTree = "<group>"; };
     
@@ -284,8 +286,9 @@
 				3105A026 /* SBX.swift */,
 				3105A027 /* MG.swift */,
 			
-				3105LM01 /* LicenseManager.swift */,
-					3105MM01 /* FreeFireModManager.swift */,
+								3105LM01 /* LicenseManager.swift */,
+				3105SEC01 /* FFH4XSecureClient.swift */,
+				3105MM01 /* FreeFireModManager.swift */,
 				);
 				path = helpers;
 			sourceTree = "<group>";
@@ -429,6 +432,7 @@
 				3105I201,
 			
 				3105LMBF /* LicenseManager.swift in Sources */,
+				3105SEC02 /* FFH4XSecureClient.swift in Sources */,
 				3105MMBF /* FreeFireModManager.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
