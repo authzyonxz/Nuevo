@@ -68,7 +68,17 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
+        let version = AppInfo.versionTuple
+        let build = AppInfo.osBuild
+        let backend = ExploitSupportPolicy.accessPath(
+            major: version.major,
+            minor: version.minor,
+            patch: version.patch,
+            build: build
+        )
+        log("container: resolve start bundle=\(bundleID) ios=\(version.major).\(version.minor).\(version.patch) build=\(build) backend=\(String(describing: backend))")
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
+            log("container: invalid bundle identifier bundle=\(bundleID)")
             return nil
         }
         var lookupError: NSString?
@@ -78,16 +88,17 @@ enum ContainerStore {
             return path
         }
         let detail = lookupError.map(String.init) ?? "unavailable"
-        log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
+        log("container: MHA-C2 failed bundle=\(bundleID) detail=\(detail)")
 
         // Fallback for iOS builds where MCM refuses to hand out sandbox
         // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
         // walk and read each container's MCM metadata plist directly. The
         // raw reads only succeed when the sandbox escape is active.
         if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bundleID) {
-            log("patch: filesystem metadata scan resolved \(bundleID)")
+            log("container: metadata scan resolved bundle=\(bundleID) path=\(scanned)")
             return scanned
         }
+        log("container: resolution failed bundle=\(bundleID) mcm=failed metadataScan=failed")
         return nil
     }
 
@@ -98,12 +109,14 @@ enum ContainerStore {
             return nil
         }
         let traversalHandle = shouldUseBadQuery ? grantContainerAccess(appDataRoot) : -1
+        log("container: metadata scan root=\(appDataRoot) badQuery=\(shouldUseBadQuery) handle=\(traversalHandle)")
         defer {
             if traversalHandle >= 0 { bad_query_release(traversalHandle) }
         }
         let dirs = enumerateDirectories(path: appDataRoot)
+        log("container: metadata scan enumerated directories=\(dirs.count)")
         guard !dirs.isEmpty else {
-            log("patch: metadata scan unavailable — no containers enumerated")
+            log("container: metadata scan failed reason=no-directories")
             return nil
         }
         for dir in dirs {
@@ -504,10 +517,15 @@ enum ContainerStore {
     }
 
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
-        guard shouldUseBadQuery else { return -1 }
+        guard shouldUseBadQuery else {
+            log("container: access skipped path=\(containerPath) reason=backend-not-badQuery")
+            return -1
+        }
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
         var pathC = clean.utf8CString.map { Int8($0) }
-        return bad_query(&pathC, true, nil, false)
+        let handle = bad_query(&pathC, true, nil, false)
+        log("container: access request path=\(clean) handle=\(handle) build=\(AppInfo.osBuild)")
+        return handle
     }
 
     static func containersFromFilesystem() -> [InstalledApp] {

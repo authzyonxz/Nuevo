@@ -83,6 +83,10 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Verificar que as correções de restauração e holograma permanecem intactas
 - [x] Compactar e validar o ZIP do projeto atualizado
 
-- [ ] Gerar build unsigned do projeto com produto `granjeiro`
-- [ ] Baixar e validar o IPA gerado
-- [ ] Entregar o IPA ao usuário
+- [x] Gerar build unsigned do projeto com produto `granjeiro`
+- [x] Baixar e validar o IPA gerado
+- [x] Entregar o IPA ao usuário
+
+- [ ] Alterar o produto da API para `ruanwq` na versão corrigida anexada
+- [ ] Gerar e verificar build unsigned dessa versão
+- [ ] Entregar o IPA atualizado

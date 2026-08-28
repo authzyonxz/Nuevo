@@ -138,6 +138,7 @@ class FreeFireModManager: ObservableObject {
         prepareLegacyKernelAccessIfNeeded()
 
         var rules: [PatchRule] = []
+        var resolvedContainers = 0
         if isHolo {
             // O holograma deve usar este diretório relativo. Quando o arquivo já
             // existe em uma variação do container, usamos a localização real para
@@ -146,8 +147,11 @@ class FreeFireModManager: ObservableObject {
             let requiredRelativePath = "\(requiredDirectory)/\(currentTarget)"
             for bid in bundleIds {
                 guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid),
-                      !rootPath.isEmpty else { continue }
-
+                      !rootPath.isEmpty else {
+                    addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
+                    continue
+                }
+                resolvedContainers += 1
                 let candidates = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
                 let normalizedDirectory = "/\(requiredDirectory)/"
                 let existingTarget = candidates.first { path in
@@ -180,6 +184,7 @@ class FreeFireModManager: ObservableObject {
             var targetPaths: [String] = []
             for bid in bundleIds {
                 if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
+                    resolvedContainers += 1
                     addLog("Escaneando container: \(bid)")
                     let found = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
                     targetPaths.append(contentsOf: found)
@@ -220,9 +225,15 @@ class FreeFireModManager: ObservableObject {
         }
         
         if rules.isEmpty {
-            addLog("ERRO: Nenhum destino válido localizado")
-            endOperation()
-            complete(completion, success: false, message: "Destino não localizado.")
+            if resolvedContainers == 0 {
+                addLog("ERRO: nenhum container foi resolvido; verificar build, bundle ID e acesso")
+                endOperation()
+                complete(completion, success: false, message: "Container do aplicativo não localizado.")
+            } else {
+                addLog("ERRO: \(resolvedContainers) container(es) resolvido(s), mas nenhum arquivo-alvo foi localizado")
+                endOperation()
+                complete(completion, success: false, message: "Arquivo-alvo não localizado no container.")
+            }
             return
         }
 
