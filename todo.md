@@ -96,7 +96,16 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Confirmar que proteção, endpoints e demais funções não foram alterados
 - [x] Gerar e verificar a IPA unsigned do design atualizado
 
-- [ ] Corrigir o design do `KeyGateOverlay`, que é a tela de entrada realmente exibida
-- [ ] Trocar o fundo atual por bolinhas roxas maiores e animadas, sem teia nem linhas
-- [ ] Preservar integralmente a proteção, a validação e os demais fluxos
-- [ ] Gerar e verificar nova IPA unsigned após a correção
+- [x] Corrigir o design do `KeyGateOverlay`, que é a tela de entrada realmente exibida
+- [x] Trocar o fundo atual por bolinhas roxas maiores e animadas, sem teia nem linhas
+- [x] Preservar integralmente a proteção, a validação e os demais fluxos
+- [x] Gerar e verificar nova IPA unsigned após a correção
+
+- [ ] Remover os bastões/pauzinhos retos das partículas
+- [ ] Adicionar conexões elásticas orgânicas entre algumas bolinhas
+- [ ] Manter login, proteção e demais funções inalterados
+- [ ] Gerar e verificar nova IPA unsigned
+
+- [ ] Alterar o produto enviado à API de `granjeiro` para `ruanwq`
+- [ ] Preservar proteção, endpoint e demais fluxos
+- [ ] Gerar e verificar nova IPA unsigned
