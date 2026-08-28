@@ -218,7 +218,13 @@ struct LoginView: View {
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 32)
-                            .background(Color(red: 0.20, green: 0.48, blue: 0.92))
+                            .background(
+                                LinearGradient(
+                                    colors: [Color(red: 0.48, green: 0.14, blue: 0.88), Color(red: 0.25, green: 0.08, blue: 0.52)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .clipShape(Capsule())
                         }
                         .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -244,7 +250,15 @@ struct LoginView: View {
                         .foregroundStyle(.white.opacity(0.48))
                 }
                 .padding(.horizontal, 28)
-                .frame(maxWidth: 280)
+                .padding(.vertical, 22)
+                .background(Color.black.opacity(0.52))
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(Color(red: 0.68, green: 0.30, blue: 1.0).opacity(0.38), lineWidth: 1)
+                )
+                .shadow(color: Color.purple.opacity(0.22), radius: 24, x: 0, y: 12)
+                .frame(maxWidth: 300)
 
                 Spacer()
             }

@@ -1,36 +1,54 @@
 import SwiftUI
 
-/// Fundo decorativo de baixo custo: linhas radiais e arcos suaves em roxo.
-/// Não intercepta toques e deve permanecer atrás do conteúdo.
+/// Fundo decorativo animado. A camada não captura toques e fica atrás do conteúdo.
 struct SpiderWebBackground: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { timeline in
             let time = timeline.date.timeIntervalSinceReferenceDate
-            let phase = time.truncatingRemainder(dividingBy: 12.0) / 12.0
 
             Canvas { context, size in
-                let points = [
-                    CGPoint(x: size.width * 0.06, y: size.height * 0.08),
-                    CGPoint(x: size.width * 0.94, y: size.height * 0.16),
-                    CGPoint(x: size.width * 0.02, y: size.height * 0.82),
-                    CGPoint(x: size.width * 0.98, y: size.height * 0.88)
+                let purple = Color(red: 0.66, green: 0.18, blue: 1.0)
+                let brightPurple = Color(red: 0.86, green: 0.48, blue: 1.0)
+                let anchors = [
+                    CGPoint(x: size.width * 0.02, y: size.height * 0.06),
+                    CGPoint(x: size.width * 0.98, y: size.height * 0.13),
+                    CGPoint(x: size.width * 0.04, y: size.height * 0.91),
+                    CGPoint(x: size.width * 0.96, y: size.height * 0.84)
                 ]
 
-                for (index, point) in points.enumerated() {
-                    let localPhase = phase + Double(index) * 0.17
-                    let pulse = 0.72 + 0.28 * sin(localPhase * .pi * 2.0)
-                    let radius = min(size.width, size.height) * (0.42 + 0.025 * sin(localPhase * .pi * 2.0))
+                for (index, anchor) in anchors.enumerated() {
+                    let phase = time * 0.42 + Double(index) * 1.37
+                    let drift = CGFloat(sin(phase) * 10.0)
+                    let center = CGPoint(x: anchor.x + drift, y: anchor.y + CGFloat(cos(phase * 0.8) * 8.0))
+                    let rotation = phase * 0.11
+                    let radius = min(size.width, size.height) * 0.49
+                    let pulse = 0.70 + 0.30 * ((sin(phase * 1.6) + 1.0) / 2.0)
+
                     drawWeb(
                         in: &context,
-                        center: point,
+                        center: center,
                         radius: radius,
-                        opacity: 0.16 * pulse,
-                        lineWidth: 0.8
+                        rotation: rotation,
+                        opacity: 0.27 * pulse,
+                        lineWidth: 1.05,
+                        purple: purple
+                    )
+
+                    drawMovingBeads(
+                        in: &context,
+                        center: center,
+                        radius: radius,
+                        rotation: rotation,
+                        phase: phase,
+                        opacity: 0.92,
+                        color: brightPurple
                     )
                 }
+
+                let glowPulse = 0.18 + 0.10 * ((sin(time * 1.2) + 1.0) / 2.0)
+                drawCenterGlow(in: &context, size: size, color: purple, opacity: glowPulse)
             }
             .drawingGroup()
-            .opacity(0.9)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
@@ -40,20 +58,18 @@ struct SpiderWebBackground: View {
         in context: inout GraphicsContext,
         center: CGPoint,
         radius: CGFloat,
+        rotation: Double,
         opacity: Double,
-        lineWidth: CGFloat
+        lineWidth: CGFloat,
+        purple: Color
     ) {
-        let rays = 12
-        let rings = 5
-        let purple = Color(red: 0.62, green: 0.22, blue: 0.95)
+        let rays = 14
+        let rings = 6
         let stroke = StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
 
         for ray in 0..<rays {
-            let angle = (Double(ray) / Double(rays)) * .pi * 2.0
-            let end = CGPoint(
-                x: center.x + cos(angle) * radius,
-                y: center.y + sin(angle) * radius
-            )
+            let angle = rotation + (Double(ray) / Double(rays)) * .pi * 2.0
+            let end = CGPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius)
             var path = Path()
             path.move(to: center)
             path.addLine(to: end)
@@ -64,28 +80,56 @@ struct SpiderWebBackground: View {
             let ringRadius = radius * CGFloat(ring) / CGFloat(rings + 1)
             var path = Path()
             for ray in 0..<rays {
-                let angle = (Double(ray) / Double(rays)) * .pi * 2.0
-                let point = CGPoint(
-                    x: center.x + cos(angle) * ringRadius,
-                    y: center.y + sin(angle) * ringRadius
-                )
+                let angle = rotation + (Double(ray) / Double(rays)) * .pi * 2.0
+                let point = CGPoint(x: center.x + cos(angle) * ringRadius, y: center.y + sin(angle) * ringRadius)
                 if ray == 0 {
                     path.move(to: point)
                 } else {
-                    let previousAngle = (Double(ray - 1) / Double(rays)) * .pi * 2.0
-                    let previous = CGPoint(
-                        x: center.x + cos(previousAngle) * ringRadius,
-                        y: center.y + sin(previousAngle) * ringRadius
-                    )
-                    let midpoint = CGPoint(
-                        x: (previous.x + point.x) / 2.0,
-                        y: (previous.y + point.y) / 2.0
-                    )
-                    path.addQuadCurve(to: point, control: midpoint)
+                    let previousAngle = rotation + (Double(ray - 1) / Double(rays)) * .pi * 2.0
+                    let previous = CGPoint(x: center.x + cos(previousAngle) * ringRadius, y: center.y + sin(previousAngle) * ringRadius)
+                    let control = CGPoint(x: (previous.x + point.x) / 2.0, y: (previous.y + point.y) / 2.0)
+                    path.addQuadCurve(to: point, control: control)
                 }
             }
             path.closeSubpath()
-            context.stroke(path, with: .color(purple.opacity(opacity * 0.82)), style: stroke)
+            context.stroke(path, with: .color(purple.opacity(opacity * 0.88)), style: stroke)
         }
+    }
+
+    private func drawMovingBeads(
+        in context: inout GraphicsContext,
+        center: CGPoint,
+        radius: CGFloat,
+        rotation: Double,
+        phase: Double,
+        opacity: Double,
+        color: Color
+    ) {
+        let beads = 9
+        for index in 0..<beads {
+            let progress = (phase * 0.12 + Double(index) / Double(beads)).truncatingRemainder(dividingBy: 1.0)
+            let angle = rotation + progress * .pi * 2.0
+            let beadRadius = radius * (0.30 + 0.055 * CGFloat(index % 3))
+            let point = CGPoint(x: center.x + cos(angle) * beadRadius, y: center.y + sin(angle) * beadRadius)
+            let size = CGFloat(2.8 + 1.2 * ((sin(phase + Double(index)) + 1.0) / 2.0))
+            let rect = CGRect(x: point.x - size / 2.0, y: point.y - size / 2.0, width: size, height: size)
+            context.fill(Path(ellipseIn: rect), with: .color(color.opacity(opacity)))
+        }
+
+        let centerSize = CGFloat(5.0 + 2.0 * ((sin(phase * 1.4) + 1.0) / 2.0))
+        let centerRect = CGRect(x: center.x - centerSize / 2.0, y: center.y - centerSize / 2.0, width: centerSize, height: centerSize)
+        context.fill(Path(ellipseIn: centerRect), with: .color(color.opacity(opacity * 0.95)))
+    }
+
+    private func drawCenterGlow(in context: inout GraphicsContext, size: CGSize, color: Color, opacity: Double) {
+        let center = CGPoint(x: size.width / 2.0, y: size.height * 0.47)
+        let glowRadius = min(size.width, size.height) * 0.32
+        let rect = CGRect(x: center.x - glowRadius, y: center.y - glowRadius, width: glowRadius * 2.0, height: glowRadius * 2.0)
+        context.fill(Path(ellipseIn: rect), with: .radialGradient(
+            Gradient(colors: [color.opacity(opacity), color.opacity(0.0)]),
+            center: center,
+            startRadius: 0,
+            endRadius: glowRadius
+        ))
     }
 }

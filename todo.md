@@ -87,8 +87,7 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Baixar e validar o IPA gerado
 - [x] Entregar o IPA ao usuário
 
-- [x] Processar a nova fonte `Novo.zip` do MediaFire
-- [x] Ler e avaliar o guia de configuração e hardening incluído
-- [x] Aplicar somente as instruções compatíveis com build unsigned e sem alteração indevida do funcionamento
-- [x] Validar o projeto Xcode e o workflow de build
-- [ ] Gerar e verificar a IPA unsigned da nova fonte
+- [ ] Processar `MenagerFF_visual_animado_corrigido.zip`
+- [ ] Aplicar o mesmo padrão Release/hardening do guia anterior
+- [ ] Corrigir referências de arquivos necessárias para a compilação
+- [ ] Gerar e verificar a nova IPA unsigned
