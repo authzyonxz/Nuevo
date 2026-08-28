@@ -58,10 +58,7 @@ struct KeyGateOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.94)
-                .ignoresSafeArea()
-
-            SpiderWebBackground()
+            Color.black
                 .ignoresSafeArea()
 
             VStack(spacing: 15) {

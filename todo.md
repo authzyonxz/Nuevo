@@ -106,6 +106,10 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [ ] Manter login, proteção e demais funções inalterados
 - [ ] Gerar e verificar nova IPA unsigned
 
-- [ ] Alterar o produto enviado à API de `granjeiro` para `ruanwq`
-- [ ] Preservar proteção, endpoint e demais fluxos
+- [x] Alterar o produto enviado à API de `granjeiro` para `ruanwq`
+- [x] Preservar proteção, endpoint e demais fluxos
+- [x] Gerar e verificar nova IPA unsigned
+
+- [ ] Remover completamente a animação do fundo da tela de login
+- [ ] Manter o fundo estático e preservar proteção, API e demais elementos
 - [ ] Gerar e verificar nova IPA unsigned
