@@ -58,79 +58,88 @@ struct KeyGateOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.82)
+            Color.black.opacity(0.94)
                 .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(spacing: 12) {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 38, height: 38)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            SpiderWebBackground()
+                .ignoresSafeArea()
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("INSIRA SUA KEY")
-                            .font(.system(size: 17, weight: .heavy, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("Valide seu acesso para continuar")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.48))
-                    }
-                }
+            VStack(spacing: 15) {
+                Text("EXPLOIT iOS")
+                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    .tracking(0.1)
+                    .foregroundStyle(.white)
 
-                SecureField("Cole sua key aqui", text: $inputKey)
+                SecureField("Digite sua chave", text: $inputKey)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .foregroundColor(.white)
+                    .textContentType(.password)
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white)
                     .tint(.white)
-                    .padding(.horizontal, 14)
-                    .frame(height: 50)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                    )
+                    .padding(.horizontal, 18)
+                    .frame(height: 36)
+                    .background(Color(red: 0.15, green: 0.15, blue: 0.16))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
 
                 if !message.isEmpty {
                     Text(message)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundColor(.red.opacity(0.9))
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.red.opacity(0.95))
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 8)
                 }
 
-                Button(action: validate) {
-                    HStack(spacing: 8) {
-                        if licenseManager.isLoading {
-                            ProgressView().tint(.black)
-                        } else {
-                            Image(systemName: "arrow.right.circle.fill")
-                            Text("CONTINUAR")
+                HStack(spacing: 8) {
+                    Button(action: validate) {
+                        HStack(spacing: 6) {
+                            if licenseManager.isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(0.72)
+                            } else {
+                                Text("Enviar")
+                            }
                         }
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
+                        .background(Color(red: 0.29, green: 0.55, blue: 0.92))
+                        .clipShape(Capsule())
                     }
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.55 : 1)
+
+                    Button {
+                        guard let pasted = UIPasteboard.general.string else { return }
+                        inputKey = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                    } label: {
+                        Text("Paste")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 34)
+                            .background(Color(red: 0.23, green: 0.23, blue: 0.24))
+                            .clipShape(Capsule())
+                    }
+                    .disabled(licenseManager.isLoading)
                 }
-                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
             }
-            .padding(22)
-            .frame(maxWidth: 390)
-            .background(Color(red: 0.035, green: 0.035, blue: 0.045))
+            .padding(.horizontal, 28)
+            .padding(.vertical, 24)
+            .frame(maxWidth: 300)
+            .background(Color(red: 0.025, green: 0.025, blue: 0.03).opacity(0.94))
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.13), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.7), radius: 32, y: 16)
-            .padding(.horizontal, 24)
+            .shadow(color: .black.opacity(0.65), radius: 28, x: 0, y: 14)
         }
+        .preferredColorScheme(.dark)
     }
 
     private func validate() {

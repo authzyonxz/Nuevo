@@ -91,3 +91,12 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Aplicar o mesmo padrão Release/hardening do guia anterior
 - [x] Corrigir referências de arquivos necessárias para a compilação
 - [x] Gerar e verificar a nova IPA unsigned
+- [x] Alterar somente o design da tela de login conforme a referência
+- [x] Substituir a teia por partículas alongadas animadas sem conexões
+- [x] Confirmar que proteção, endpoints e demais funções não foram alterados
+- [x] Gerar e verificar a IPA unsigned do design atualizado
+
+- [ ] Corrigir o design do `KeyGateOverlay`, que é a tela de entrada realmente exibida
+- [ ] Trocar o fundo atual por bolinhas roxas maiores e animadas, sem teia nem linhas
+- [ ] Preservar integralmente a proteção, a validação e os demais fluxos
+- [ ] Gerar e verificar nova IPA unsigned após a correção
