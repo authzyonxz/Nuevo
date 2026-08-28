@@ -158,86 +158,98 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.02, green: 0.02, blue: 0.04)
+            Color.black
                 .ignoresSafeArea()
 
-            VStack(spacing: 24) {
+            SpiderWebBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
                 Spacer()
 
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(LinearGradient(gradient: Gradient(colors: [.blue, .cyan]), startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 90, height: 90)
-                            .shadow(color: .blue.opacity(0.5), radius: 15)
-                        
-                        Image(systemName: "shield.checkerboard")
-                            .font(.system(size: 40))
-                            .foregroundColor(.white)
+                VStack(spacing: 14) {
+                    HStack(spacing: 6) {
+                        Text("EXPLOIT iOS")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .tracking(0.15)
+                            .foregroundStyle(.white)
+
+                        Image(systemName: "moon.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .accessibilityHidden(true)
                     }
 
-                    Text("MenagerFF")
-                        .font(.system(size: 28, weight: .black))
-                        .foregroundColor(.white)
-                }
+                    SecureField("Digite sua chave", text: $inputKey)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .textContentType(.password)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white)
+                        .tint(.white)
+                        .padding(.horizontal, 18)
+                        .frame(height: 34)
+                        .background(Color(red: 0.14, green: 0.14, blue: 0.15))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
+                        .onSubmit(onLogin)
 
-                // Janela preta com título em branco
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("INSIRA SUA KEY")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-
-                    SecureField("Digite sua Key...", text: $inputKey)
-                        .padding(16)
-                        .background(Color.black)
-                        .cornerRadius(12)
-                        .foregroundColor(.white)
-                        .font(.system(size: 15, design: .monospaced))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                        )
-
-                    if let err = licenseManager.errorMessage {
+                    if let err = licenseManager.errorMessage, !err.isEmpty {
                         Text(err)
-                            .font(.system(size: 12))
-                            .foregroundColor(.red)
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.red.opacity(0.95))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 8)
                     }
 
-                    Button(action: onLogin) {
-                        HStack {
-                            if licenseManager.isLoading {
-                                ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            } else {
-                                Text("ENTRAR NO PAINEL")
-                                    .font(.system(size: 15, weight: .bold))
+                    HStack(spacing: 8) {
+                        Button(action: onLogin) {
+                            HStack(spacing: 6) {
+                                if licenseManager.isLoading {
+                                    ProgressView()
+                                        .tint(.white)
+                                        .scaleEffect(0.72)
+                                } else {
+                                    Text("Enviar")
+                                }
                             }
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 32)
+                            .background(Color(red: 0.20, green: 0.48, blue: 0.92))
+                            .clipShape(Capsule())
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(LinearGradient(gradient: Gradient(colors: [.blue, Color.blue.opacity(0.7)]), startPoint: .leading, endPoint: .trailing))
-                        .cornerRadius(12)
-                        .shadow(color: .blue.opacity(0.3), radius: 8, y: 4)
-                    }
-                    .disabled(licenseManager.isLoading)
-                }
-                .padding(24)
-                .background(Color(#colorLiteral(red: 0.06, green: 0.06, blue: 0.08, alpha: 1)))
-                .cornerRadius(20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-                .padding(.horizontal, 24)
+                        .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.55 : 1)
 
-                Text("Tempo restante: \(timeRemaining)s")
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.4))
+                        Button {
+                            guard let pasted = UIPasteboard.general.string else { return }
+                            inputKey = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                        } label: {
+                            Text("Paste")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 32)
+                                .background(Color(red: 0.22, green: 0.22, blue: 0.23))
+                                .clipShape(Capsule())
+                        }
+                        .disabled(licenseManager.isLoading)
+                    }
+
+                    Text("Auto close in \(timeRemaining) seconds")
+                        .font(.system(size: 9, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.48))
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: 280)
 
                 Spacer()
             }
         }
+        .preferredColorScheme(.dark)
     }
 }
 
@@ -316,6 +328,13 @@ private enum GameChoice: String, CaseIterable, Identifiable {
         case .freeFireMax: return "FreeFireMaxLogo"
         }
     }
+
+    var bundleID: String {
+        switch self {
+        case .freeFire: return "com.dts.freefireth"
+        case .freeFireMax: return "com.dts.freefiremax"
+        }
+    }
 }
 
 struct HomeView: View {
@@ -332,6 +351,9 @@ struct HomeView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+
+            SpiderWebBackground()
+                .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
@@ -482,9 +504,7 @@ struct HomeView: View {
             return
         }
 
-        // A key é validada na entrada do IPA. Aqui o switch mantém apenas
-        // o fluxo original de aplicação do patch, sem nova chamada à API.
-        modManager.applyMod(mod) { _, msg in
+        modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
             alertMessage = msg
             showAlert = true
         }
@@ -569,6 +589,9 @@ struct ProfileView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+
+            SpiderWebBackground()
+                .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
@@ -697,7 +720,7 @@ struct InfoRow: View {
     let title: String
     let value: String
     let color: Color
-    
+
     var body: some View {
         HStack {
             Text(title)

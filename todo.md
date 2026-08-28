@@ -87,6 +87,8 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Baixar e validar o IPA gerado
 - [x] Entregar o IPA ao usuário
 
-- [ ] Alterar o produto da API para `ruanwq` na versão corrigida anexada
-- [ ] Gerar e verificar build unsigned dessa versão
-- [ ] Entregar o IPA atualizado
+- [x] Processar a nova fonte `Novo.zip` do MediaFire
+- [x] Ler e avaliar o guia de configuração e hardening incluído
+- [x] Aplicar somente as instruções compatíveis com build unsigned e sem alteração indevida do funcionamento
+- [x] Validar o projeto Xcode e o workflow de build
+- [ ] Gerar e verificar a IPA unsigned da nova fonte

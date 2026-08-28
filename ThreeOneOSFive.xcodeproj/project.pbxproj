@@ -72,6 +72,7 @@
 		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
 
     3105LMBF /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105LM01 /* LicenseManager.swift */; };
+    3105WEB02 /* SpiderWebBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105WEB01 /* SpiderWebBackground.swift */; };
     3105MMBF /* FreeFireModManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105MM01 /* FreeFireModManager.swift */; };
     3105MODSBF /* Mods in Resources */ = {isa = PBXBuildFile; fileRef = 3105MODS /* Mods */; };
     
@@ -161,6 +162,7 @@
 
     3105LM01 /* LicenseManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
     3105SEC01 /* FFH4XSecureClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FFH4XSecureClient.swift; sourceTree = "<group>"; };
+    3105WEB01 /* SpiderWebBackground.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpiderWebBackground.swift; sourceTree = "<group>"; };
     3105MM01 /* FreeFireModManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FreeFireModManager.swift; sourceTree = "<group>"; };
     3105MODS /* Mods */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Mods; sourceTree = "<group>"; };
     
@@ -289,6 +291,7 @@
 								3105LM01 /* LicenseManager.swift */,
 				3105SEC01 /* FFH4XSecureClient.swift */,
 				3105MM01 /* FreeFireModManager.swift */,
+                3105WEB01 /* SpiderWebBackground.swift */,
 				);
 				path = helpers;
 			sourceTree = "<group>";
@@ -433,7 +436,8 @@
 			
 				3105LMBF /* LicenseManager.swift in Sources */,
 				3105SEC02 /* FFH4XSecureClient.swift in Sources */,
-				3105MMBF /* FreeFireModManager.swift in Sources */,);
+				3105MMBF /* FreeFireModManager.swift in Sources */,
+                3105WEB02 /* SpiderWebBackground.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -619,11 +623,17 @@
 					DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 					DEAD_CODE_STRIPPING = YES;
 					ENABLE_NS_ASSERTIONS = NO;
+					ENABLE_TESTABILITY = NO;
+					ONLY_ACTIVE_ARCH = NO;
+					DEPLOYMENT_POSTPROCESSING = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 					GCC_C_LANGUAGE_STANDARD = gnu17;
 					GCC_NO_COMMON_BLOCKS = YES;
-					GCC_OPTIMIZATION_LEVEL = s;
+					GCC_OPTIMIZATION_LEVEL = 3;
+					GCC_GENERATE_TEST_COVERAGE_FILES = NO;
+					CLANG_ENABLE_CODE_COVERAGE = NO;
+					INSTRUMENT_PROGRAM_FLOW = NO;
 					STRIP_INSTALLED_PRODUCT = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -637,6 +647,7 @@
 				SDKROOT = iphoneos;
 					SWIFT_COMPILATION_MODE = wholemodule;
 					SWIFT_OPTIMIZATION_LEVEL = "-O";
+					SWIFT_REFLECTION_METADATA_LEVEL = without-names;
 					STRIP_SWIFT_SYMBOLS = YES;
 					VALIDATE_PRODUCT = YES;
 			};

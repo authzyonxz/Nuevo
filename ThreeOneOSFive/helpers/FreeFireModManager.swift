@@ -61,7 +61,7 @@ class FreeFireModManager: ObservableObject {
 
     private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
-    private let bundleIds = ["com.dts.freefireth", "com.dts.freefiremax"]
+    private let supportedBundleIDs: Set<String> = ["com.dts.freefireth", "com.dts.freefiremax"]
     
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
 
@@ -100,7 +100,23 @@ class FreeFireModManager: ObservableObject {
         }
     }
 
-    func applyMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+    func applyMod(_ mod: ModType, bundleID: String, completion: @escaping (Bool, String) -> Void) {
+        guard supportedBundleIDs.contains(bundleID) else {
+            complete(completion, success: false, message: "Jogo selecionado não suportado.")
+            return
+        }
+        LicenseManager.shared.recheckSecureSession { [weak self] valid, message in
+            guard let self else { return }
+            guard valid else {
+                self.complete(completion, success: false, message: message ?? "Sessão expirada. Valide a key novamente.")
+                return
+            }
+            self.applyModAfterSessionCheck(mod, bundleID: bundleID, completion: completion)
+        }
+    }
+
+    private func applyModAfterSessionCheck(_ mod: ModType, bundleID: String, completion: @escaping (Bool, String) -> Void) {
+        let bundleIds = [bundleID]
         guard LicenseManager.shared.isAuthorized else {
             complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
             return
@@ -314,6 +330,17 @@ class FreeFireModManager: ObservableObject {
     }
 
     func restoreOriginal(completion: @escaping (Bool, String) -> Void) {
+        LicenseManager.shared.recheckSecureSession { [weak self] valid, message in
+            guard let self else { return }
+            guard valid else {
+                self.complete(completion, success: false, message: message ?? "Sessão expirada. Valide a key novamente.")
+                return
+            }
+            self.restoreOriginalAfterSessionCheck(completion: completion)
+        }
+    }
+
+    private func restoreOriginalAfterSessionCheck(completion: @escaping (Bool, String) -> Void) {
         guard beginOperation() else {
             complete(completion, success: false, message: "Outra operação já está em andamento.")
             return
