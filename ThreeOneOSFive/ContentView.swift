@@ -167,18 +167,11 @@ struct LoginView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                VStack(spacing: 14) {
-                    HStack(spacing: 6) {
-                        Text("EXPLOIT iOS")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .tracking(0.15)
-                            .foregroundStyle(.white)
-
-                        Image(systemName: "moon.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.9))
-                            .accessibilityHidden(true)
-                    }
+                VStack(spacing: 15) {
+                    Text("EXPLOIT iOS")
+                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .tracking(0.1)
+                        .foregroundStyle(.white)
 
                     SecureField("Digite sua chave", text: $inputKey)
                         .textInputAutocapitalization(.never)
@@ -188,10 +181,10 @@ struct LoginView: View {
                         .foregroundStyle(.white)
                         .tint(.white)
                         .padding(.horizontal, 18)
-                        .frame(height: 34)
-                        .background(Color(red: 0.14, green: 0.14, blue: 0.15))
+                        .frame(height: 36)
+                        .background(Color(red: 0.15, green: 0.15, blue: 0.16))
                         .clipShape(Capsule())
-                        .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
+                        .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
                         .onSubmit(onLogin)
 
                     if let err = licenseManager.errorMessage, !err.isEmpty {
@@ -217,14 +210,8 @@ struct LoginView: View {
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 32)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(red: 0.48, green: 0.14, blue: 0.88), Color(red: 0.25, green: 0.08, blue: 0.52)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .frame(height: 34)
+                            .background(Color(red: 0.29, green: 0.55, blue: 0.92))
                             .clipShape(Capsule())
                         }
                         .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -238,8 +225,8 @@ struct LoginView: View {
                                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 32)
-                                .background(Color(red: 0.22, green: 0.22, blue: 0.23))
+                                .frame(height: 34)
+                                .background(Color(red: 0.23, green: 0.23, blue: 0.24))
                                 .clipShape(Capsule())
                         }
                         .disabled(licenseManager.isLoading)
@@ -250,14 +237,14 @@ struct LoginView: View {
                         .foregroundStyle(.white.opacity(0.48))
                 }
                 .padding(.horizontal, 28)
-                .padding(.vertical, 22)
-                .background(Color.black.opacity(0.52))
-                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .padding(.vertical, 24)
+                .background(Color(red: 0.025, green: 0.025, blue: 0.03).opacity(0.92))
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color(red: 0.68, green: 0.30, blue: 1.0).opacity(0.38), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.white.opacity(0.13), lineWidth: 1)
                 )
-                .shadow(color: Color.purple.opacity(0.22), radius: 24, x: 0, y: 12)
+                .shadow(color: .black.opacity(0.65), radius: 28, x: 0, y: 14)
                 .frame(maxWidth: 300)
 
                 Spacer()

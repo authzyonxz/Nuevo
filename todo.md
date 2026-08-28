@@ -87,7 +87,7 @@ A árvore `ThreeOneOSFive` e o projeto Xcode devem permanecer idênticos ao ZIP 
 - [x] Baixar e validar o IPA gerado
 - [x] Entregar o IPA ao usuário
 
-- [ ] Processar `MenagerFF_visual_animado_corrigido.zip`
-- [ ] Aplicar o mesmo padrão Release/hardening do guia anterior
-- [ ] Corrigir referências de arquivos necessárias para a compilação
-- [ ] Gerar e verificar a nova IPA unsigned
+- [x] Processar `MenagerFF_visual_animado_corrigido.zip`
+- [x] Aplicar o mesmo padrão Release/hardening do guia anterior
+- [x] Corrigir referências de arquivos necessárias para a compilação
+- [x] Gerar e verificar a nova IPA unsigned

@@ -1,52 +1,73 @@
 import SwiftUI
 
-/// Fundo decorativo animado. A camada não captura toques e fica atrás do conteúdo.
+/// Fundo decorativo de partículas alongadas. Não captura toques e fica atrás do conteúdo.
 struct SpiderWebBackground: View {
+    private struct Particle {
+        let x: CGFloat
+        let y: CGFloat
+        let length: CGFloat
+        let thickness: CGFloat
+        let angle: Double
+        let speed: Double
+        let phase: Double
+        let brightness: Double
+    }
+
+    private let particles: [Particle] = [
+        Particle(x: 0.10, y: 0.13, length: 22, thickness: 3.0, angle: -0.30, speed: 0.55, phase: 0.4, brightness: 0.78),
+        Particle(x: 0.25, y: 0.08, length: 14, thickness: 2.6, angle: 0.16, speed: 0.38, phase: 1.8, brightness: 0.55),
+        Particle(x: 0.44, y: 0.18, length: 20, thickness: 3.2, angle: -0.18, speed: 0.48, phase: 2.7, brightness: 0.64),
+        Particle(x: 0.70, y: 0.11, length: 17, thickness: 2.8, angle: 0.28, speed: 0.60, phase: 3.5, brightness: 0.72),
+        Particle(x: 0.90, y: 0.20, length: 25, thickness: 3.2, angle: -0.42, speed: 0.42, phase: 4.1, brightness: 0.58),
+        Particle(x: 0.06, y: 0.34, length: 16, thickness: 2.7, angle: 0.30, speed: 0.44, phase: 5.0, brightness: 0.60),
+        Particle(x: 0.19, y: 0.44, length: 24, thickness: 3.4, angle: -0.12, speed: 0.52, phase: 0.9, brightness: 0.70),
+        Particle(x: 0.82, y: 0.39, length: 18, thickness: 2.8, angle: 0.20, speed: 0.50, phase: 2.1, brightness: 0.62),
+        Particle(x: 0.95, y: 0.51, length: 23, thickness: 3.0, angle: -0.26, speed: 0.36, phase: 3.0, brightness: 0.54),
+        Particle(x: 0.12, y: 0.68, length: 19, thickness: 3.1, angle: 0.22, speed: 0.58, phase: 4.4, brightness: 0.66),
+        Particle(x: 0.31, y: 0.82, length: 26, thickness: 3.3, angle: -0.34, speed: 0.46, phase: 5.2, brightness: 0.76),
+        Particle(x: 0.55, y: 0.72, length: 15, thickness: 2.6, angle: 0.12, speed: 0.40, phase: 1.1, brightness: 0.55),
+        Particle(x: 0.75, y: 0.86, length: 22, thickness: 3.2, angle: -0.20, speed: 0.53, phase: 2.8, brightness: 0.68),
+        Particle(x: 0.93, y: 0.76, length: 16, thickness: 2.7, angle: 0.35, speed: 0.45, phase: 4.9, brightness: 0.60),
+        Particle(x: 0.42, y: 0.50, length: 12, thickness: 2.5, angle: -0.40, speed: 0.33, phase: 3.8, brightness: 0.46),
+        Particle(x: 0.61, y: 0.35, length: 13, thickness: 2.5, angle: 0.42, speed: 0.57, phase: 0.2, brightness: 0.50)
+    ]
+
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { timeline in
             let time = timeline.date.timeIntervalSinceReferenceDate
 
             Canvas { context, size in
                 let purple = Color(red: 0.66, green: 0.18, blue: 1.0)
-                let brightPurple = Color(red: 0.86, green: 0.48, blue: 1.0)
-                let anchors = [
-                    CGPoint(x: size.width * 0.02, y: size.height * 0.06),
-                    CGPoint(x: size.width * 0.98, y: size.height * 0.13),
-                    CGPoint(x: size.width * 0.04, y: size.height * 0.91),
-                    CGPoint(x: size.width * 0.96, y: size.height * 0.84)
-                ]
+                let softPurple = Color(red: 0.82, green: 0.44, blue: 1.0)
 
-                for (index, anchor) in anchors.enumerated() {
-                    let phase = time * 0.42 + Double(index) * 1.37
-                    let drift = CGFloat(sin(phase) * 10.0)
-                    let center = CGPoint(x: anchor.x + drift, y: anchor.y + CGFloat(cos(phase * 0.8) * 8.0))
-                    let rotation = phase * 0.11
-                    let radius = min(size.width, size.height) * 0.49
-                    let pulse = 0.70 + 0.30 * ((sin(phase * 1.6) + 1.0) / 2.0)
-
-                    drawWeb(
+                for particle in particles {
+                    drawParticle(
                         in: &context,
-                        center: center,
-                        radius: radius,
-                        rotation: rotation,
-                        opacity: 0.27 * pulse,
-                        lineWidth: 1.05,
-                        purple: purple
-                    )
-
-                    drawMovingBeads(
-                        in: &context,
-                        center: center,
-                        radius: radius,
-                        rotation: rotation,
-                        phase: phase,
-                        opacity: 0.92,
-                        color: brightPurple
+                        particle: particle,
+                        size: size,
+                        time: time,
+                        color: particle.brightness > 0.68 ? softPurple : purple
                     )
                 }
 
-                let glowPulse = 0.18 + 0.10 * ((sin(time * 1.2) + 1.0) / 2.0)
-                drawCenterGlow(in: &context, size: size, color: purple, opacity: glowPulse)
+                let glowPulse = 0.10 + 0.06 * ((sin(time * 0.85) + 1.0) / 2.0)
+                let center = CGPoint(x: size.width / 2.0, y: size.height * 0.48)
+                let glowRadius = min(size.width, size.height) * 0.34
+                let glowRect = CGRect(
+                    x: center.x - glowRadius,
+                    y: center.y - glowRadius,
+                    width: glowRadius * 2.0,
+                    height: glowRadius * 2.0
+                )
+                context.fill(
+                    Path(ellipseIn: glowRect),
+                    with: .radialGradient(
+                        Gradient(colors: [purple.opacity(glowPulse), purple.opacity(0.0)]),
+                        center: center,
+                        startRadius: 0,
+                        endRadius: glowRadius
+                    )
+                )
             }
             .drawingGroup()
         }
@@ -54,82 +75,51 @@ struct SpiderWebBackground: View {
         .accessibilityHidden(true)
     }
 
-    private func drawWeb(
+    private func drawParticle(
         in context: inout GraphicsContext,
-        center: CGPoint,
-        radius: CGFloat,
-        rotation: Double,
-        opacity: Double,
-        lineWidth: CGFloat,
-        purple: Color
-    ) {
-        let rays = 14
-        let rings = 6
-        let stroke = StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
-
-        for ray in 0..<rays {
-            let angle = rotation + (Double(ray) / Double(rays)) * .pi * 2.0
-            let end = CGPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius)
-            var path = Path()
-            path.move(to: center)
-            path.addLine(to: end)
-            context.stroke(path, with: .color(purple.opacity(opacity)), style: stroke)
-        }
-
-        for ring in 1...rings {
-            let ringRadius = radius * CGFloat(ring) / CGFloat(rings + 1)
-            var path = Path()
-            for ray in 0..<rays {
-                let angle = rotation + (Double(ray) / Double(rays)) * .pi * 2.0
-                let point = CGPoint(x: center.x + cos(angle) * ringRadius, y: center.y + sin(angle) * ringRadius)
-                if ray == 0 {
-                    path.move(to: point)
-                } else {
-                    let previousAngle = rotation + (Double(ray - 1) / Double(rays)) * .pi * 2.0
-                    let previous = CGPoint(x: center.x + cos(previousAngle) * ringRadius, y: center.y + sin(previousAngle) * ringRadius)
-                    let control = CGPoint(x: (previous.x + point.x) / 2.0, y: (previous.y + point.y) / 2.0)
-                    path.addQuadCurve(to: point, control: control)
-                }
-            }
-            path.closeSubpath()
-            context.stroke(path, with: .color(purple.opacity(opacity * 0.88)), style: stroke)
-        }
-    }
-
-    private func drawMovingBeads(
-        in context: inout GraphicsContext,
-        center: CGPoint,
-        radius: CGFloat,
-        rotation: Double,
-        phase: Double,
-        opacity: Double,
+        particle: Particle,
+        size: CGSize,
+        time: TimeInterval,
         color: Color
     ) {
-        let beads = 9
-        for index in 0..<beads {
-            let progress = (phase * 0.12 + Double(index) / Double(beads)).truncatingRemainder(dividingBy: 1.0)
-            let angle = rotation + progress * .pi * 2.0
-            let beadRadius = radius * (0.30 + 0.055 * CGFloat(index % 3))
-            let point = CGPoint(x: center.x + cos(angle) * beadRadius, y: center.y + sin(angle) * beadRadius)
-            let size = CGFloat(2.8 + 1.2 * ((sin(phase + Double(index)) + 1.0) / 2.0))
-            let rect = CGRect(x: point.x - size / 2.0, y: point.y - size / 2.0, width: size, height: size)
-            context.fill(Path(ellipseIn: rect), with: .color(color.opacity(opacity)))
-        }
+        let phase = time * particle.speed + particle.phase
+        let breathing = 0.72 + 0.28 * ((sin(phase * 1.35) + 1.0) / 2.0)
+        let stretch = 0.72 + 0.42 * ((sin(phase * 0.92 + 1.1) + 1.0) / 2.0)
+        let driftX = CGFloat(sin(phase * 0.72) * 12.0)
+        let driftY = CGFloat(cos(phase * 0.58) * 10.0)
+        let center = CGPoint(
+            x: size.width * particle.x + driftX,
+            y: size.height * particle.y + driftY
+        )
+        let length = particle.length * stretch
+        let thickness = particle.thickness * (0.85 + 0.20 * breathing)
+        let halfLength = length / 2.0
+        let direction = CGVector(dx: cos(particle.angle), dy: sin(particle.angle))
+        let start = CGPoint(
+            x: center.x - direction.dx * halfLength,
+            y: center.y - direction.dy * halfLength
+        )
+        let end = CGPoint(
+            x: center.x + direction.dx * halfLength,
+            y: center.y + direction.dy * halfLength
+        )
 
-        let centerSize = CGFloat(5.0 + 2.0 * ((sin(phase * 1.4) + 1.0) / 2.0))
-        let centerRect = CGRect(x: center.x - centerSize / 2.0, y: center.y - centerSize / 2.0, width: centerSize, height: centerSize)
-        context.fill(Path(ellipseIn: centerRect), with: .color(color.opacity(opacity * 0.95)))
-    }
+        var path = Path()
+        path.move(to: start)
+        path.addLine(to: end)
+        context.stroke(
+            path,
+            with: .color(color.opacity((0.20 + particle.brightness * 0.34) * breathing)),
+            style: StrokeStyle(lineWidth: thickness, lineCap: .round)
+        )
 
-    private func drawCenterGlow(in context: inout GraphicsContext, size: CGSize, color: Color, opacity: Double) {
-        let center = CGPoint(x: size.width / 2.0, y: size.height * 0.47)
-        let glowRadius = min(size.width, size.height) * 0.32
-        let rect = CGRect(x: center.x - glowRadius, y: center.y - glowRadius, width: glowRadius * 2.0, height: glowRadius * 2.0)
-        context.fill(Path(ellipseIn: rect), with: .radialGradient(
-            Gradient(colors: [color.opacity(opacity), color.opacity(0.0)]),
-            center: center,
-            startRadius: 0,
-            endRadius: glowRadius
-        ))
+        let dotSize = max(2.0, thickness * 0.80)
+        let dotRect = CGRect(
+            x: center.x - dotSize / 2.0,
+            y: center.y - dotSize / 2.0,
+            width: dotSize,
+            height: dotSize
+        )
+        context.fill(Path(ellipseIn: dotRect), with: .color(color.opacity(0.48 * breathing)))
     }
 }
