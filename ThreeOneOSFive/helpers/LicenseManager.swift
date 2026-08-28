@@ -175,6 +175,7 @@ final class LicenseManager: ObservableObject {
                 self.licenseInfo = nil
                 completion(false, self.userMessage(for: error))
             } catch {
+                guard let self else { return }
                 self.isAuthorized = false
                 self.secureClient = nil
                 self.licenseInfo = nil
