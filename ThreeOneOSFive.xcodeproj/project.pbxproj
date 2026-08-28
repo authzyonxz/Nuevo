@@ -242,9 +242,11 @@
 				3105C102 /* FolderPatchSelectionView.swift */,
 				3105E101 /* CleanerView.swift */,
 				3105F106 /* WallpaperLabView.swift */,
-				3105F108 /* OnboardingView.swift */,
-			);
-			path = views;
+									3105F108 /* OnboardingView.swift */,
+					3105WEB01 /* SpiderWebBackground.swift */,
+				);
+				path = views;
+
 			sourceTree = "<group>";
 		};
 		3105A405 /* helpers */ = {
@@ -290,9 +292,9 @@
 			
 								3105LM01 /* LicenseManager.swift */,
 				3105SEC01 /* FFH4XSecureClient.swift */,
-				3105MM01 /* FreeFireModManager.swift */,
-                3105WEB01 /* SpiderWebBackground.swift */,
-				);
+									3105MM01 /* FreeFireModManager.swift */,
+					);
+
 				path = helpers;
 			sourceTree = "<group>";
 		};
