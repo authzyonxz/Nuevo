@@ -427,22 +427,33 @@ struct HomeView: View {
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
+        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
                 let accessed = url.startAccessingSecurityScopedResource()
                 defer { if accessed { url.stopAccessingSecurityScopedResource() } }
                 do {
-                    pendingData = try Data(contentsOf: url)
-                    pendingFilename = url.lastPathComponent
-                    showNameSheet = true
+                    let importedData = try Data(contentsOf: url)
+                    let importedFilename = url.lastPathComponent
+                    // O seletor ainda está sendo dispensado neste callback. Adiar a
+                    // próxima apresentação evita que a tela de nome seja descartada.
+                    DispatchQueue.main.async {
+                        pendingData = importedData
+                        pendingFilename = importedFilename
+                        showNameSheet = true
+                    }
                 } catch {
-                    alertMessage = "Não foi possível ler o arquivo importado."
+                    DispatchQueue.main.async {
+                        alertMessage = "Não foi possível ler o arquivo importado."
+                        showAlert = true
+                    }
+                }
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    alertMessage = "Seleção cancelada ou arquivo indisponível: \(error.localizedDescription)"
                     showAlert = true
                 }
-            case .failure:
-                break
             }
         }
         .sheet(isPresented: $showNameSheet) {
