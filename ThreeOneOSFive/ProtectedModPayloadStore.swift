@@ -1,6 +1,11 @@
 import CryptoKit
 import Foundation
 
+// Mantido somente para compatibilidade do payload legado; não é exibido nem ativado pela UI.
+enum ModType: String {
+    case hsAlto, hsPescoco, hsPeito, hologramaArmas
+}
+
 /// Payloads protegidos contra extração casual do IPA.
 /// A descriptografia ocorre somente em memória e o plaintext não é gravado no bundle.
 enum ProtectedModPayloadStore {

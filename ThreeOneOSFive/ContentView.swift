@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
@@ -348,6 +349,10 @@ struct HomeView: View {
     @State private var alertMessage: String = ""
     @State private var showAlert: Bool = false
     @State private var showLogs: Bool = false
+    @State private var showFileImporter = false
+    @State private var showNameSheet = false
+    @State private var pendingFilename = ""
+    @State private var pendingData: Data?
 
     private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
     private let secondaryText = Color.white.opacity(0.48)
@@ -383,7 +388,7 @@ struct HomeView: View {
 
                     HStack(spacing: 8) {
                         Circle()
-                            .fill(!modManager.activeMods.isEmpty ? Color.green : Color.white.opacity(0.35))
+                            .fill(!modManager.activeFunctionIDs.isEmpty ? Color.green : Color.white.opacity(0.35))
                             .frame(width: 7, height: 7)
                         Text(modManager.statusMessage)
                             .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -411,8 +416,7 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
 
-                    modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
-                    modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
+                    importedFunctionsSection
 
                     Spacer(minLength: 92)
                 }
@@ -422,6 +426,34 @@ struct HomeView: View {
         }
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                do {
+                    pendingData = try Data(contentsOf: url)
+                    pendingFilename = url.lastPathComponent
+                    showNameSheet = true
+                } catch {
+                    alertMessage = "Não foi possível ler o arquivo importado."
+                    showAlert = true
+                }
+            case .failure:
+                break
+            }
+        }
+        .sheet(isPresented: $showNameSheet) {
+            ImportFunctionNameView(filename: pendingFilename) { name in
+                guard let data = pendingData else { return }
+                let result = modManager.importFunction(name: name, filename: pendingFilename, data: data)
+                alertMessage = result.1
+                showAlert = true
+                pendingData = nil
+                pendingFilename = ""
+            }
         }
     }
 
@@ -468,96 +500,139 @@ struct HomeView: View {
         }
     }
 
-    private func modSection(title: String, mods: [ModType]) -> some View {
+    private var importedFunctionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundColor(secondaryText)
-
-            VStack(spacing: 0) {
-                ForEach(Array(mods.enumerated()), id: \.element.id) { index, mod in
-                    ModRowReference(
-                        mod: mod,
-                        isActive: modManager.activeMods.contains(mod),
-                        isProcessing: modManager.isProcessing,
-                        onToggle: { isOn in handleToggle(mod: mod, isOn: isOn) }
-                    )
-                    if index < mods.count - 1 {
-                        Divider().overlay(Color.white.opacity(0.1)).padding(.leading, 16)
-                    }
-                }
+            HStack {
+                Text("FUNÇÕES IMPORTADAS")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(secondaryText)
+                Spacer()
+                Text("\(modManager.importedFunctions.count)/8")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(secondaryText)
             }
-            .background(panel)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+
+            if modManager.importedFunctions.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "arrow.down.doc")
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(.white.opacity(0.38))
+                    Text("Nenhuma função importada")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
+                    Text("Importe um arquivo cache_res ou assetindexer para começar.")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(secondaryText)
+                        .multilineTextAlignment(.center)
+                    importButton
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(panel)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(modManager.importedFunctions.enumerated()), id: \.element.id) { index, function in
+                        ImportedFunctionRow(function: function, isActive: modManager.isActive(function), isProcessing: modManager.isProcessing, onToggle: { isOn in
+                            if isOn {
+                                modManager.activate(function, bundleID: selectedGame.bundleID) { _, msg in alertMessage = msg; showAlert = true }
+                            } else {
+                                modManager.deactivate(function) { _, msg in alertMessage = msg; showAlert = true }
+                            }
+                        }, onRemove: {
+                            let result = modManager.removeFunction(function)
+                            alertMessage = result.1
+                            showAlert = true
+                        })
+                        if index < modManager.importedFunctions.count - 1 { Divider().overlay(Color.white.opacity(0.1)).padding(.leading, 16) }
+                    }
+                    if modManager.canImportMore { importButton.padding(14) }
+                }
+                .background(panel)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            }
         }
     }
 
-    private var aimbotMods: [ModType] { [.hsAlto, .hsPescoco, .hsPeito] }
-    private var hologramMods: [ModType] { [.hologramaArmas] }
-
-    private func handleToggle(mod: ModType, isOn: Bool) {
-        guard isOn else {
-            modManager.restoreOriginal { _, msg in
-                alertMessage = msg
-                showAlert = true
-            }
-            return
+    private var importButton: some View {
+        Button { showFileImporter = true } label: {
+            Label("IMPORTAR ARQUIVO", systemImage: "plus.circle.fill")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 38)
+                .background(Color.blue.opacity(0.8))
+                .clipShape(Capsule())
         }
-
-        modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
-            alertMessage = msg
-            showAlert = true
-        }
+        .buttonStyle(.plain)
+        .disabled(modManager.isProcessing || !modManager.canImportMore)
     }
 }
 
-// MARK: - Mod Row
-struct ModRowReference: View {
-    let mod: ModType
+// MARK: - Imported Function Row
+struct ImportedFunctionRow: View {
+    let function: ImportedFunction
     let isActive: Bool
     let isProcessing: Bool
     let onToggle: (Bool) -> Void
+    let onRemove: () -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: mod == .hologramaArmas ? "sparkles" : "scope")
+        HStack(spacing: 12) {
+            Image(systemName: function.isAvatarResource ? "person.crop.circle" : "doc.fill")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(isActive ? .white : .white.opacity(0.38))
+                .foregroundColor(isActive ? .green : .white.opacity(0.38))
                 .frame(width: 28)
-
             VStack(alignment: .leading, spacing: 4) {
-                Text(mod.rawValue)
+                Text(function.name)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
-                Text(mod.subtitle)
+                    .lineLimit(1)
+                Text(function.isAvatarResource ? "Avatar · caminho automático" : "Cache · caminho automático")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.42))
-                    .lineLimit(2)
+                    .lineLimit(1)
             }
-
-            Spacer(minLength: 8)
-
-            if isProcessing {
-                ProgressView()
-                    .tint(.white)
-                    .frame(width: 51, height: 31)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isActive },
-                    set: { value in
-                        guard !isProcessing else { return }
-                        onToggle(value)
-                    }
-                ))
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .tint(.green)
-                .disabled(isProcessing)
+            Spacer(minLength: 4)
+            if isProcessing { ProgressView().tint(.white).frame(width: 52, height: 31) }
+            else {
+                Button { onToggle(!isActive) } label: {
+                    Text(isActive ? "DESATIVAR" : "ATIVAR")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10).frame(height: 31)
+                        .background(isActive ? Color.orange.opacity(0.82) : Color.green.opacity(0.72))
+                        .clipShape(Capsule())
+                }.buttonStyle(.plain)
+                Button(role: .destructive, action: onRemove) { Image(systemName: "trash") }
+                    .buttonStyle(.plain).foregroundColor(.red.opacity(0.8))
+                    .disabled(isActive)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 15)
+        .padding(.horizontal, 16).padding(.vertical, 14)
+    }
+}
+
+struct ImportFunctionNameView: View {
+    let filename: String
+    let onSave: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("NOME DA FUNÇÃO").font(.system(size: 13, weight: .heavy, design: .rounded))
+            Text(filename).font(.system(size: 10, design: .monospaced)).foregroundColor(.secondary).lineLimit(2)
+            TextField("Ex.: Minha configuração", text: $name).textFieldStyle(.roundedBorder)
+            HStack {
+                Button("Cancelar") { dismiss() }.buttonStyle(.bordered)
+                Spacer()
+                Button("Salvar") { onSave(name); dismiss() }.buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(22).presentationDetents([.height(220)])
     }
 }
 
