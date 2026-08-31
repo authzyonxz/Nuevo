@@ -32,6 +32,10 @@
             <key>LSItemContentTypes</key>
             <array>
                 <string>com.yangjiii.3105.patch-package</string>
+                <!-- Os arquivos de função do MenagerFF não possuem uma extensão
+                     convencional; public.data permite que o Files encaminhe o
+                     documento selecionado para o manipulador onOpenURL. -->
+                <string>public.data</string>
             </array>
         </dict>
     </array>

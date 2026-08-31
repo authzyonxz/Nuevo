@@ -427,33 +427,21 @@ struct HomeView: View {
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
+        // Também recebe arquivos quando o usuário toca neles no app Arquivos e
+        // escolhe o MenagerFF em "Abrir com". Antes, o Info.plist declarava o
+        // tipo, mas a URL recebida não era encaminhada para a tela de importação.
+        .onOpenURL { url in
+            guard url.isFileURL else { return }
+            importFile(from: url)
+        }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
-                let accessed = url.startAccessingSecurityScopedResource()
-                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
-                do {
-                    let importedData = try Data(contentsOf: url)
-                    let importedFilename = url.lastPathComponent
-                    // O seletor ainda está sendo dispensado neste callback. Adiar a
-                    // próxima apresentação evita que a tela de nome seja descartada.
-                    DispatchQueue.main.async {
-                        pendingData = importedData
-                        pendingFilename = importedFilename
-                        showNameSheet = true
-                    }
-                } catch {
-                    DispatchQueue.main.async {
-                        alertMessage = "Não foi possível ler o arquivo importado."
-                        showAlert = true
-                    }
-                }
+                importFile(from: url)
             case .failure(let error):
-                DispatchQueue.main.async {
-                    alertMessage = "Seleção cancelada ou arquivo indisponível: \(error.localizedDescription)"
-                    showAlert = true
-                }
+                alertMessage = "Seleção cancelada ou arquivo indisponível: \(error.localizedDescription)"
+                showAlert = true
             }
         }
         .sheet(isPresented: $showNameSheet) {
@@ -465,6 +453,37 @@ struct HomeView: View {
                 pendingData = nil
                 pendingFilename = ""
             }
+        }
+    }
+
+    private func importFile(from url: URL) {
+        guard modManager.canImportMore else {
+            alertMessage = "Você já atingiu o limite de 8 funções importadas."
+            showAlert = true
+            return
+        }
+
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessed { url.stopAccessingSecurityScopedResource() }
+        }
+
+        do {
+            // A leitura acontece enquanto o security scope ainda está ativo.
+            // Depois disso, o conteúdo fica independente da URL temporária do iOS.
+            let importedData = try Data(contentsOf: url, options: [.mappedIfSafe])
+            let importedFilename = url.lastPathComponent
+
+            // O callback do seletor/Files pode ocorrer durante a transição de tela;
+            // agendar a apresentação evita que a sheet seja imediatamente fechada.
+            DispatchQueue.main.async {
+                pendingData = importedData
+                pendingFilename = importedFilename
+                showNameSheet = true
+            }
+        } catch {
+            alertMessage = "Não foi possível ler o arquivo importado: \(error.localizedDescription)"
+            showAlert = true
         }
     }
 
