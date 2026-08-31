@@ -29,7 +29,15 @@ enum ProtectedModPayloadStore {
               combined.count > 12 else { throw PayloadError.invalidPayload }
         do {
             let nonce = try AES.GCM.Nonce(data: combined.prefix(12))
-            let sealedBox = try AES.GCM.SealedBox(nonce: nonce, ciphertextAndTag: combined.dropFirst(12))
+            let encrypted = Data(combined.dropFirst(12))
+            guard encrypted.count > 16 else { throw PayloadError.invalidPayload }
+            let ciphertext = encrypted.dropLast(16)
+            let tag = encrypted.suffix(16)
+            let sealedBox = try AES.GCM.SealedBox(
+                nonce: nonce,
+                ciphertext: Data(ciphertext),
+                tag: Data(tag)
+            )
             return try AES.GCM.open(sealedBox, using: key)
         } catch {
             throw PayloadError.decryptionFailed
