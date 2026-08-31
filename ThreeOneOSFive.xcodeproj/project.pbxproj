@@ -74,7 +74,7 @@
     3105LMBF /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105LM01 /* LicenseManager.swift */; };
     3105WEB02 /* SpiderWebBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105WEB01 /* SpiderWebBackground.swift */; };
     3105MMBF /* FreeFireModManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105MM01 /* FreeFireModManager.swift */; };
-    3105MODSBF /* Mods in Resources */ = {isa = PBXBuildFile; fileRef = 3105MODS /* Mods */; };
+    3105PMBF /* ProtectedModPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105PM01 /* ProtectedModPayloadStore.swift */; };
     
 /* End PBXBuildFile section */
 
@@ -164,7 +164,7 @@
     3105SEC01 /* FFH4XSecureClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FFH4XSecureClient.swift; sourceTree = "<group>"; };
     3105WEB01 /* SpiderWebBackground.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpiderWebBackground.swift; sourceTree = "<group>"; };
     3105MM01 /* FreeFireModManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FreeFireModManager.swift; sourceTree = "<group>"; };
-    3105MODS /* Mods */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Mods; sourceTree = "<group>"; };
+    3105PM01 /* ProtectedModPayloadStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProtectedModPayloadStore.swift; sourceTree = "<group>"; };
     
 /* End PBXFileReference section */
 
@@ -200,8 +200,9 @@
 					3105A406 /* kexploit */,
 					3105K100 /* KFDBackend.m */,
 					3105A120 /* Localizable.strings */,
-					3105A031 /* Assets.xcassets */,
-					3105MODS /* Mods */,
+											3105A031 /* Assets.xcassets */,
+						3105PM01 /* ProtectedModPayloadStore.swift */,
+
 				);
 			path = ThreeOneOSFive;
 			sourceTree = "<group>";
@@ -377,7 +378,7 @@
 				3105A211,
 				3105A228,
 			
-				3105MODSBF /* Mods in Resources */,);
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -438,7 +439,8 @@
 			
 				3105LMBF /* LicenseManager.swift in Sources */,
 				3105SEC02 /* FFH4XSecureClient.swift in Sources */,
-				3105MMBF /* FreeFireModManager.swift in Sources */,
+                3105MMBF /* FreeFireModManager.swift in Sources */,
+                3105PMBF /* ProtectedModPayloadStore.swift in Sources */,
                 3105WEB02 /* SpiderWebBackground.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

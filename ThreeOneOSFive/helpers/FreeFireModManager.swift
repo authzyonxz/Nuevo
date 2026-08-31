@@ -140,11 +140,15 @@ class FreeFireModManager: ObservableObject {
         
         let isHolo = (mod == .hologramaArmas)
         let currentTarget = isHolo ? targetHoloName : targetFileName
-        let modPath = Bundle.main.path(forResource: currentTarget, ofType: nil, inDirectory: "Mods/\(mod.folderName)")
-        guard let finalModPath = modPath, let modData = try? Data(contentsOf: URL(fileURLWithPath: finalModPath)) else {
-            addLog("ERRO: Mod não encontrado na IPA (\(currentTarget))")
+        let modData: Data
+        do {
+            // O payload não é mais copiado como arquivo legível para o bundle.
+            // Ele é aberto somente em memória depois da sessão ser validada.
+            modData = try ProtectedModPayloadStore.data(for: mod)
+        } catch {
+            addLog("ERRO: Payload protegido indisponível (\(currentTarget))")
             endOperation()
-            complete(completion, success: false, message: "Mod não encontrado na IPA.")
+            complete(completion, success: false, message: "Payload protegido indisponível.")
             return
         }
         
