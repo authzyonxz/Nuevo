@@ -48,7 +48,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPeito: return "HS no Peito do Inimigo."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
-        case .fps144: return "Funciona em dispositivos iOS com tela 120Hz."
+        case .fps144: return "Funciona no Free Fire normal em dispositivos iOS com tela 120Hz."
         }
     }
 
@@ -125,6 +125,10 @@ class FreeFireModManager: ObservableObject {
             complete(completion, success: false, message: "Jogo selecionado não suportado.")
             return
         }
+        guard mod != .fps144 || bundleID == "com.dts.freefireth" else {
+            complete(completion, success: false, message: "A função 144fps funciona somente no Free Fire normal, não no Free Fire MAX.")
+            return
+        }
         LicenseManager.shared.recheckSecureSession { [weak self] valid, message in
             guard let self else { return }
             guard valid else {
@@ -192,7 +196,7 @@ class FreeFireModManager: ObservableObject {
         var rules: [PatchRule] = []
         var resolvedContainers = 0
         if isFPS {
-            let requiredRelativePath = "Documents/Library/Preferences/\(currentTarget)"
+            let requiredRelativePath = "Library/Preferences/\(currentTarget)"
             for bid in bundleIds {
                 guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty else {
                     addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
