@@ -6,9 +6,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS PEITO"
     case hologramaArmas = "HOLOGRAMA ARMAS"
-    case texturaAlok1 = "Textura 1 - Alok"
-    case texturaAlok2 = "Textura 2 - Alok"
-    case texturaAlok3 = "Textura 3 - Alok"
+    case texturaAlok1 = "Skin Instaplayer"
+    case texturaAlok2 = "Skin Mandela"
+    case texturaAlok3 = "Skin RuokFF"
+    case fps144 = "144fps"
 
     var id: String { rawValue }
 
@@ -23,6 +24,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .texturaAlok1: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A11")!
         case .texturaAlok2: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A12")!
         case .texturaAlok3: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A13")!
+        case .fps144: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A14")!
         }
     }
 
@@ -35,6 +37,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .texturaAlok1: return "TEXTURA_ALOK_1"
         case .texturaAlok2: return "TEXTURA_ALOK_2"
         case .texturaAlok3: return "TEXTURA_ALOK_3"
+        case .fps144: return "FPS_144"
         }
     }
 
@@ -44,7 +47,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPescoco: return "HS Apenas no Pescoço do Inimigo."
         case .hsPeito: return "HS no Peito do Inimigo."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
-        case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Textura Alok para o arquivo optionalab_avatar_66.DfUs7MzeaoXWJ4jWN8zRBmYoY7Q~3D."
+        case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
+        case .fps144: return "Funciona em dispositivos iOS com tela 120Hz."
         }
     }
 
@@ -56,6 +60,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
             return "FUNÇÕES DE HOLOGRAMA"
         case .texturaAlok1, .texturaAlok2, .texturaAlok3:
             return "TEXTURAS"
+        case .fps144:
+            return "DESEMPENHO"
         }
     }
 }
@@ -74,6 +80,7 @@ class FreeFireModManager: ObservableObject {
     private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
     private let targetTextureAlokNewName = "optionalab_avatar_66.DfUs7MzeaoXWJ4jWN8zRBmYoY7Q~3D"
+    private let targetFPSName = "com.dts.freefireth.plist"
     private let supportedBundleIDs: Set<String> = ["com.dts.freefireth", "com.dts.freefiremax"]
 
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
@@ -152,10 +159,11 @@ class FreeFireModManager: ObservableObject {
         addLog("Injeção V21: \(mod.rawValue)")
 
         let isTexture = [.texturaAlok1, .texturaAlok2, .texturaAlok3].contains(mod)
+        let isFPS = (mod == .fps144)
         let isHolo = (mod == .hologramaArmas)
-        let currentTarget = targetTextureAlokNewName
+        let currentTarget = isFPS ? targetFPSName : (isTexture ? targetTextureAlokNewName : (isHolo ? targetHoloName : targetFileName))
         let modData: Data?
-        if [.hsAlto, .hsPescoco, .hsPeito, .texturaAlok1, .texturaAlok2, .texturaAlok3].contains(mod) {
+        if [.hsAlto, .hsPescoco, .hsPeito, .texturaAlok1, .texturaAlok2, .texturaAlok3, .fps144].contains(mod) {
             do {
                 modData = try ProtectedModPayloadStore.decrypt(mod)
                 addLog("Payload protegido descriptografado em memória: \(mod.rawValue)")
@@ -183,7 +191,23 @@ class FreeFireModManager: ObservableObject {
 
         var rules: [PatchRule] = []
         var resolvedContainers = 0
-        if isTexture {
+        if isFPS {
+            let requiredRelativePath = "Documents/Library/Preferences/\(currentTarget)"
+            for bid in bundleIds {
+                guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty else {
+                    addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
+                    continue
+                }
+                resolvedContainers += 1
+                let fullPath = (rootPath as NSString).appendingPathComponent(requiredRelativePath)
+                guard FileManager.default.fileExists(atPath: fullPath) else {
+                    addLog("ERRO: 144fps não encontrado no caminho exato: \(requiredRelativePath)")
+                    continue
+                }
+                addLog("144fps encontrado no caminho exato: \(requiredRelativePath)")
+                rules.append(PatchRule(bundleID: bid, relativePath: requiredRelativePath, replacementFilename: currentTarget, replacementData: modData))
+            }
+        } else if isTexture {
             // A textura deve substituir somente este arquivo e neste caminho.
             // Não há busca global nem fallback para evitar alterar outro asset.
             let candidateRelativePaths = [

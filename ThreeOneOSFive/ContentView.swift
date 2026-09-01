@@ -416,6 +416,7 @@ struct HomeView: View {
 
                     modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
                     modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
+                    modSection(title: "DESEMPENHO", mods: performanceMods)
 
                     Spacer(minLength: 92)
                 }
@@ -498,6 +499,7 @@ struct HomeView: View {
 
     private var aimbotMods: [ModType] { [.hsAlto, .hsPescoco, .hsPeito] }
     private var hologramMods: [ModType] { [.hologramaArmas] }
+    private var performanceMods: [ModType] { [.fps144] }
 
     private func handleToggle(mod: ModType, isOn: Bool) {
         guard isOn else {
@@ -524,7 +526,7 @@ struct ModRowReference: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: mod == .hologramaArmas ? "sparkles" : "scope")
+            Image(systemName: mod == .hologramaArmas ? "sparkles" : (mod == .fps144 ? "speedometer" : "scope"))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(isActive ? .white : .white.opacity(0.38))
                 .frame(width: 28)
@@ -830,8 +832,8 @@ struct TexturesView: View {
                     Text(modManager.activeMods.contains(mod) ? "ATIVA" : "Pronta para ativar")
                         .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundColor(modManager.activeMods.contains(mod) ? .green : secondaryText)
-                    Text("Optional/ios/optionalavatarres/gameassetbundles ou gameassetbundles")
-                        .font(.system(size: 9, design: .monospaced))
+                    Text("Usar personagem alok despertar para funcionar a textura")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundColor(secondaryText)
                         .lineLimit(2)
                 }
@@ -863,13 +865,6 @@ struct TexturesView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 15)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Busca pelo nome completo")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(.white.opacity(0.7))
-                Text("optionalab_avatar_66.DfUs7MzeaoXWJ4jWN8zRBmYoY7Q~3D")
-                    .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(secondaryText)
-                    .textSelection(.enabled)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 15)
