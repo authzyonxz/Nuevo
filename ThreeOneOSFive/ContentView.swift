@@ -270,6 +270,8 @@ struct MainTabView: View {
             Group {
                 if selectedTab == 0 {
                     HomeView()
+                } else if selectedTab == 1 {
+                    TexturesView()
                 } else {
                     ProfileView()
                 }
@@ -278,7 +280,8 @@ struct MainTabView: View {
 
             HStack(spacing: 8) {
                 TabButton(index: 0, icon: "square.grid.2x2.fill", title: "FUNÇÕES", selectedTab: $selectedTab)
-                TabButton(index: 1, icon: "person.crop.circle", title: "CONFIG", selectedTab: $selectedTab)
+                TabButton(index: 1, icon: "paintpalette.fill", title: "TEXTURAS", selectedTab: $selectedTab)
+                TabButton(index: 2, icon: "person.crop.circle", title: "CONFIG", selectedTab: $selectedTab)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -834,5 +837,220 @@ struct InfoRow: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(color)
         }
+    }
+}
+
+
+// MARK: - Textures
+final class TextureManager: ObservableObject {
+    static let shared = TextureManager()
+    static let textureFilename = "optionalab_avatar_66.CoOEgYl5yYUMEbFNIb8L3onAO6o~3D"
+    static let targetRelativePath = "Documents/contentcache/optional/ios/gameassetbundles/" + textureFilename
+    private static let textureProjectID = UUID(uuidString: "9B6E6F2A-2C77-4F3D-9B7D-6B9F2D8A4101")!
+
+    @Published private(set) var isActive = false
+    @Published private(set) var isProcessing = false
+    @Published private(set) var statusMessage = "Textura pronta para ativar"
+
+    private var receipt: PatchTransactionReceipt?
+
+    init() {
+        receipt = DevicePatchService.latestReceipt(projectID: Self.textureProjectID)
+        isActive = receipt != nil
+        if isActive { statusMessage = "Textura ativa" }
+    }
+
+    func activate(bundleID: String, completion: @escaping (Bool, String) -> Void) {
+        guard !isProcessing else { return }
+        guard KernelExploit.currentAccessPath != .unsupported else {
+            completion(false, "Esta versão/build do iOS não é suportada.")
+            return
+        }
+        guard let resourceURL = Bundle.main.url(forResource: Self.textureFilename, withExtension: nil),
+              let textureData = try? Data(contentsOf: resourceURL),
+              !textureData.isEmpty else {
+            completion(false, "Arquivo da textura não foi incluído na aplicação.")
+            return
+        }
+
+        isProcessing = true
+        statusMessage = "Ativando textura..."
+        let project = PatchProject(
+            id: Self.textureProjectID,
+            name: "MenagerFF_Textura_1_Alok",
+            bundleIdentifiers: [bundleID],
+            rules: [PatchRule(
+                bundleID: bundleID,
+                relativePath: Self.targetRelativePath,
+                replacementFilename: Self.textureFilename,
+                replacementData: textureData
+            )]
+        )
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let newReceipt = try DevicePatchService.apply(project: project)
+                DispatchQueue.main.async {
+                    self.receipt = newReceipt
+                    self.isActive = true
+                    self.isProcessing = false
+                    self.statusMessage = "Textura ativa"
+                    completion(true, "Textura 1 - Alok ativada com sucesso.")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isProcessing = false
+                    self.statusMessage = "Textura pronta para ativar"
+                    completion(false, "Falha ao ativar a textura: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    func deactivate(completion: @escaping (Bool, String) -> Void) {
+        guard !isProcessing else { return }
+        guard let receipt = receipt ?? DevicePatchService.latestReceipt(projectID: Self.textureProjectID) else {
+            completion(false, "A textura não está ativa ou não possui backup para restaurar.")
+            return
+        }
+        guard KernelExploit.currentAccessPath != .unsupported else {
+            completion(false, "Esta versão/build do iOS não é suportada.")
+            return
+        }
+
+        isProcessing = true
+        statusMessage = "Restaurando arquivo original..."
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                guard KernelExploit.ensureAccessForRestore() else { throw PatchPackageError.restoreFailed }
+                try DevicePatchService.restore(receipt: receipt)
+                DispatchQueue.main.async {
+                    self.receipt = nil
+                    self.isActive = false
+                    self.isProcessing = false
+                    self.statusMessage = "Arquivo original restaurado"
+                    completion(true, "Textura desativada e arquivo original restaurado.")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isProcessing = false
+                    self.statusMessage = "Textura ativa"
+                    completion(false, "Falha ao restaurar o arquivo original: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+}
+
+struct TexturesView: View {
+    @StateObject private var textureManager = TextureManager.shared
+    @State private var selectedGame: GameChoice = .freeFire
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+
+    private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
+    private let secondaryText = Color.white.opacity(0.48)
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("TEXTURAS")
+                        .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                    Text("Personalize o visual do Free Fire")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(secondaryText)
+
+                    textureGamePicker
+                    textureCard
+                    Spacer(minLength: 92)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 24)
+            }
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("TEXTURAS"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+    }
+
+    private var textureGamePicker: some View {
+        HStack(spacing: 10) {
+            ForEach(GameChoice.allCases) { game in
+                Button {
+                    selectedGame = game
+                } label: {
+                    Text(game == .freeFire ? "FREE FIRE" : "FREE FIRE MAX")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .background(selectedGame == game ? Color.white.opacity(0.15) : Color.white.opacity(0.06))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(selectedGame == game ? Color.white.opacity(0.8) : Color.white.opacity(0.12), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var textureCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 14) {
+                Image("AlokTexturePreview")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 104, height: 78)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Textura 1 - Alok")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    Text(textureManager.statusMessage)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(textureManager.isActive ? .green : secondaryText)
+                    Text("optional/ios/gameassetbundles")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(secondaryText)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 0)
+            }
+
+            if textureManager.isProcessing {
+                ProgressView().tint(.white).frame(maxWidth: .infinity).padding(.vertical, 8)
+            } else {
+                Button {
+                    if textureManager.isActive {
+                        textureManager.deactivate { _, message in
+                            alertMessage = message
+                            showAlert = true
+                        }
+                    } else {
+                        textureManager.activate(bundleID: selectedGame.bundleID) { _, message in
+                            alertMessage = message
+                            showAlert = true
+                        }
+                    }
+                } label: {
+                    Text(textureManager.isActive ? "DESATIVAR E RESTAURAR" : "ATIVAR TEXTURA")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(textureManager.isActive ? Color.orange.opacity(0.82) : Color.green.opacity(0.72))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(panel)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
     }
 }
