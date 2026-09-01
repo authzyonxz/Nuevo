@@ -29511,7 +29511,7 @@ e7HlWBPnJkz08Uy+EmD6Cp0MtNeYm5TiKoWhHSzpOYasLGZ46knaLV1RI+ePKxg2JA==
     ]
 
     static func decrypt(_ mod: ModType) throws -> Data {
-        guard let encoded = payloads[mod], let combined = Data(base64Encoded: encoded) else {
+        guard let encoded = payloads[mod], let combined = Data(base64Encoded: encoded, options: [.ignoreUnknownCharacters]) else {
             throw PayloadError.unavailable
         }
         guard combined.count > 12 else { throw PayloadError.invalidPayload }
