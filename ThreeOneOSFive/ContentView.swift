@@ -503,7 +503,7 @@ struct HomeView: View {
 
     private func handleToggle(mod: ModType, isOn: Bool) {
         guard isOn else {
-            modManager.restoreOriginal { _, msg in
+            modManager.restoreMod(mod) { _, msg in
                 alertMessage = msg
                 showAlert = true
             }
