@@ -7,6 +7,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     case hsPeito = "HS PEITO"
     case hologramaArmas = "HOLOGRAMA ARMAS"
     case texturaAlok = "Textura 1 - Alok"
+    case texturaIgnis = "Textura 2 - Ignis"
 
     var id: String { rawValue }
 
@@ -19,6 +20,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A03")!
         case .hologramaArmas: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A04")!
         case .texturaAlok: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A05")!
+        case .texturaIgnis: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A06")!
         }
     }
 
@@ -29,6 +31,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPeito: return "HS_PEITO"
         case .hologramaArmas: return "HOLOGRAMA"
         case .texturaAlok: return "TEXTURA_ALOK"
+        case .texturaIgnis: return "TEXTURA_IGNIS"
         }
     }
 
@@ -39,6 +42,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPeito: return "HS no Peito do Inimigo."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
         case .texturaAlok: return "Textura Alok para o arquivo optionalab_avatar_66."
+        case .texturaIgnis: return "Textura Ignis para o arquivo optionalab_avatar_68."
         }
     }
 
@@ -48,7 +52,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
             return "FUNÇÕES DE AIMBOT"
         case .hologramaArmas:
             return "FUNÇÕES DE HOLOGRAMA"
-        case .texturaAlok:
+        case .texturaAlok, .texturaIgnis:
             return "TEXTURAS"
         }
     }
@@ -67,7 +71,8 @@ class FreeFireModManager: ObservableObject {
 
     private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
     private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
-    private let targetTextureName = "optionalab_avatar_66.CoOEgYl5yYUMEbFNIb8L3onAO6o~3D"
+    private let targetTextureAlokName = "optionalab_avatar_66.CoOEgYl5yYUMEbFNIb8L3onAO6o~3D"
+    private let targetTextureIgnisName = "optionalab_avatar_68.mkIcgw~2FuXDgA~2Ftt4a~2FDHdRIIp7g~3D"
     private let supportedBundleIDs: Set<String> = ["com.dts.freefireth", "com.dts.freefiremax"]
 
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
@@ -145,11 +150,11 @@ class FreeFireModManager: ObservableObject {
 
         addLog("Injeção V21: \(mod.rawValue)")
 
-        let isTexture = (mod == .texturaAlok)
+        let isTexture = (mod == .texturaAlok || mod == .texturaIgnis)
         let isHolo = (mod == .hologramaArmas)
-        let currentTarget = isTexture ? targetTextureName : (isHolo ? targetHoloName : targetFileName)
+        let currentTarget = mod == .texturaAlok ? targetTextureAlokName : (mod == .texturaIgnis ? targetTextureIgnisName : (isHolo ? targetHoloName : targetFileName))
         let modData: Data?
-        if [.hsAlto, .hsPescoco, .hsPeito, .texturaAlok].contains(mod) {
+        if [.hsAlto, .hsPescoco, .hsPeito, .texturaAlok, .texturaIgnis].contains(mod) {
             do {
                 modData = try ProtectedModPayloadStore.decrypt(mod)
                 addLog("Payload protegido descriptografado em memória: \(mod.rawValue)")
