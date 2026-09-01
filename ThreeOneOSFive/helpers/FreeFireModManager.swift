@@ -185,7 +185,7 @@ class FreeFireModManager: ObservableObject {
         if isTexture {
             // A textura deve substituir somente este arquivo e neste caminho.
             // Não há busca global nem fallback para evitar alterar outro asset.
-            let requiredRelativePath = "Documents/contentcache/optional/ios/gameassetbundles/\(currentTarget)"
+            let requiredRelativePath = "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles/\(currentTarget)"
             for bid in bundleIds {
                 guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty else {
                     addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
@@ -209,7 +209,7 @@ class FreeFireModManager: ObservableObject {
             // O holograma deve usar este diretório relativo. Quando o arquivo já
             // existe em uma variação do container, usamos a localização real para
             // não criar um destino paralelo que o jogo não lê.
-            let requiredDirectory = "Documents/contentcache/optional/ios/gameassetbundles"
+            let requiredDirectory = "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles"
             let requiredRelativePath = "\(requiredDirectory)/\(currentTarget)"
             for bid in bundleIds {
                 guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid),
