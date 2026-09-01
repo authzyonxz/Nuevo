@@ -807,138 +807,75 @@ struct TexturesView: View {
             Text("TEXTURAS DISPONÍVEIS")
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundColor(secondaryText)
-
-            VStack(spacing: 0) {
-                HStack(spacing: 14) {
-                    Image("AlokTexturePreview")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 104, height: 78)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
-
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(ModType.texturaAlok.rawValue)
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                        Text(modManager.activeMods.contains(.texturaAlok) ? "ATIVA" : "Pronta para ativar")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundColor(modManager.activeMods.contains(.texturaAlok) ? .green : secondaryText)
-                        Text("Optional/ios/optionalavatarres/gameassetbundles")
-                            .font(.system(size: 9, design: .monospaced))
-                            .foregroundColor(secondaryText)
-                            .lineLimit(2)
-                    }
-                    Spacer(minLength: 4)
-
-                    if modManager.isProcessing {
-                        ProgressView().tint(.white).frame(width: 51, height: 31)
-                    } else {
-                        Toggle("", isOn: Binding(
-                            get: { modManager.activeMods.contains(.texturaAlok) },
-                            set: { enabled in
-                                if enabled {
-                                    modManager.applyMod(.texturaAlok, bundleID: selectedGame.bundleID) { _, message in
-                                        alertMessage = message
-                                        showAlert = true
-                                    }
-                                } else {
-                                    modManager.restoreMod(.texturaAlok) { _, message in
-                                        alertMessage = message
-                                        showAlert = true
-                                    }
-                                }
-                            }
-                        ))
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .tint(.green)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 15)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Arquivo exato")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.7))
-                    Text("optionalab_avatar_66.CoOEgYl5yYUMEbFNIb8L3onAO6o~3D")
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(secondaryText)
-                        .textSelection(.enabled)
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 15)
-            }
-            .background(panel)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
-
-            VStack(spacing: 0) {
-                HStack(spacing: 14) {
-                    Image("IgnisTexturePreview")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 104, height: 78)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
-
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(ModType.texturaIgnis.rawValue)
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                        Text(modManager.activeMods.contains(.texturaIgnis) ? "ATIVA" : "Pronta para ativar")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundColor(modManager.activeMods.contains(.texturaIgnis) ? .green : secondaryText)
-                        Text("Optional/ios/optionalavatarres/gameassetbundles")
-                            .font(.system(size: 9, design: .monospaced))
-                            .foregroundColor(secondaryText)
-                            .lineLimit(2)
-                    }
-                    Spacer(minLength: 4)
-
-                    if modManager.isProcessing {
-                        ProgressView().tint(.white).frame(width: 51, height: 31)
-                    } else {
-                        Toggle("", isOn: Binding(
-                            get: { modManager.activeMods.contains(.texturaIgnis) },
-                            set: { enabled in
-                                if enabled {
-                                    modManager.applyMod(.texturaIgnis, bundleID: selectedGame.bundleID) { _, message in
-                                        alertMessage = message
-                                        showAlert = true
-                                    }
-                                } else {
-                                    modManager.restoreMod(.texturaIgnis) { _, message in
-                                        alertMessage = message
-                                        showAlert = true
-                                    }
-                                }
-                            }
-                        ))
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .tint(.green)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 15)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Arquivo exato")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.7))
-                    Text("optionalab_avatar_68.mkIcgw~2FuXDgA~2Ftt4a~2FDHdRIIp7g~3D")
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(secondaryText)
-                        .textSelection(.enabled)
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 15)
-            }
-            .background(panel)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            textureCard(.texturaAlok1, imageName: "AlokTexturePreview1")
+            textureCard(.texturaAlok2, imageName: "AlokTexturePreview2")
+            textureCard(.texturaAlok3, imageName: "AlokTexturePreview3")
         }
+    }
+
+    @ViewBuilder
+    private func textureCard(_ mod: ModType, imageName: String) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 14) {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 104, height: 78)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(mod.rawValue)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    Text(modManager.activeMods.contains(mod) ? "ATIVA" : "Pronta para ativar")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(modManager.activeMods.contains(mod) ? .green : secondaryText)
+                    Text("Optional/ios/optionalavatarres/gameassetbundles ou gameassetbundles")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(secondaryText)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 4)
+                if modManager.isProcessing {
+                    ProgressView().tint(.white).frame(width: 51, height: 31)
+                } else {
+                    Toggle("", isOn: Binding(
+                        get: { modManager.activeMods.contains(mod) },
+                        set: { enabled in
+                            if enabled {
+                                modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, message in
+                                    alertMessage = message
+                                    showAlert = true
+                                }
+                            } else {
+                                modManager.restoreMod(mod) { _, message in
+                                    alertMessage = message
+                                    showAlert = true
+                                }
+                            }
+                        }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .tint(.green)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 15)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Busca pelo nome completo")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.7))
+                Text("optionalab_avatar_66.DfUs7MzeaoXWJ4jWN8zRBmYoY7Q~3D")
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundColor(secondaryText)
+                    .textSelection(.enabled)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 15)
+        }
+        .background(panel)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
     }
 }
