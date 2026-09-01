@@ -1,6 +1,5 @@
 import SwiftUI
 import UIKit
-import UniformTypeIdentifiers
 
 struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
@@ -352,10 +351,6 @@ struct HomeView: View {
     @State private var alertMessage: String = ""
     @State private var showAlert: Bool = false
     @State private var showLogs: Bool = false
-    @State private var showFileImporter = false
-    @State private var showNameSheet = false
-    @State private var pendingFilename = ""
-    @State private var pendingData: Data?
 
     private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
     private let secondaryText = Color.white.opacity(0.48)
@@ -391,7 +386,7 @@ struct HomeView: View {
 
                     HStack(spacing: 8) {
                         Circle()
-                            .fill(!modManager.activeFunctionIDs.isEmpty ? Color.green : Color.white.opacity(0.35))
+                            .fill(!modManager.activeMods.isEmpty ? Color.green : Color.white.opacity(0.35))
                             .frame(width: 7, height: 7)
                         Text(modManager.statusMessage)
                             .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -419,7 +414,8 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
 
-                    importedFunctionsSection
+                    modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
+                    modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
 
                     Spacer(minLength: 92)
                 }
@@ -429,64 +425,6 @@ struct HomeView: View {
         }
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-        }
-        // Também recebe arquivos quando o usuário toca neles no app Arquivos e
-        // escolhe o MenagerFF em "Abrir com". Antes, o Info.plist declarava o
-        // tipo, mas a URL recebida não era encaminhada para a tela de importação.
-        .onOpenURL { url in
-            guard url.isFileURL else { return }
-            importFile(from: url)
-        }
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
-            switch result {
-            case .success(let urls):
-                guard let url = urls.first else { return }
-                importFile(from: url)
-            case .failure(let error):
-                alertMessage = "Seleção cancelada ou arquivo indisponível: \(error.localizedDescription)"
-                showAlert = true
-            }
-        }
-        .sheet(isPresented: $showNameSheet) {
-            ImportFunctionNameView(filename: pendingFilename) { name in
-                guard let data = pendingData else { return }
-                let result = modManager.importFunction(name: name, filename: pendingFilename, data: data)
-                alertMessage = result.1
-                showAlert = true
-                pendingData = nil
-                pendingFilename = ""
-            }
-        }
-    }
-
-    private func importFile(from url: URL) {
-        guard modManager.canImportMore else {
-            alertMessage = "Você já atingiu o limite de 8 funções importadas."
-            showAlert = true
-            return
-        }
-
-        let accessed = url.startAccessingSecurityScopedResource()
-        defer {
-            if accessed { url.stopAccessingSecurityScopedResource() }
-        }
-
-        do {
-            // A leitura acontece enquanto o security scope ainda está ativo.
-            // Depois disso, o conteúdo fica independente da URL temporária do iOS.
-            let importedData = try Data(contentsOf: url, options: [.mappedIfSafe])
-            let importedFilename = url.lastPathComponent
-
-            // O callback do seletor/Files pode ocorrer durante a transição de tela;
-            // agendar a apresentação evita que a sheet seja imediatamente fechada.
-            DispatchQueue.main.async {
-                pendingData = importedData
-                pendingFilename = importedFilename
-                showNameSheet = true
-            }
-        } catch {
-            alertMessage = "Não foi possível ler o arquivo importado: \(error.localizedDescription)"
-            showAlert = true
         }
     }
 
@@ -533,139 +471,96 @@ struct HomeView: View {
         }
     }
 
-    private var importedFunctionsSection: some View {
+    private func modSection(title: String, mods: [ModType]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("FUNÇÕES IMPORTADAS")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundColor(secondaryText)
-                Spacer()
-                Text("\(modManager.importedFunctions.count)/8")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(secondaryText)
-            }
+            Text(title)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(secondaryText)
 
-            if modManager.importedFunctions.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "arrow.down.doc")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(.white.opacity(0.38))
-                    Text("Nenhuma função importada")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white)
-                    Text("Importe um arquivo cache_res ou assetindexer para começar.")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(secondaryText)
-                        .multilineTextAlignment(.center)
-                    importButton
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
-                .background(panel)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(modManager.importedFunctions.enumerated()), id: \.element.id) { index, function in
-                        ImportedFunctionRow(function: function, isActive: modManager.isActive(function), isProcessing: modManager.isProcessing, onToggle: { isOn in
-                            if isOn {
-                                modManager.activate(function, bundleID: selectedGame.bundleID) { _, msg in alertMessage = msg; showAlert = true }
-                            } else {
-                                modManager.deactivate(function) { _, msg in alertMessage = msg; showAlert = true }
-                            }
-                        }, onRemove: {
-                            let result = modManager.removeFunction(function)
-                            alertMessage = result.1
-                            showAlert = true
-                        })
-                        if index < modManager.importedFunctions.count - 1 { Divider().overlay(Color.white.opacity(0.1)).padding(.leading, 16) }
+            VStack(spacing: 0) {
+                ForEach(Array(mods.enumerated()), id: \.element.id) { index, mod in
+                    ModRowReference(
+                        mod: mod,
+                        isActive: modManager.activeMods.contains(mod),
+                        isProcessing: modManager.isProcessing,
+                        onToggle: { isOn in handleToggle(mod: mod, isOn: isOn) }
+                    )
+                    if index < mods.count - 1 {
+                        Divider().overlay(Color.white.opacity(0.1)).padding(.leading, 16)
                     }
-                    if modManager.canImportMore { importButton.padding(14) }
                 }
-                .background(panel)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
             }
+            .background(panel)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
         }
     }
 
-    private var importButton: some View {
-        Button { showFileImporter = true } label: {
-            Label("IMPORTAR ARQUIVO", systemImage: "plus.circle.fill")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 38)
-                .background(Color.blue.opacity(0.8))
-                .clipShape(Capsule())
+    private var aimbotMods: [ModType] { [.hsAlto, .hsPescoco, .hsPeito] }
+    private var hologramMods: [ModType] { [.hologramaArmas] }
+
+    private func handleToggle(mod: ModType, isOn: Bool) {
+        guard isOn else {
+            modManager.restoreOriginal { _, msg in
+                alertMessage = msg
+                showAlert = true
+            }
+            return
         }
-        .buttonStyle(.plain)
-        .disabled(modManager.isProcessing || !modManager.canImportMore)
+
+        modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
+            alertMessage = msg
+            showAlert = true
+        }
     }
 }
 
-// MARK: - Imported Function Row
-struct ImportedFunctionRow: View {
-    let function: ImportedFunction
+// MARK: - Mod Row
+struct ModRowReference: View {
+    let mod: ModType
     let isActive: Bool
     let isProcessing: Bool
     let onToggle: (Bool) -> Void
-    let onRemove: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: function.isAvatarResource ? "person.crop.circle" : "doc.fill")
+        HStack(spacing: 14) {
+            Image(systemName: mod == .hologramaArmas ? "sparkles" : "scope")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(isActive ? .green : .white.opacity(0.38))
+                .foregroundColor(isActive ? .white : .white.opacity(0.38))
                 .frame(width: 28)
+
             VStack(alignment: .leading, spacing: 4) {
-                Text(function.name)
+                Text(mod.rawValue)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
-                    .lineLimit(1)
-                Text(function.isAvatarResource ? "Avatar · caminho automático" : "Cache · caminho automático")
+                Text(mod.subtitle)
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.42))
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
-            Spacer(minLength: 4)
-            if isProcessing { ProgressView().tint(.white).frame(width: 52, height: 31) }
-            else {
-                Button { onToggle(!isActive) } label: {
-                    Text(isActive ? "DESATIVAR" : "ATIVAR")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10).frame(height: 31)
-                        .background(isActive ? Color.orange.opacity(0.82) : Color.green.opacity(0.72))
-                        .clipShape(Capsule())
-                }.buttonStyle(.plain)
-                Button(role: .destructive, action: onRemove) { Image(systemName: "trash") }
-                    .buttonStyle(.plain).foregroundColor(.red.opacity(0.8))
-                    .disabled(isActive)
+
+            Spacer(minLength: 8)
+
+            if isProcessing {
+                ProgressView()
+                    .tint(.white)
+                    .frame(width: 51, height: 31)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isActive },
+                    set: { value in
+                        guard !isProcessing else { return }
+                        onToggle(value)
+                    }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(.green)
+                .disabled(isProcessing)
             }
         }
-        .padding(.horizontal, 16).padding(.vertical, 14)
-    }
-}
-
-struct ImportFunctionNameView: View {
-    let filename: String
-    let onSave: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var name = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("NOME DA FUNÇÃO").font(.system(size: 13, weight: .heavy, design: .rounded))
-            Text(filename).font(.system(size: 10, design: .monospaced)).foregroundColor(.secondary).lineLimit(2)
-            TextField("Ex.: Minha configuração", text: $name).textFieldStyle(.roundedBorder)
-            HStack {
-                Button("Cancelar") { dismiss() }.buttonStyle(.bordered)
-                Spacer()
-                Button("Salvar") { onSave(name); dismiss() }.buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(22).presentationDetents([.height(220)])
+        .padding(.horizontal, 16)
+        .padding(.vertical, 15)
     }
 }
 
@@ -841,109 +736,9 @@ struct InfoRow: View {
 }
 
 
-// MARK: - Textures
-final class TextureManager: ObservableObject {
-    static let shared = TextureManager()
-    static let textureFilename = "optionalab_avatar_66.CoOEgYl5yYUMEbFNIb8L3onAO6o~3D"
-    static let targetRelativePath = "Documents/contentcache/optional/ios/gameassetbundles/" + textureFilename
-    private static let textureProjectID = UUID(uuidString: "9B6E6F2A-2C77-4F3D-9B7D-6B9F2D8A4101")!
-
-    @Published private(set) var isActive = false
-    @Published private(set) var isProcessing = false
-    @Published private(set) var statusMessage = "Textura pronta para ativar"
-
-    private var receipt: PatchTransactionReceipt?
-
-    init() {
-        receipt = DevicePatchService.latestReceipt(projectID: Self.textureProjectID)
-        isActive = receipt != nil
-        if isActive { statusMessage = "Textura ativa" }
-    }
-
-    func activate(bundleID: String, completion: @escaping (Bool, String) -> Void) {
-        guard !isProcessing else { return }
-        guard KernelExploit.currentAccessPath != .unsupported else {
-            completion(false, "Esta versão/build do iOS não é suportada.")
-            return
-        }
-        guard let resourceURL = Bundle.main.url(forResource: Self.textureFilename, withExtension: nil),
-              let textureData = try? Data(contentsOf: resourceURL),
-              !textureData.isEmpty else {
-            completion(false, "Arquivo da textura não foi incluído na aplicação.")
-            return
-        }
-
-        isProcessing = true
-        statusMessage = "Ativando textura..."
-        let project = PatchProject(
-            id: Self.textureProjectID,
-            name: "MenagerFF_Textura_1_Alok",
-            bundleIdentifiers: [bundleID],
-            rules: [PatchRule(
-                bundleID: bundleID,
-                relativePath: Self.targetRelativePath,
-                replacementFilename: Self.textureFilename,
-                replacementData: textureData
-            )]
-        )
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let newReceipt = try DevicePatchService.apply(project: project)
-                DispatchQueue.main.async {
-                    self.receipt = newReceipt
-                    self.isActive = true
-                    self.isProcessing = false
-                    self.statusMessage = "Textura ativa"
-                    completion(true, "Textura 1 - Alok ativada com sucesso.")
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.isProcessing = false
-                    self.statusMessage = "Textura pronta para ativar"
-                    completion(false, "Falha ao ativar a textura: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-
-    func deactivate(completion: @escaping (Bool, String) -> Void) {
-        guard !isProcessing else { return }
-        guard let receipt = receipt ?? DevicePatchService.latestReceipt(projectID: Self.textureProjectID) else {
-            completion(false, "A textura não está ativa ou não possui backup para restaurar.")
-            return
-        }
-        guard KernelExploit.currentAccessPath != .unsupported else {
-            completion(false, "Esta versão/build do iOS não é suportada.")
-            return
-        }
-
-        isProcessing = true
-        statusMessage = "Restaurando arquivo original..."
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                guard KernelExploit.ensureAccessForRestore() else { throw PatchPackageError.restoreFailed }
-                try DevicePatchService.restore(receipt: receipt)
-                DispatchQueue.main.async {
-                    self.receipt = nil
-                    self.isActive = false
-                    self.isProcessing = false
-                    self.statusMessage = "Arquivo original restaurado"
-                    completion(true, "Textura desativada e arquivo original restaurado.")
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.isProcessing = false
-                    self.statusMessage = "Textura ativa"
-                    completion(false, "Falha ao restaurar o arquivo original: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-}
-
+// MARK: - Textures View
 struct TexturesView: View {
-    @StateObject private var textureManager = TextureManager.shared
+    @StateObject private var modManager = FreeFireModManager.shared
     @State private var selectedGame: GameChoice = .freeFire
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -956,19 +751,30 @@ struct TexturesView: View {
             Color.black.ignoresSafeArea()
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("TEXTURAS")
-                        .font(.system(size: 28, weight: .heavy, design: .rounded))
-                        .foregroundColor(.white)
-                    Text("Personalize o visual do Free Fire")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(secondaryText)
+                    HStack(spacing: 12) {
+                        Image(systemName: "paintpalette.fill")
+                            .font(.system(size: 21, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("TEXTURAS")
+                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                            Text("Personalize o visual do Free Fire")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(secondaryText)
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 24)
 
-                    textureGamePicker
-                    textureCard
+                    gamePicker
+                    textureSection
                     Spacer(minLength: 92)
                 }
                 .padding(.horizontal, 18)
-                .padding(.top, 24)
             }
         }
         .alert(isPresented: $showAlert) {
@@ -976,11 +782,11 @@ struct TexturesView: View {
         }
     }
 
-    private var textureGamePicker: some View {
+    private var gamePicker: some View {
         HStack(spacing: 10) {
             ForEach(GameChoice.allCases) { game in
                 Button {
-                    selectedGame = game
+                    withAnimation(.easeOut(duration: 0.18)) { selectedGame = game }
                 } label: {
                     Text(game == .freeFire ? "FREE FIRE" : "FREE FIRE MAX")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -996,61 +802,77 @@ struct TexturesView: View {
         }
     }
 
-    private var textureCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 14) {
-                Image("AlokTexturePreview")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 104, height: 78)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
+    private var textureSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("TEXTURAS DISPONÍVEIS")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(secondaryText)
 
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Textura 1 - Alok")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                    Text(textureManager.statusMessage)
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(textureManager.isActive ? .green : secondaryText)
-                    Text("optional/ios/gameassetbundles")
+            VStack(spacing: 0) {
+                HStack(spacing: 14) {
+                    Image("AlokTexturePreview")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 104, height: 78)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(ModType.texturaAlok.rawValue)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        Text(modManager.activeMods.contains(.texturaAlok) ? "ATIVA" : "Pronta para ativar")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundColor(modManager.activeMods.contains(.texturaAlok) ? .green : secondaryText)
+                        Text("optional/ios/gameassetbundles")
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundColor(secondaryText)
+                            .lineLimit(2)
+                    }
+                    Spacer(minLength: 4)
+
+                    if modManager.isProcessing {
+                        ProgressView().tint(.white).frame(width: 51, height: 31)
+                    } else {
+                        Toggle("", isOn: Binding(
+                            get: { modManager.activeMods.contains(.texturaAlok) },
+                            set: { enabled in
+                                if enabled {
+                                    modManager.applyMod(.texturaAlok, bundleID: selectedGame.bundleID) { _, message in
+                                        alertMessage = message
+                                        showAlert = true
+                                    }
+                                } else {
+                                    modManager.restoreMod(.texturaAlok) { _, message in
+                                        alertMessage = message
+                                        showAlert = true
+                                    }
+                                }
+                            }
+                        ))
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .tint(.green)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 15)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Arquivo exato")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.7))
+                    Text("optionalab_avatar_66.CoOEgYl5yYUMEbFNIb8L3onAO6o~3D")
                         .font(.system(size: 9, design: .monospaced))
                         .foregroundColor(secondaryText)
-                        .lineLimit(2)
+                        .textSelection(.enabled)
                 }
-                Spacer(minLength: 0)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 15)
             }
-
-            if textureManager.isProcessing {
-                ProgressView().tint(.white).frame(maxWidth: .infinity).padding(.vertical, 8)
-            } else {
-                Button {
-                    if textureManager.isActive {
-                        textureManager.deactivate { _, message in
-                            alertMessage = message
-                            showAlert = true
-                        }
-                    } else {
-                        textureManager.activate(bundleID: selectedGame.bundleID) { _, message in
-                            alertMessage = message
-                            showAlert = true
-                        }
-                    }
-                } label: {
-                    Text(textureManager.isActive ? "DESATIVAR E RESTAURAR" : "ATIVAR TEXTURA")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(textureManager.isActive ? Color.orange.opacity(0.82) : Color.green.opacity(0.72))
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-            }
+            .background(panel)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
         }
-        .padding(16)
-        .background(panel)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
     }
 }

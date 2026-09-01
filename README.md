@@ -95,12 +95,6 @@ The app selects the access path automatically: kernel/offsets for iOS 17/18 and 
 └── docs/images/             # Repository artwork and current UI previews
 ```
 
-## Protected substitution payloads
-
-The built-in substitution payloads are no longer copied as readable files under `Mods/` in the app bundle. They are stored as authenticated encrypted data in `ProtectedModPayloadStore.swift`, decrypted only in memory after the license session is validated, and passed directly to the patch transaction.
-
-This reduces casual extraction from the IPA, but it is not absolute secrecy: anything the app can decrypt on a user-controlled device can potentially be recovered by a determined reverse engineer. For stronger protection, deliver the encrypted payload from a controlled backend only after license validation and keep the decryption key outside the app binary.
-
 ## Security and responsible use
 
 Do not publish logs, app containers, cookies, account databases, or patch payloads containing personal data. Report security-sensitive issues privately to the maintainer.
