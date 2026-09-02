@@ -2,9 +2,16 @@ import Foundation
 import SwiftUI
 
 enum ModType: String, CaseIterable, Identifiable, Hashable {
+    // Compatibilidade com projetos antigos; as novas opções usam variantes explícitas.
     case hsAlto = "HS ALTO"
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS PEITO"
+    case hsAltoCache = "HS Alto — cache_res"
+    case hsPescocoCache = "HS Pescoço — cache_res"
+    case hsPeitoCache = "HS Peito — cache_res"
+    case hsAltoAvatarPescoco = "HS Alto + Pescoço — Avatar"
+    case hsPescocoAvatarAntena = "HS Pescoço + Antena — Avatar"
+    case hsPeitoAvatarAntena = "HS Peito + Antena — Avatar"
     case hologramaArmas = "HOLOGRAMA ARMAS"
     case texturaAlok1 = "Skin Instaplayer"
     case texturaAlok2 = "Skin Mandela"
@@ -20,6 +27,12 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsAlto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A01")!
         case .hsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A02")!
         case .hsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A03")!
+        case .hsAltoCache: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A21")!
+        case .hsPescocoCache: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A22")!
+        case .hsPeitoCache: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A23")!
+        case .hsAltoAvatarPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A24")!
+        case .hsPescocoAvatarAntena: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A25")!
+        case .hsPeitoAvatarAntena: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A26")!
         case .hologramaArmas: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A04")!
         case .texturaAlok1: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A11")!
         case .texturaAlok2: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A12")!
@@ -30,9 +43,12 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var subtitle: String {
         switch self {
-        case .hsAlto: return "HS Acima da Cabeça do Inimigo."
-        case .hsPescoco: return "HS Apenas no Pescoço do Inimigo."
-        case .hsPeito: return "HS no Peito do Inimigo."
+        case .hsAlto, .hsAltoCache: return "HS acima da cabeça do inimigo usando cache_res."
+        case .hsPescoco, .hsPescocoCache: return "HS apenas no pescoço do inimigo usando cache_res."
+        case .hsPeito, .hsPeitoCache: return "HS no peito do inimigo usando cache_res."
+        case .hsAltoAvatarPescoco: return "Avatar: HS alto + pescoço. Somente Free Fire normal."
+        case .hsPescocoAvatarAntena: return "Avatar: HS pescoço + antena. Somente Free Fire normal."
+        case .hsPeitoAvatarAntena: return "Avatar: HS peito + antena. Somente Free Fire normal."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
         case .fps144: return "Funciona no Free Fire normal em dispositivos iOS com tela 120Hz."
@@ -41,8 +57,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var sectionName: String {
         switch self {
-        case .hsAlto, .hsPescoco, .hsPeito:
-            return "FUNÇÕES DE AIMBOT"
+        case .hsAlto, .hsPescoco, .hsPeito, .hsAltoCache, .hsPescocoCache, .hsPeitoCache:
+            return "FUNÇÕES CACHE_RES"
+        case .hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena:
+            return "FUNÇÕES AVATAR"
         case .hologramaArmas:
             return "FUNÇÕES DE HOLOGRAMA"
         case .texturaAlok1, .texturaAlok2, .texturaAlok3:
@@ -86,7 +104,9 @@ class FreeFireModManager: ObservableObject {
             do {
                 let manifest = try await OnlinePayloadUpdater.shared.manifest(forceRefresh: true)
                 let ids: [ModType: String] = [
-                    .hsAlto: "hs_alto", .hsPescoco: "hs_pescoco", .hsPeito: "hs_peito",
+                    .hsAlto: "hs_alto_cache", .hsPescoco: "hs_pescoco_cache", .hsPeito: "hs_peito_cache",
+                    .hsAltoCache: "hs_alto_cache", .hsPescocoCache: "hs_pescoco_cache", .hsPeitoCache: "hs_peito_cache",
+                    .hsAltoAvatarPescoco: "hs_alto_avatar_pescoco", .hsPescocoAvatarAntena: "hs_pescoco_avatar_antena", .hsPeitoAvatarAntena: "hs_peito_avatar_antena",
                     .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
                     .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
                 ]
@@ -123,14 +143,15 @@ class FreeFireModManager: ObservableObject {
     }
 
     private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping ((OnlinePayloadUpdater.RemotePayload, Data)?) -> Void) {
-        guard [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas].contains(mod) else {
+        guard [.hsAlto, .hsPescoco, .hsPeito, .hsAltoCache, .hsPescocoCache, .hsPeitoCache, .hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena, .hologramaArmas].contains(mod) else {
             completion(nil)
             return
         }
         let remoteIDs: [ModType: String] = [
-            .hsAlto: "hs_alto", .hsPescoco: "hs_pescoco", .hsPeito: "hs_peito",
-            .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
-            .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
+            .hsAlto: "hs_alto_cache", .hsPescoco: "hs_pescoco_cache", .hsPeito: "hs_peito_cache",
+            .hsAltoCache: "hs_alto_cache", .hsPescocoCache: "hs_pescoco_cache", .hsPeitoCache: "hs_peito_cache",
+            .hsAltoAvatarPescoco: "hs_alto_avatar_pescoco", .hsPescocoAvatarAntena: "hs_pescoco_avatar_antena", .hsPeitoAvatarAntena: "hs_peito_avatar_antena",
+            .hologramaArmas: "holograma_armas"
         ]
         guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
@@ -161,6 +182,11 @@ class FreeFireModManager: ObservableObject {
         }
         guard mod != .fps144 || bundleID == "com.dts.freefireth" else {
             complete(completion, success: false, message: "A função 144fps funciona somente no Free Fire normal, não no Free Fire MAX.")
+            return
+        }
+        let avatarMods: Set<ModType> = [.hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena]
+        guard !avatarMods.contains(mod) || bundleID == "com.dts.freefireth" else {
+            complete(completion, success: false, message: "As funções Avatar funcionam somente no Free Fire normal, não no Free Fire MAX.")
             return
         }
         LicenseManager.shared.recheckSecureSession { [weak self] valid, message in

@@ -19,6 +19,7 @@ final class OnlinePayloadUpdater {
     struct RemotePayload: Decodable, Identifiable {
         let id: String
         let displayName: String
+        let fileType: String?
         let version: Int
         let fileName: String
         let targetPaths: [String]
@@ -29,7 +30,7 @@ final class OnlinePayloadUpdater {
         let enabled: Bool
 
         enum CodingKeys: String, CodingKey {
-            case id, displayName = "display_name", version, fileName = "file_name"
+            case id, displayName = "display_name", fileType = "file_type", version, fileName = "file_name"
             case targetPaths = "target_paths", compatibleGames = "compatible_games"
             case sha256, size, downloadURL = "download_url", enabled
         }
