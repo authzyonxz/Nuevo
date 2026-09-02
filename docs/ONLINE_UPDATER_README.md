@@ -118,7 +118,7 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d ffh4xcorporation.online
 ```
 
-Acesse `https://ffh4xcorporation.online/configurar`, informe o token administrativo e publique cada payload.
+Acesse `https://ffh4xcorporation.online/configurar`, informe o token administrativo e publique cada payload. A aba **Monitoramento** permite testar a saúde da API e atualizar manualmente a lista de eventos.
 
 ## Publicação pela API
 
@@ -136,11 +136,11 @@ curl -X POST https://ffh4xcorporation.online/api/v1/admin/payloads \
   -F payload=@./cache_res.exemplo
 ```
 
-O manifesto público está em `/api/v1/manifest`. O download de cada payload ocorre em `/api/v1/payloads/:id`. O servidor rejeita nomes com separadores de diretório, limita uploads a 250 MB e não expõe a listagem do armazenamento.
+O manifesto público está em `/api/v1/manifest`. O download de cada payload ocorre em `/api/v1/payloads/:id`. Os logs administrativos podem ser consultados em `/api/v1/admin/logs?limit=200` com `Authorization: Bearer <ADMIN_TOKEN>`. O servidor rejeita nomes com separadores de diretório, limita uploads a 250 MB e não expõe a listagem do armazenamento.
 
 ## Integração no iOS
 
-Adicione `OnlinePayloadUpdater.swift` ao target principal no Xcode e troque `https://ffh4xcorporation.online` pelo domínio HTTPS `ffh4xcorporation.online`. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
+Adicione `OnlinePayloadUpdater.swift` ao target principal no Xcode e troque `https://ffh4xcorporation.online` pelo domínio HTTPS definitivo. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
 
 A integração com `FreeFireModManager` deve ocorrer **antes da aplicação**: buscar o item remoto, receber `Data`, descriptografar ou reencapsular em memória e então usar as mesmas regras de caminho e o mesmo `PatchTransactionReceipt` já existentes. Não salve o payload em `Documents`, `Library` ou no bundle. Para o 144fps, mantenha a validação exclusiva para `com.dts.freefireth` e `Library/Preferences`; para texturas, aceite somente os dois caminhos exatos já definidos no projeto.
 
@@ -160,6 +160,10 @@ Task {
     }
 }
 ```
+
+## Monitoramento e logs
+
+Os eventos são armazenados em `storage/events.ndjson`, um registro JSON por linha. O painel mostra os 200 eventos mais recentes e registra health-checks, consultas ao manifesto, downloads de payloads, publicações, alterações de status e tentativas de autenticação inválidas. O botão **Atualizar monitoramento** executa um novo teste contra `/api/v1/health` e recarrega os logs sem exigir refresh da página.
 
 ## Atualizações e rollback
 
