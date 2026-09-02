@@ -310,7 +310,7 @@ class FreeFireModManager: ObservableObject {
     }
 
     private func resolveRemoteTarget(relativePath: String, fileName: String, rootPath: String) -> String? {
-        var accessHandle: Int32 = -1
+        var accessHandle: Int64 = -1
         if KernelExploit.currentAccessPath == .badQuery {
             accessHandle = ContainerStore.grantContainerAccess(rootPath)
             guard accessHandle >= 0 else {
