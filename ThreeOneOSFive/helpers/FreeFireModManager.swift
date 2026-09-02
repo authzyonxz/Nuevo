@@ -295,6 +295,18 @@ class FreeFireModManager: ObservableObject {
                             })
                         }
                     }
+                    if matches.isEmpty {
+                        addLog("TEXTURA DIAG: nenhum nome exato; iniciando fallback pelo prefixo optionalab_avatar_")
+                        for directory in searchDirectories {
+                            let directoryPath = (rootPath as NSString).appendingPathComponent(directory)
+                            let prefixed = findFilesStarting(with: "optionalab_avatar_", in: directoryPath)
+                            addLog("TEXTURA DIAG: candidatos por prefixo em \(directory)=\(prefixed.count)")
+                            for path in prefixed.prefix(20) {
+                                addLog("TEXTURA DIAG: candidato prefixo=\(path.replacingOccurrences(of: "\\\\", with: "/"))")
+                            }
+                            matches.append(contentsOf: prefixed)
+                        }
+                    }
                     addLog("TEXTURA DIAG: resultados aceitos=\(matches.count)")
                     guard let existing = matches.first else {
                         addLog("Alvo local não encontrado após busca compatível nos diretórios de textura")
@@ -436,6 +448,18 @@ class FreeFireModManager: ObservableObject {
             defer { bad_query_release(handle) }
         }
         return findFiles(named: name, in: directory)
+    }
+
+    private func findFilesStarting(with prefix: String, in directory: String) -> [String] {
+        var results: [String] = []
+        let fm = FileManager.default
+        let url = URL(fileURLWithPath: directory)
+        if let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
+            for case let fileURL as URL in enumerator {
+                if fileURL.lastPathComponent.hasPrefix(prefix) { results.append(fileURL.path) }
+            }
+        }
+        return results
     }
 
     private func findFiles(named name: String, in directory: String) -> [String] {
