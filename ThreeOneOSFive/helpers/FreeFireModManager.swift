@@ -269,14 +269,23 @@ class FreeFireModManager: ObservableObject {
                         "/Documents/contentcache/optional/ios/gameassetbundles/"
                     ]
                     let normalizedRoot = rootPath.replacingOccurrences(of: "\\\\", with: "/")
+                    addLog("TEXTURA DIAG: bundle=\(bid)")
+                    addLog("TEXTURA DIAG: container=\(normalizedRoot)")
+                    addLog("TEXTURA DIAG: diretórios permitidos=\(allowedDirectories.joined(separator: ","))")
                     var matches: [String] = []
                     for textureName in textureNames {
+                        addLog("TEXTURA DIAG: pesquisando nome exato=\(textureName)")
                         let found = findFilesWithSelectedAccess(named: textureName, in: rootPath)
+                        addLog("TEXTURA DIAG: resultados brutos para \(textureName)=\(found.count)")
+                        for path in found.prefix(10) {
+                            addLog("TEXTURA DIAG: resultado=\(path.replacingOccurrences(of: "\\\\", with: "/"))")
+                        }
                         matches.append(contentsOf: found.filter { path in
                             let normalized = path.replacingOccurrences(of: "\\\\", with: "/")
                             return normalized.hasPrefix(normalizedRoot) && allowedDirectories.contains(where: { normalized.contains($0) })
                         })
                     }
+                    addLog("TEXTURA DIAG: resultados aceitos=\(matches.count)")
                     guard let existing = matches.first else {
                         addLog("Alvo local não encontrado após busca compatível nos diretórios de textura")
                         continue
