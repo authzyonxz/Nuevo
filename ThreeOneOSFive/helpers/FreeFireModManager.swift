@@ -66,6 +66,8 @@ class FreeFireModManager: ObservableObject {
     private var operationInFlight = false
 
     private let supportedBundleIDs: Set<String> = ["com.dts.freefireth", "com.dts.freefiremax"]
+    private let localTextureTargetName = "optionalab_avatar_66.DfUs7MzeaoXWJ4jWN8zRBmYoY7Q~3D"
+    private let localFPSPreferenceName = "com.dts.freefireth.plist"
 
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
 
@@ -121,6 +123,10 @@ class FreeFireModManager: ObservableObject {
     }
 
     private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping ((OnlinePayloadUpdater.RemotePayload, Data)?) -> Void) {
+        guard [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas].contains(mod) else {
+            completion(nil)
+            return
+        }
         let remoteIDs: [ModType: String] = [
             .hsAlto: "hs_alto", .hsPescoco: "hs_pescoco", .hsPeito: "hs_peito",
             .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
@@ -193,16 +199,34 @@ class FreeFireModManager: ObservableObject {
 
         addLog("Injeção V21: \(mod.rawValue)")
 
-        guard let remotePayload, !remotePayload.1.isEmpty else {
-            addLog("ERRO: Nenhum payload publicado para \(mod.rawValue); a IPA está limpa por projeto")
-            endOperation()
-            complete(completion, success: false, message: "Nenhum payload publicado no site para esta função.")
-            return
+        let localPayload = [.texturaAlok1, .texturaAlok2, .texturaAlok3, .fps144].contains(mod)
+        let remoteDefinition: OnlinePayloadUpdater.RemotePayload?
+        let modData: Data
+        let currentTarget: String
+        if localPayload {
+            do {
+                modData = try ProtectedModPayloadStore.decrypt(mod)
+            } catch {
+                addLog("ERRO: payload local protegido indisponível: \(mod.rawValue)")
+                endOperation()
+                complete(completion, success: false, message: "Payload local protegido indisponível.")
+                return
+            }
+            remoteDefinition = nil
+            currentTarget = mod == .fps144 ? localFPSPreferenceName : localTextureTargetName
+            addLog("Payload local AES-GCM aberto somente em memória: \(mod.rawValue)")
+        } else {
+            guard let remotePayload, !remotePayload.1.isEmpty else {
+                addLog("ERRO: nenhum payload remoto publicado para \(mod.rawValue)")
+                endOperation()
+                complete(completion, success: false, message: "Nenhum payload publicado no site para esta função.")
+                return
+            }
+            remoteDefinition = remotePayload.0
+            modData = remotePayload.1
+            currentTarget = remotePayload.0.fileName
+            addLog("Payload remoto validado em memória: \(mod.rawValue) v\(remotePayload.0.version)")
         }
-        let remoteDefinition = remotePayload.0
-        let modData = remotePayload.1
-        let currentTarget = remoteDefinition.fileName
-        addLog("Payload remoto validado em memória: \(mod.rawValue) v\(remoteDefinition.version)")
         let modSize = modData.count
         addLog("Origem OK: \(modSize) bytes")
 
@@ -210,8 +234,8 @@ class FreeFireModManager: ObservableObject {
 
         var rules: [PatchRule] = []
         var resolvedContainers = 0
-        let configuredPaths = remoteDefinition.targetPaths
-        guard !configuredPaths.isEmpty else {
+        let configuredPaths = remoteDefinition?.targetPaths ?? []
+        if !localPayload && configuredPaths.isEmpty {
             addLog("ERRO: o payload remoto não possui caminhos configurados")
             endOperation()
             complete(completion, success: false, message: "Configure pelo menos um caminho no site.")
@@ -224,26 +248,38 @@ class FreeFireModManager: ObservableObject {
                 continue
             }
             resolvedContainers += 1
-            for configuredPath in configuredPaths {
-                let relativeInput = configuredPath.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
-                guard !relativeInput.isEmpty, !relativeInput.contains("..") else {
-                    addLog("ERRO: caminho remoto rejeitado por segurança: \(configuredPath)")
+            if localPayload {
+                let localPaths: [String]
+                if mod == .fps144 {
+                    localPaths = ["Library/Preferences/\(currentTarget)"]
+                } else {
+                    localPaths = [
+                        "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles/\(currentTarget)",
+                        "Documents/contentcache/Optional/ios/gameassetbundles/\(currentTarget)"
+                    ]
+                }
+                guard let existing = localPaths.compactMap({ resolveRemoteTarget(relativePath: $0, fileName: currentTarget, rootPath: rootPath) }).first else {
+                    addLog("Alvo local não encontrado nos caminhos conhecidos para \(currentTarget)")
                     continue
                 }
-                guard let targetFullPath = resolveRemoteTarget(relativePath: relativeInput, fileName: currentTarget, rootPath: rootPath) else {
-                    addLog("Alvo não encontrado no caminho publicado: \(relativeInput) | arquivo exato: \(currentTarget)")
-                    continue
+                let relativePath = String(existing.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                addLog("Alvo local encontrado: \(relativePath)")
+                rules.append(PatchRule(bundleID: bid, relativePath: relativePath, replacementFilename: (existing as NSString).lastPathComponent, replacementData: modData))
+            } else {
+                for configuredPath in configuredPaths {
+                    let relativeInput = configuredPath.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+                    guard !relativeInput.isEmpty, !relativeInput.contains("..") else {
+                        addLog("ERRO: caminho remoto rejeitado por segurança: \(configuredPath)")
+                        continue
+                    }
+                    guard let targetFullPath = resolveRemoteTarget(relativePath: relativeInput, fileName: currentTarget, rootPath: rootPath) else {
+                        addLog("Alvo não encontrado no caminho publicado: \(relativeInput) | arquivo exato: \(currentTarget)")
+                        continue
+                    }
+                    let relativePath = String(targetFullPath.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                    addLog("Alvo remoto encontrado: \(relativePath)")
+                    rules.append(PatchRule(bundleID: bid, relativePath: relativePath, replacementFilename: (targetFullPath as NSString).lastPathComponent, replacementData: modData))
                 }
-                let relativePath = String(targetFullPath.dropFirst(rootPath.count))
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                let replacementName = (targetFullPath as NSString).lastPathComponent
-                addLog("Alvo remoto encontrado: \(relativePath)")
-                rules.append(PatchRule(
-                    bundleID: bid,
-                    relativePath: relativePath,
-                    replacementFilename: replacementName,
-                    replacementData: modData
-                ))
             }
         }
 
