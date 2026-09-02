@@ -249,22 +249,42 @@ class FreeFireModManager: ObservableObject {
             }
             resolvedContainers += 1
             if localPayload {
-                let localPaths: [String]
                 if mod == .fps144 {
-                    localPaths = ["Library/Preferences/\(currentTarget)"]
+                    let requiredRelativePath = "Library/Preferences/\(currentTarget)"
+                    guard resolveRemoteTarget(relativePath: requiredRelativePath, fileName: currentTarget, rootPath: rootPath) != nil else {
+                        addLog("ERRO: 144fps não encontrado no caminho exato: \(requiredRelativePath)")
+                        continue
+                    }
+                    addLog("144fps encontrado no caminho exato: \(requiredRelativePath)")
+                    rules.append(PatchRule(bundleID: bid, relativePath: requiredRelativePath, replacementFilename: currentTarget, replacementData: modData))
                 } else {
-                    localPaths = [
-                        "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles/\(currentTarget)",
-                        "Documents/contentcache/Optional/ios/gameassetbundles/\(currentTarget)"
+                    let textureNames = [
+                        currentTarget,
+                        "optionalab_avatar_66.CoOEgYl5yYUMEbFNIb8L3onAO6o~3D"
                     ]
+                    let allowedDirectories = [
+                        "/Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles/",
+                        "/Documents/contentcache/Optional/ios/gameassetbundles/",
+                        "/Documents/contentcache/optional/ios/optionalavatarres/gameassetbundles/",
+                        "/Documents/contentcache/optional/ios/gameassetbundles/"
+                    ]
+                    let normalizedRoot = rootPath.replacingOccurrences(of: "\\\\", with: "/")
+                    var matches: [String] = []
+                    for textureName in textureNames {
+                        let found = findFilesWithSelectedAccess(named: textureName, in: rootPath)
+                        matches.append(contentsOf: found.filter { path in
+                            let normalized = path.replacingOccurrences(of: "\\\\", with: "/")
+                            return normalized.hasPrefix(normalizedRoot) && allowedDirectories.contains(where: { normalized.contains($0) })
+                        })
+                    }
+                    guard let existing = matches.first else {
+                        addLog("Alvo local não encontrado após busca compatível nos diretórios de textura")
+                        continue
+                    }
+                    let relativePath = String(existing.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                    addLog("Textura encontrada pela busca antiga compatível: \(relativePath)")
+                    rules.append(PatchRule(bundleID: bid, relativePath: relativePath, replacementFilename: (existing as NSString).lastPathComponent, replacementData: modData))
                 }
-                guard let existing = localPaths.compactMap({ resolveRemoteTarget(relativePath: $0, fileName: currentTarget, rootPath: rootPath) }).first else {
-                    addLog("Alvo local não encontrado nos caminhos conhecidos para \(currentTarget)")
-                    continue
-                }
-                let relativePath = String(existing.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                addLog("Alvo local encontrado: \(relativePath)")
-                rules.append(PatchRule(bundleID: bid, relativePath: relativePath, replacementFilename: (existing as NSString).lastPathComponent, replacementData: modData))
             } else {
                 for configuredPath in configuredPaths {
                     let relativeInput = configuredPath.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
