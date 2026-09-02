@@ -296,9 +296,10 @@ class FreeFireModManager: ObservableObject {
             return
         }
 
+        let projectName = remoteDefinition.map { "MenagerFF_Remote_\($0.id)_v\($0.version)" } ?? "MenagerFF_Local_\(mod.rawValue)"
         let project = PatchProject(
             id: mod.persistentProjectID,
-            name: "MenagerFF_Remote_\(remoteDefinition.id)_v\(remoteDefinition.version)",
+            name: projectName,
             rules: rules
         )
 
