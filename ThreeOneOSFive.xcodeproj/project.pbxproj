@@ -377,7 +377,7 @@
 			files = (
 				3105A211,
 				3105A228,
-
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
