@@ -6,12 +6,12 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     case hsAlto = "HS ALTO"
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS PEITO"
-    case hsAltoCache = "HS Alto — cache_res"
-    case hsPescocoCache = "HS Pescoço — cache_res"
-    case hsPeitoCache = "HS Peito — cache_res"
-    case hsAltoAvatarPescoco = "HS Alto + Pescoço — Avatar"
-    case hsPescocoAvatarAntena = "HS Pescoço + Antena — Avatar"
-    case hsPeitoAvatarAntena = "HS Peito + Antena — Avatar"
+    case hsAltoCache = "HS Alto"
+    case hsPescocoCache = "HS Pescoço"
+    case hsPeitoCache = "HS Peito"
+    case hsAltoAvatarPescoco = "HS Alto + Pescoço"
+    case hsPescocoAvatarAntena = "HS Alto + Pescoço + Antena"
+    case hsPeitoAvatarAntena = "HS Peito + Antena"
     case hologramaArmas = "HOLOGRAMA ARMAS"
     case texturaAlok1 = "Skin Instaplayer"
     case texturaAlok2 = "Skin Mandela"
@@ -58,7 +58,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     var sectionName: String {
         switch self {
         case .hsAlto, .hsPescoco, .hsPeito, .hsAltoCache, .hsPescocoCache, .hsPeitoCache:
-            return "FUNÇÕES CACHE_RES"
+            return "FUNÇÕES CACHE"
         case .hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena:
             return "FUNÇÕES AVATAR"
         case .hologramaArmas:
@@ -95,7 +95,12 @@ class FreeFireModManager: ObservableObject {
     }
 
     func displayName(for mod: ModType) -> String {
-        remoteDisplayNames[mod] ?? mod.rawValue
+        switch mod {
+        case .hsAltoCache, .hsPescocoCache, .hsPeitoCache, .hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena:
+            return mod.rawValue
+        default:
+            return remoteDisplayNames[mod] ?? mod.rawValue
+        }
     }
 
     private func refreshRemoteCatalog() {

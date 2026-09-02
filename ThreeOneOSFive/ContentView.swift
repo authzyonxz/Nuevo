@@ -414,7 +414,7 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
 
-                    modSection(title: "FUNÇÕES CACHE_RES", mods: cacheMods)
+                    modSection(title: "FUNÇÕES CACHE", mods: cacheMods)
                     modSection(title: "FUNÇÕES AVATAR", mods: avatarMods)
                     modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
                     modSection(title: "DESEMPENHO", mods: performanceMods)
