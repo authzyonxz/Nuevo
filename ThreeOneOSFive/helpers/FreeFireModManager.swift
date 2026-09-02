@@ -88,7 +88,7 @@ class FreeFireModManager: ObservableObject {
                     .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
                     .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
                 ]
-                let names = Dictionary(uniqueKeysWithValues: ids.compactMap { mod, id in
+                let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ids.compactMap { (mod: ModType, id: String) -> (ModType, String)? in
                     guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
                     return (mod, item.displayName)
                 })
