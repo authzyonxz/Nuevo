@@ -110,6 +110,24 @@ class FreeFireModManager: ObservableObject {
         }
     }
 
+    private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping (Data?) -> Void) {
+        let remoteIDs: [ModType: String] = [
+            .hsAlto: "hs_alto", .hsPescoco: "hs_pescoco", .hsPeito: "hs_peito",
+            .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
+            .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
+        ]
+        guard let id = remoteIDs[mod] else { completion(nil); return }
+        Task {
+            do {
+                let (_, data) = try await OnlinePayloadUpdater.shared.download(id: id, bundleID: bundleID, forceRefresh: true)
+                completion(data)
+            } catch {
+                addLog("Payload remoto indisponível; usando proteção local para \(mod.rawValue): \(error.localizedDescription)")
+                completion(nil)
+            }
+        }
+    }
+
     func addLog(_ msg: String) {
         DispatchQueue.main.async {
             let formatter = DateFormatter()
@@ -135,11 +153,14 @@ class FreeFireModManager: ObservableObject {
                 self.complete(completion, success: false, message: message ?? "Sessão expirada. Valide a key novamente.")
                 return
             }
-            self.applyModAfterSessionCheck(mod, bundleID: bundleID, completion: completion)
+            self.fetchRemotePayloadIfAvailable(mod: mod, bundleID: bundleID) { [weak self] remoteData in
+                guard let self else { return }
+                self.applyModAfterSessionCheck(mod, bundleID: bundleID, remoteData: remoteData, completion: completion)
+            }
         }
     }
 
-    private func applyModAfterSessionCheck(_ mod: ModType, bundleID: String, completion: @escaping (Bool, String) -> Void) {
+    private func applyModAfterSessionCheck(_ mod: ModType, bundleID: String, remoteData: Data? = nil, completion: @escaping (Bool, String) -> Void) {
         let bundleIds = [bundleID]
         guard LicenseManager.shared.isAuthorized else {
             complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
@@ -167,7 +188,10 @@ class FreeFireModManager: ObservableObject {
         let isHolo = (mod == .hologramaArmas)
         let currentTarget = isFPS ? targetFPSName : (isTexture ? targetTextureAlokNewName : (isHolo ? targetHoloName : targetFileName))
         let modData: Data?
-        if [.hsAlto, .hsPescoco, .hsPeito, .texturaAlok1, .texturaAlok2, .texturaAlok3, .fps144].contains(mod) {
+        if let remoteData, !remoteData.isEmpty {
+            modData = remoteData
+            addLog("Payload remoto validado em memória: \(mod.rawValue)")
+        } else if [.hsAlto, .hsPescoco, .hsPeito, .texturaAlok1, .texturaAlok2, .texturaAlok3, .fps144].contains(mod) {
             do {
                 modData = try ProtectedModPayloadStore.decrypt(mod)
                 addLog("Payload protegido descriptografado em memória: \(mod.rawValue)")
