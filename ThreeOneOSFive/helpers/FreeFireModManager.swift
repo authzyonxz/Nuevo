@@ -230,14 +230,8 @@ class FreeFireModManager: ObservableObject {
                     addLog("ERRO: caminho remoto rejeitado por segurança: \(configuredPath)")
                     continue
                 }
-                let inputFullPath = (rootPath as NSString).appendingPathComponent(relativeInput)
-                var targetFullPath = inputFullPath
-                var isDirectory: ObjCBool = false
-                if FileManager.default.fileExists(atPath: inputFullPath, isDirectory: &isDirectory), isDirectory.boolValue {
-                    targetFullPath = (inputFullPath as NSString).appendingPathComponent(currentTarget)
-                }
-                guard FileManager.default.fileExists(atPath: targetFullPath) else {
-                    addLog("Alvo não encontrado no caminho publicado: \(relativeInput)")
+                guard let targetFullPath = resolveRemoteTarget(relativePath: relativeInput, fileName: currentTarget, rootPath: rootPath) else {
+                    addLog("Alvo não encontrado no caminho publicado: \(relativeInput) | arquivo exato: \(currentTarget)")
                     continue
                 }
                 let relativePath = String(targetFullPath.dropFirst(rootPath.count))
@@ -313,6 +307,47 @@ class FreeFireModManager: ObservableObject {
             return
         }
         log("access: legacy kernel elevation active")
+    }
+
+    private func resolveRemoteTarget(relativePath: String, fileName: String, rootPath: String) -> String? {
+        var accessHandle: Int32 = -1
+        if KernelExploit.currentAccessPath == .badQuery {
+            accessHandle = ContainerStore.grantContainerAccess(rootPath)
+            guard accessHandle >= 0 else {
+                addLog("DIAGNÓSTICO: acesso ao container falhou antes da resolução: \(accessHandle)")
+                return nil
+            }
+            defer { bad_query_release(accessHandle) }
+        }
+        guard let configured = resolveCaseInsensitivePath(relativePath, from: rootPath) else {
+            addLog("DIAGNÓSTICO: caminho publicado não existe com nenhuma capitalização: \(relativePath)")
+            return nil
+        }
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: configured, isDirectory: &isDirectory), isDirectory.boolValue {
+            let exact = (configured as NSString).appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: exact) { return exact }
+            let matches = findFilesWithSelectedAccess(named: fileName, in: configured)
+            return matches.first
+        }
+        if FileManager.default.fileExists(atPath: configured) { return configured }
+        let parent = (configured as NSString).deletingLastPathComponent
+        return findFilesWithSelectedAccess(named: fileName, in: parent).first
+    }
+
+    private func resolveCaseInsensitivePath(_ relativePath: String, from rootPath: String) -> String? {
+        var current = rootPath
+        for component in relativePath.split(separator: "/").map(String.init) {
+            let direct = (current as NSString).appendingPathComponent(component)
+            if FileManager.default.fileExists(atPath: direct) {
+                current = direct
+                continue
+            }
+            guard let entries = try? FileManager.default.contentsOfDirectory(atPath: current),
+                  let match = entries.first(where: { $0.caseInsensitiveCompare(component) == .orderedSame }) else { return nil }
+            current = (current as NSString).appendingPathComponent(match)
+        }
+        return current
     }
 
     private func findFilesWithSelectedAccess(named name: String, in directory: String) -> [String] {
