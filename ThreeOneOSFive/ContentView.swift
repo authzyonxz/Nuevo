@@ -482,6 +482,7 @@ struct HomeView: View {
                 ForEach(Array(mods.enumerated()), id: \.element.id) { index, mod in
                     ModRowReference(
                         mod: mod,
+                        displayName: modManager.displayName(for: mod),
                         isActive: modManager.activeMods.contains(mod),
                         isProcessing: modManager.isProcessing,
                         onToggle: { isOn in handleToggle(mod: mod, isOn: isOn) }
@@ -520,6 +521,7 @@ struct HomeView: View {
 // MARK: - Mod Row
 struct ModRowReference: View {
     let mod: ModType
+    let displayName: String
     let isActive: Bool
     let isProcessing: Bool
     let onToggle: (Bool) -> Void
@@ -532,7 +534,7 @@ struct ModRowReference: View {
                 .frame(width: 28)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(mod.rawValue)
+                Text(displayName)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                 Text(mod.subtitle)
@@ -826,7 +828,7 @@ struct TexturesView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(mod.rawValue)
+                    Text(modManager.displayName(for: mod))
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     Text(modManager.activeMods.contains(mod) ? "ATIVA" : "Pronta para ativar")

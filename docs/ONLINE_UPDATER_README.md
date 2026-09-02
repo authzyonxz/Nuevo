@@ -1,6 +1,6 @@
 # MenagerFF Online Updater
 
-Este pacote fornece uma **API de atualização de payloads** e um painel administrativo em `/configurar`. O servidor publica um manifesto versionado, mantém os arquivos fora do bundle do aplicativo, calcula SHA-256 e permite ativar ou desativar cada função sem uma nova IPA.
+Este pacote fornece uma **API de atualização de payloads** e um painel administrativo em `/configurar`. O servidor publica um manifesto versionado, mantém os arquivos fora do bundle do aplicativo, calcula SHA-256 e permite ativar, desativar, substituir ou excluir cada função sem uma nova IPA. A IPA final não contém payloads, nomes de arquivos nem caminhos de destino.
 
 > O servidor deve ser usado somente para arquivos e aplicações que você está autorizado a distribuir. Não coloque credenciais, chaves privadas ou payloads reais no GitHub.
 
@@ -8,7 +8,7 @@ Este pacote fornece uma **API de atualização de payloads** e um painel adminis
 
 | Componente | Função |
 |---|---|
-| `server/index.mjs` | API Express, upload, catálogo e download |
+| `server/index.mjs` | API Express, upload, catálogo, download, substituição e exclusão |
 | `public/index.html` | Painel administrativo acessível em `/configurar` |
 | `storage/manifest.json` | Catálogo atual, criado automaticamente |
 | `storage/payloads/` | Arquivos publicados, fora da IPA |
@@ -136,13 +136,13 @@ curl -X POST https://ffh4xcorporation.online/api/v1/admin/payloads \
   -F payload=@./cache_res.exemplo
 ```
 
-O manifesto público está em `/api/v1/manifest`. O download de cada payload ocorre em `/api/v1/payloads/:id`. Os logs administrativos podem ser consultados em `/api/v1/admin/logs?limit=200` com `Authorization: Bearer <ADMIN_TOKEN>`. O servidor rejeita nomes com separadores de diretório, limita uploads a 250 MB e não expõe a listagem do armazenamento.
+O manifesto público está em `/api/v1/manifest`. O download de cada payload ocorre em `/api/v1/payloads/:id`. As opções do painel ficam em `/api/v1/admin/options`. Os logs administrativos podem ser consultados em `/api/v1/admin/logs?limit=200` com `Authorization: Bearer <ADMIN_TOKEN>`. O servidor rejeita nomes com separadores de diretório, limita uploads a 250 MB e não expõe a listagem do armazenamento.
 
 ## Integração no iOS
 
-Adicione `OnlinePayloadUpdater.swift` ao target principal no Xcode e troque `https://ffh4xcorporation.online` pelo domínio HTTPS definitivo. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
+O `OnlinePayloadUpdater.swift` já está incluído no target principal e usa `https://ffh4xcorporation.online`. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
 
-A integração com `FreeFireModManager` deve ocorrer **antes da aplicação**: buscar o item remoto, receber `Data`, descriptografar ou reencapsular em memória e então usar as mesmas regras de caminho e o mesmo `PatchTransactionReceipt` já existentes. Não salve o payload em `Documents`, `Library` ou no bundle. Para o 144fps, mantenha a validação exclusiva para `com.dts.freefireth` e `Library/Preferences`; para texturas, aceite somente os dois caminhos exatos já definidos no projeto.
+O `FreeFireModManager` exige um payload remoto publicado. Não existe fallback para payload em memória, arquivo no bundle ou caminho padrão. Cada item do manifesto traz um ou mais `target_paths`; cada entrada pode ser o caminho completo do arquivo ou o caminho de um diretório, ao qual o app acrescenta o `file_name`. O aplicativo só aplica destinos já existentes e rejeita caminhos com `..`. Assim, você pode cadastrar qualquer arquivo autorizado e qualquer diretório/arquivo de destino pelo site. Para o 144fps, selecione no painel somente `Free Fire normal`; o bundle ID é verificado no cliente antes da aplicação.
 
 Exemplo de uso assíncrono:
 
@@ -165,9 +165,9 @@ Task {
 
 Os eventos são armazenados em `storage/events.ndjson`, um registro JSON por linha. O painel mostra os 200 eventos mais recentes e registra health-checks, consultas ao manifesto, downloads de payloads, publicações, alterações de status e tentativas de autenticação inválidas. O botão **Atualizar monitoramento** executa um novo teste contra `/api/v1/health` e recarrega os logs sem exigir refresh da página.
 
-## Atualizações e rollback
+## Atualizações, desativação e exclusão
 
-Para atualizar, publique novamente o mesmo `id` com uma versão maior. Para rollback, publique o artefato anterior com versão posterior ou desative o item no painel e distribua uma versão corrigida. Faça backup periódico de `storage/manifest.json` e `storage/payloads/`.
+No painel, selecione o **ID estável** e o **nome exibido** nas listas, marque `Free Fire normal`, `Free Fire MAX` ou ambos, informe a versão, o nome exato do arquivo e os caminhos. Um caminho pode ser um diretório ou um arquivo completo. Ao publicar novamente o mesmo ID, o artefato anterior é removido e substituído. O botão **Desativar** mantém o arquivo no histórico, mas impede downloads; o botão **Excluir** remove o item do manifesto e apaga o arquivo do armazenamento. Faça backup periódico de `storage/manifest.json`, `storage/payloads/` e `storage/events.ndjson`.
 
 ## Diagnóstico
 

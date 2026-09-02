@@ -3,7 +3,7 @@ import CryptoKit
 
 /// Baixa versões publicadas pelo servidor e entrega o payload em memória.
 /// A aplicação continua responsável por descriptografar e aplicar o conteúdo
-/// usando ProtectedModPayloadStore/FreeFireModManager.
+/// usando FreeFireModManager e as regras do manifesto remoto.
 final class OnlinePayloadUpdater {
     static let shared = OnlinePayloadUpdater()
 

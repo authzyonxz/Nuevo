@@ -28,19 +28,6 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    var folderName: String {
-        switch self {
-        case .hsAlto: return "HS_ALTO"
-        case .hsPescoco: return "HS_PESCOCO"
-        case .hsPeito: return "HS_PEITO"
-        case .hologramaArmas: return "HOLOGRAMA"
-        case .texturaAlok1: return "TEXTURA_ALOK_1"
-        case .texturaAlok2: return "TEXTURA_ALOK_2"
-        case .texturaAlok3: return "TEXTURA_ALOK_3"
-        case .fps144: return "FPS_144"
-        }
-    }
-
     var subtitle: String {
         switch self {
         case .hsAlto: return "HS Acima da Cabeça do Inimigo."
@@ -70,6 +57,7 @@ class FreeFireModManager: ObservableObject {
     static let shared = FreeFireModManager()
 
     @Published private(set) var activeMods: Set<ModType> = []
+    @Published private(set) var remoteDisplayNames: [ModType: String] = [:]
     @Published var statusMessage: String = "Pronto para injetar"
     @Published var debugLogs: String = ""
     @Published private(set) var isProcessing = false
@@ -77,16 +65,38 @@ class FreeFireModManager: ObservableObject {
     private let operationLock = NSLock()
     private var operationInFlight = false
 
-    private let targetFileName = "cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D"
-    private let targetHoloName = "shaders.HPt9DZviTSXL9hpGW9QNOMigNLA~3D"
-    private let targetTextureAlokNewName = "optionalab_avatar_66.DfUs7MzeaoXWJ4jWN8zRBmYoY7Q~3D"
-    private let targetFPSName = "com.dts.freefireth.plist"
     private let supportedBundleIDs: Set<String> = ["com.dts.freefireth", "com.dts.freefiremax"]
 
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
 
     init() {
         restorePersistedState()
+        refreshRemoteCatalog()
+    }
+
+    func displayName(for mod: ModType) -> String {
+        remoteDisplayNames[mod] ?? mod.rawValue
+    }
+
+    private func refreshRemoteCatalog() {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let manifest = try await OnlinePayloadUpdater.shared.manifest(forceRefresh: true)
+                let ids: [ModType: String] = [
+                    .hsAlto: "hs_alto", .hsPescoco: "hs_pescoco", .hsPeito: "hs_peito",
+                    .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
+                    .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
+                ]
+                let names = Dictionary(uniqueKeysWithValues: ids.compactMap { mod, id in
+                    guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
+                    return (mod, item.displayName)
+                })
+                await MainActor.run { self.remoteDisplayNames = names }
+            } catch {
+                self.addLog("Catálogo remoto ainda não configurado: \(error.localizedDescription)")
+            }
+        }
     }
 
     /// Reconstitui a indicação das funções cujo patch continua aplicado.
@@ -110,7 +120,7 @@ class FreeFireModManager: ObservableObject {
         }
     }
 
-    private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping (Data?) -> Void) {
+    private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping ((OnlinePayloadUpdater.RemotePayload, Data)?) -> Void) {
         let remoteIDs: [ModType: String] = [
             .hsAlto: "hs_alto", .hsPescoco: "hs_pescoco", .hsPeito: "hs_peito",
             .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
@@ -119,10 +129,10 @@ class FreeFireModManager: ObservableObject {
         guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
             do {
-                let (_, data) = try await OnlinePayloadUpdater.shared.download(id: id, bundleID: bundleID, forceRefresh: true)
-                completion(data)
+                let result = try await OnlinePayloadUpdater.shared.download(id: id, bundleID: bundleID, forceRefresh: true)
+                completion(result)
             } catch {
-                addLog("Payload remoto indisponível; usando proteção local para \(mod.rawValue): \(error.localizedDescription)")
+                addLog("Payload remoto indisponível para \(mod.rawValue): \(error.localizedDescription)")
                 completion(nil)
             }
         }
@@ -153,14 +163,14 @@ class FreeFireModManager: ObservableObject {
                 self.complete(completion, success: false, message: message ?? "Sessão expirada. Valide a key novamente.")
                 return
             }
-            self.fetchRemotePayloadIfAvailable(mod: mod, bundleID: bundleID) { [weak self] remoteData in
+            self.fetchRemotePayloadIfAvailable(mod: mod, bundleID: bundleID) { [weak self] remotePayload in
                 guard let self else { return }
-                self.applyModAfterSessionCheck(mod, bundleID: bundleID, remoteData: remoteData, completion: completion)
+                self.applyModAfterSessionCheck(mod, bundleID: bundleID, remotePayload: remotePayload, completion: completion)
             }
         }
     }
 
-    private func applyModAfterSessionCheck(_ mod: ModType, bundleID: String, remoteData: Data? = nil, completion: @escaping (Bool, String) -> Void) {
+    private func applyModAfterSessionCheck(_ mod: ModType, bundleID: String, remotePayload: (OnlinePayloadUpdater.RemotePayload, Data)? = nil, completion: @escaping (Bool, String) -> Void) {
         let bundleIds = [bundleID]
         guard LicenseManager.shared.isAuthorized else {
             complete(completion, success: false, message: "Key ativa necessária. Valide a key antes de ativar uma função.")
@@ -183,35 +193,16 @@ class FreeFireModManager: ObservableObject {
 
         addLog("Injeção V21: \(mod.rawValue)")
 
-        let isTexture = [.texturaAlok1, .texturaAlok2, .texturaAlok3].contains(mod)
-        let isFPS = (mod == .fps144)
-        let isHolo = (mod == .hologramaArmas)
-        let currentTarget = isFPS ? targetFPSName : (isTexture ? targetTextureAlokNewName : (isHolo ? targetHoloName : targetFileName))
-        let modData: Data?
-        if let remoteData, !remoteData.isEmpty {
-            modData = remoteData
-            addLog("Payload remoto validado em memória: \(mod.rawValue)")
-        } else if [.hsAlto, .hsPescoco, .hsPeito, .texturaAlok1, .texturaAlok2, .texturaAlok3, .fps144].contains(mod) {
-            do {
-                modData = try ProtectedModPayloadStore.decrypt(mod)
-                addLog("Payload protegido descriptografado em memória: \(mod.rawValue)")
-            } catch {
-                addLog("ERRO: Payload protegido indisponível (\(mod.rawValue))")
-                endOperation()
-                complete(completion, success: false, message: "Payload protegido indisponível.")
-                return
-            }
-        } else {
-            let modPath = Bundle.main.path(forResource: currentTarget, ofType: nil, inDirectory: "Mods/\(mod.folderName)")
-            modData = modPath.flatMap { try? Data(contentsOf: URL(fileURLWithPath: $0)) }
-        }
-        guard let modData, !modData.isEmpty else {
-            addLog("ERRO: Mod não encontrado na IPA (\(currentTarget))")
+        guard let remotePayload, !remotePayload.1.isEmpty else {
+            addLog("ERRO: Nenhum payload publicado para \(mod.rawValue); a IPA está limpa por projeto")
             endOperation()
-            complete(completion, success: false, message: "Mod não encontrado na IPA.")
+            complete(completion, success: false, message: "Nenhum payload publicado no site para esta função.")
             return
         }
-
+        let remoteDefinition = remotePayload.0
+        let modData = remotePayload.1
+        let currentTarget = remoteDefinition.fileName
+        addLog("Payload remoto validado em memória: \(mod.rawValue) v\(remoteDefinition.version)")
         let modSize = modData.count
         addLog("Origem OK: \(modSize) bytes")
 
@@ -219,131 +210,46 @@ class FreeFireModManager: ObservableObject {
 
         var rules: [PatchRule] = []
         var resolvedContainers = 0
-        if isFPS {
-            let requiredRelativePath = "Library/Preferences/\(currentTarget)"
-            for bid in bundleIds {
-                guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty else {
-                    addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
-                    continue
-                }
-                resolvedContainers += 1
-                let fullPath = (rootPath as NSString).appendingPathComponent(requiredRelativePath)
-                guard FileManager.default.fileExists(atPath: fullPath) else {
-                    addLog("ERRO: 144fps não encontrado no caminho exato: \(requiredRelativePath)")
-                    continue
-                }
-                addLog("144fps encontrado no caminho exato: \(requiredRelativePath)")
-                rules.append(PatchRule(bundleID: bid, relativePath: requiredRelativePath, replacementFilename: currentTarget, replacementData: modData))
-            }
-        } else if isTexture {
-            // A textura deve substituir somente este arquivo e neste caminho.
-            // Não há busca global nem fallback para evitar alterar outro asset.
-            let candidateRelativePaths = [
-                "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles/\(currentTarget)",
-                "Documents/contentcache/Optional/ios/gameassetbundles/\(currentTarget)"
-            ]
-            for bid in bundleIds {
-                guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty else {
-                    addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
-                    continue
-                }
-                resolvedContainers += 1
-                guard let requiredRelativePath = candidateRelativePaths.first(where: { path in
-                    FileManager.default.fileExists(atPath: (rootPath as NSString).appendingPathComponent(path))
-                }) else {
-                    addLog("ERRO: textura não encontrada nos dois caminhos exatos para \(currentTarget)")
-                    continue
-                }
-                addLog("Textura encontrada no caminho exato: \(requiredRelativePath)")
-                rules.append(PatchRule(
-                    bundleID: bid,
-                    relativePath: requiredRelativePath,
-                    replacementFilename: currentTarget,
-                    replacementData: modData
-                ))
-            }
-        } else if isHolo {
-            // O holograma deve usar este diretório relativo. Quando o arquivo já
-            // existe em uma variação do container, usamos a localização real para
-            // não criar um destino paralelo que o jogo não lê.
-            let requiredDirectory = "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles"
-            let requiredRelativePath = "\(requiredDirectory)/\(currentTarget)"
-            for bid in bundleIds {
-                guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid),
-                      !rootPath.isEmpty else {
-                    addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
-                    continue
-                }
-                resolvedContainers += 1
-                let candidates = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
-                let normalizedDirectory = "/\(requiredDirectory)/"
-                let existingTarget = candidates.first { path in
-                    path.replacingOccurrences(of: "\\\\", with: "/")
-                        .contains(normalizedDirectory)
-                } ?? candidates.first
+        let configuredPaths = remoteDefinition.targetPaths
+        guard !configuredPaths.isEmpty else {
+            addLog("ERRO: o payload remoto não possui caminhos configurados")
+            endOperation()
+            complete(completion, success: false, message: "Configure pelo menos um caminho no site.")
+            return
+        }
 
-                guard let existingTarget,
-                      existingTarget.hasPrefix(rootPath) else {
-                    addLog("ERRO: Holograma não encontrado no container \(bid); nenhuma regra criada")
+        for bid in bundleIds {
+            guard let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty else {
+                addLog("DIAGNÓSTICO: container não resolvido para \(bid)")
+                continue
+            }
+            resolvedContainers += 1
+            for configuredPath in configuredPaths {
+                let relativeInput = configuredPath.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+                guard !relativeInput.isEmpty, !relativeInput.contains("..") else {
+                    addLog("ERRO: caminho remoto rejeitado por segurança: \(configuredPath)")
                     continue
                 }
-
-                let relativePath = String(existingTarget.dropFirst(rootPath.count))
+                let inputFullPath = (rootPath as NSString).appendingPathComponent(relativeInput)
+                var targetFullPath = inputFullPath
+                var isDirectory: ObjCBool = false
+                if FileManager.default.fileExists(atPath: inputFullPath, isDirectory: &isDirectory), isDirectory.boolValue {
+                    targetFullPath = (inputFullPath as NSString).appendingPathComponent(currentTarget)
+                }
+                guard FileManager.default.fileExists(atPath: targetFullPath) else {
+                    addLog("Alvo não encontrado no caminho publicado: \(relativeInput)")
+                    continue
+                }
+                let relativePath = String(targetFullPath.dropFirst(rootPath.count))
                     .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                if relativePath != requiredRelativePath {
-                    addLog("AVISO: Holograma encontrado em caminho alternativo: \(relativePath)")
-                } else {
-                    addLog("Holograma encontrado no caminho exigido: \(relativePath)")
-                }
-
+                let replacementName = (targetFullPath as NSString).lastPathComponent
+                addLog("Alvo remoto encontrado: \(relativePath)")
                 rules.append(PatchRule(
                     bundleID: bid,
                     relativePath: relativePath,
-                    replacementFilename: currentTarget,
+                    replacementFilename: replacementName,
                     replacementData: modData
                 ))
-            }
-        } else {
-            var targetPaths: [String] = []
-            for bid in bundleIds {
-                if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid), !rootPath.isEmpty {
-                    resolvedContainers += 1
-                    addLog("Escaneando container: \(bid)")
-                    let found = findFilesWithSelectedAccess(named: currentTarget, in: rootPath)
-                    targetPaths.append(contentsOf: found)
-                    for p in found {
-                        addLog("Alvo encontrado: ...\(p.suffix(40))")
-                    }
-                }
-            }
-            if targetPaths.isEmpty {
-                addLog("AVISO: Busca global vazia, usando caminhos padrão")
-                for bid in bundleIds {
-                    if let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bid) {
-                        let subPath = isHolo ? "optional" : "compulsory"
-                        let standardPaths = [
-                            "Documents/contentcache/\(subPath)/ios/gameassetbundles/\(currentTarget)",
-                            "Documents/ContentCache/\(subPath.capitalized)/ios/gameassetbundles/\(currentTarget)"
-                        ]
-                        for sp in standardPaths {
-                            targetPaths.append((rootPath as NSString).appendingPathComponent(sp))
-                        }
-                    }
-                }
-            }
-
-            for fullPath in targetPaths {
-                for bid in bundleIds {
-                    if let root = ContainerStore.resolveAppContainerPath(bundleID: bid), fullPath.hasPrefix(root) {
-                        let relative = String(fullPath.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                        rules.append(PatchRule(
-                            bundleID: bid,
-                            relativePath: relative,
-                            replacementFilename: currentTarget,
-                            replacementData: modData
-                        ))
-                    }
-                }
             }
         }
 
@@ -362,7 +268,7 @@ class FreeFireModManager: ObservableObject {
 
         let project = PatchProject(
             id: mod.persistentProjectID,
-            name: "MenagerFF_V21_\(mod.folderName)",
+            name: "MenagerFF_Remote_\(remoteDefinition.id)_v\(remoteDefinition.version)",
             rules: rules
         )
 
