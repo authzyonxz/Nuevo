@@ -97,7 +97,7 @@ Crie um bloco para o seu domínio em `/etc/nginx/sites-available/menagerff-updat
 ```nginx
 server {
     listen 80;
-    server_name updater.seudominio.com;
+    server_name ffh4xcorporation.online;
 
     client_max_body_size 250M;
     location / {
@@ -115,17 +115,17 @@ Depois habilite e emita o certificado:
 ```bash
 sudo ln -s /etc/nginx/sites-available/menagerff-updater /etc/nginx/sites-enabled/menagerff-updater
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d updater.seudominio.com
+sudo certbot --nginx -d ffh4xcorporation.online
 ```
 
-Acesse `https://updater.seudominio.com/configurar`, informe o token administrativo e publique cada payload.
+Acesse `https://ffh4xcorporation.online/configurar`, informe o token administrativo e publique cada payload.
 
 ## Publicação pela API
 
 O painel é o caminho recomendado. Para automação, publique um arquivo com `multipart/form-data`:
 
 ```bash
-curl -X POST https://updater.seudominio.com/api/v1/admin/payloads \
+curl -X POST https://ffh4xcorporation.online/api/v1/admin/payloads \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -F id=hs_pescoco \
   -F display_name='HS PESCOÇO' \
@@ -140,7 +140,7 @@ O manifesto público está em `/api/v1/manifest`. O download de cada payload oco
 
 ## Integração no iOS
 
-Adicione `OnlinePayloadUpdater.swift` ao target principal no Xcode e troque `https://SEU-DOMINIO-DO-UPDATER` pelo domínio HTTPS definitivo. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
+Adicione `OnlinePayloadUpdater.swift` ao target principal no Xcode e troque `https://ffh4xcorporation.online` pelo domínio HTTPS `ffh4xcorporation.online`. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
 
 A integração com `FreeFireModManager` deve ocorrer **antes da aplicação**: buscar o item remoto, receber `Data`, descriptografar ou reencapsular em memória e então usar as mesmas regras de caminho e o mesmo `PatchTransactionReceipt` já existentes. Não salve o payload em `Documents`, `Library` ou no bundle. Para o 144fps, mantenha a validação exclusiva para `com.dts.freefireth` e `Library/Preferences`; para texturas, aceite somente os dois caminhos exatos já definidos no projeto.
 
@@ -170,8 +170,8 @@ Para atualizar, publique novamente o mesmo `id` com uma versão maior. Para roll
 ```bash
 sudo systemctl status menagerff-updater
 sudo journalctl -u menagerff-updater -n 100 --no-pager
-curl -fsS https://updater.seudominio.com/api/v1/health
-curl -fsS https://updater.seudominio.com/api/v1/manifest | jq
+curl -fsS https://ffh4xcorporation.online/api/v1/health
+curl -fsS https://ffh4xcorporation.online/api/v1/manifest | jq
 ```
 
 Se o iOS não baixar um arquivo, confira primeiro HTTPS, `compatible_games`, `enabled`, `size` e `sha256`. Não desative a validação de hash para contornar erro de publicação.

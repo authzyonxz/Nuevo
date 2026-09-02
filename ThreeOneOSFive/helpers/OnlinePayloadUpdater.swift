@@ -51,7 +51,7 @@ final class OnlinePayloadUpdater {
     }
 
     // Substitua por https://SEU-DOMINIO, sem terminar com barra.
-    private let baseURL = URL(string: "https://SEU-DOMINIO-DO-UPDATER")!
+    private let baseURL = URL(string: "https://ffh4xcorporation.online")!
     private let session: URLSession
     private var cachedManifest: Manifest?
 
