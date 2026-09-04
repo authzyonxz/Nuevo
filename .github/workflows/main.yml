@@ -2,11 +2,8 @@ name: Build Unsigned IPA
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
-
-permissions:
-  contents: read
 
 jobs:
   build:
@@ -21,45 +18,25 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Build app without code signing
+      - name: Build Unsigned IPA
         run: |
-          set -euo pipefail
-          rm -rf build
-          xcodebuild \
+          xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
-            -scheme 3105 \
+            -alltargets \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$PWD/build/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=NO \
-            clean build
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
-      - name: Package unsigned IPA
-        run: |
-          set -euo pipefail
-          products_dir="build/DerivedData/Build/Products/Release-iphoneos"
-          app_path="$(find "$products_dir" -maxdepth 1 -type d -name '*.app' -print -quit)"
-          if [ -z "$app_path" ]; then
-            echo "No .app product found in $products_dir" >&2
-            exit 1
-          fi
-
-          rm -rf build/Payload build/MenagerFF_Unsigned.ipa
           mkdir -p build/Payload
-          cp -R "$app_path" build/Payload/
-          (cd build && /usr/bin/zip -qry MenagerFF_Unsigned.ipa Payload)
+          find . -name "*.app" -type d -exec cp -r {} build/Payload/ \;
+          cd build
+          zip -r MenagerFF_V27_FreeFireDirectBundle.ipa Payload
 
-          test -s build/MenagerFF_Unsigned.ipa
-          unzip -l build/MenagerFF_Unsigned.ipa
-
-      - name: Upload unsigned IPA
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MenagerFF_Unsigned_IPA
-          path: build/MenagerFF_Unsigned.ipa
-          if-no-files-found: error
+          name: MenagerFF_V27_IPA
+          path: build/MenagerFF_V27_FreeFireDirectBundle.ipa

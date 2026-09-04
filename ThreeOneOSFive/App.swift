@@ -29,12 +29,6 @@ struct ThreeOneOSFiveApp: App {
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .background {
                 KernelExploit.cleanup()
-            } else if newPhase == .active {
-                if LicenseManager.shared.isAuthorized {
-                    LicenseManager.shared.recheckSecureSession { _, _ in }
-                } else {
-                    LicenseManager.shared.resumeAuthorization()
-                }
             }
         }
     }
