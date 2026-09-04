@@ -70,7 +70,6 @@ final class LicenseManager: ObservableObject {
         guard !deviceCaptured, !isLoading else { return }
         guard let client = keyAuth,
               let token = try? sessionStore.load(),
-              let token,
               !token.isEmpty else {
             beginAuthorization()
             return
@@ -94,7 +93,7 @@ final class LicenseManager: ObservableObject {
 
     func obtainUDID() {
         guard !deviceCaptured else { return }
-        guard let token = try? sessionStore.load(), let token, !token.isEmpty else {
+        guard let token = try? sessionStore.load(), !token.isEmpty else {
             beginAuthorization()
             return
         }
