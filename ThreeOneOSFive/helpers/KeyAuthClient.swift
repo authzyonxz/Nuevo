@@ -107,7 +107,26 @@ public struct DeviceSessionStatus: Decodable, Sendable {
 public struct AuthorizationResult: Decodable, Sendable {
     public let grant: String
     public let claims: GrantClaims
-    public let kid: String
+    public let kid: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case grant, claims, grantPayload, kid
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.grant = try container.decode(String.self, forKey: .grant)
+        let claims = try container.decodeIfPresent(GrantClaims.self, forKey: .claims)
+            ?? (try container.decodeIfPresent(GrantClaims.self, forKey: .grantPayload))
+        guard let claims else {
+            throw DecodingError.keyNotFound(
+                CodingKeys.grantPayload,
+                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Missing claims/grantPayload")
+            )
+        }
+        self.claims = claims
+        self.kid = try container.decodeIfPresent(String.self, forKey: .kid)
+    }
 }
 
 public struct GrantClaims: Decodable, Sendable {
@@ -297,7 +316,7 @@ public final class KeyAuthClient: @unchecked Sendable {
             key: normalizedLicenseKey(licenseKey)
         )
         let result = try await post("/api/v2/authorization/issue", body: issue, as: AuthorizationResult.self)
-        guard result.kid == configuration.keyID else { throw KeyAuthError.invalidGrant }
+        if let kid = result.kid, kid != configuration.keyID { throw KeyAuthError.invalidGrant }
         try Self.verifyGrant(
             result.grant,
             configuration: configuration,
