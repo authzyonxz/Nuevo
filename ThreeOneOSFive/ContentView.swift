@@ -34,18 +34,7 @@ struct ContentView: View {
         guard !didCheckEntry else { return }
         didCheckEntry = true
         showKeyGate = true
-
-        guard let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty else {
-            return
-        }
-
-        // A API é consultada somente ao entrar no app, usando a mesma
-        // rotina protegida e o mesmo payload já existente.
-        licenseManager.validateKey(savedKey) { success, _ in
-            withAnimation(.easeOut(duration: 0.2)) {
-                showKeyGate = !success
-            }
-        }
+        licenseManager.beginAuthorization()
     }
 }
 
@@ -67,18 +56,37 @@ struct KeyGateOverlay: View {
                     .tracking(0.1)
                     .foregroundStyle(.white)
 
-                SecureField("Digite sua chave", text: $inputKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(.password)
-                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                Text(licenseManager.stage.title)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                    .tint(.white)
-                    .padding(.horizontal, 18)
-                    .frame(height: 36)
-                    .background(Color(red: 0.15, green: 0.15, blue: 0.16))
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
+
+                Text(licenseManager.stageMessage)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.white.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 8)
+
+                if licenseManager.isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(0.8)
+                }
+
+                if licenseManager.deviceCaptured {
+                    SecureField("Digite sua chave", text: $inputKey)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textContentType(.password)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white)
+                        .tint(.white)
+                        .padding(.horizontal, 18)
+                        .frame(height: 36)
+                        .background(Color(red: 0.15, green: 0.15, blue: 0.16))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
+                }
 
                 if !message.isEmpty {
                     Text(message)
@@ -89,7 +97,8 @@ struct KeyGateOverlay: View {
                         .padding(.horizontal, 8)
                 }
 
-                HStack(spacing: 8) {
+                if licenseManager.deviceCaptured {
+                    HStack(spacing: 8) {
                     Button(action: validate) {
                         HStack(spacing: 6) {
                             if licenseManager.isLoading {
@@ -107,8 +116,8 @@ struct KeyGateOverlay: View {
                         .background(Color(red: 0.29, green: 0.55, blue: 0.92))
                         .clipShape(Capsule())
                     }
-                    .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.55 : 1)
+                    .disabled(licenseManager.isLoading || !licenseManager.canEnterKey || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !licenseManager.canEnterKey ? 0.55 : 1)
 
                     Button {
                         guard let pasted = UIPasteboard.general.string else { return }
@@ -122,7 +131,37 @@ struct KeyGateOverlay: View {
                             .background(Color(red: 0.23, green: 0.23, blue: 0.24))
                             .clipShape(Capsule())
                     }
-                    .disabled(licenseManager.isLoading)
+                    .disabled(licenseManager.isLoading || !licenseManager.canEnterKey)
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        Button(action: licenseManager.obtainUDID) {
+                            HStack(spacing: 7) {
+                                Image(systemName: "arrow.down.circle.fill")
+                                Text("Obter UDID")
+                            }
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 36)
+                            .background(Color(red: 0.29, green: 0.55, blue: 0.92))
+                            .clipShape(Capsule())
+                        }
+                        .disabled(!licenseManager.canObtainUDID)
+                        .opacity(licenseManager.canObtainUDID ? 1 : 0.55)
+
+                        Button(action: licenseManager.refreshDeviceCapture) {
+                            Text("Verificar")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 36)
+                                .background(Color.white.opacity(0.16))
+                                .clipShape(Capsule())
+                        }
+                        .disabled(!licenseManager.canVerifyUDID)
+                        .opacity(licenseManager.canVerifyUDID ? 1 : 0.55)
+                    }
                 }
             }
             .padding(.horizontal, 28)
@@ -142,6 +181,10 @@ struct KeyGateOverlay: View {
     private func validate() {
         let key = inputKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { return }
+        guard licenseManager.canEnterKey else {
+            message = licenseManager.stageMessage
+            return
+        }
         message = ""
         licenseManager.validateKey(key) { success, error in
             if success {
@@ -414,8 +457,7 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
 
-                    modSection(title: "FUNÇÕES CACHE", mods: cacheMods)
-                    modSection(title: "FUNÇÕES AVATAR", mods: avatarMods)
+                    modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
                     modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
                     modSection(title: "DESEMPENHO", mods: performanceMods)
 
@@ -499,8 +541,7 @@ struct HomeView: View {
         }
     }
 
-    private var cacheMods: [ModType] { [.hsAltoCache, .hsPescocoCache, .hsPeitoCache] }
-    private var avatarMods: [ModType] { [.hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena] }
+    private var aimbotMods: [ModType] { [.hsAlto, .hsPescoco, .hsPeito] }
     private var hologramMods: [ModType] { [.hologramaArmas] }
     private var performanceMods: [ModType] { [.fps144] }
 

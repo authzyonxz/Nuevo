@@ -1,6 +1,6 @@
 # MenagerFF Online Updater
 
-Este pacote fornece uma **API de atualização de payloads** e um painel administrativo em `/configurar`. O servidor publica um manifesto versionado, mantém os arquivos remotos fora do bundle do aplicativo, calcula SHA-256 e permite ativar, desativar, substituir ou excluir HS/Aimbot e Holograma sem uma nova IPA. Nesta versão híbrida, texturas e 144fps permanecem protegidos dentro da IPA e HS/Aimbot e Holograma são configuráveis online.
+Este pacote fornece uma **API de atualização de payloads** e um painel administrativo em `/configurar`. O servidor publica um manifesto versionado, mantém os arquivos fora do bundle do aplicativo, calcula SHA-256 e permite ativar, desativar, substituir ou excluir cada função sem uma nova IPA. A IPA final não contém payloads, nomes de arquivos nem caminhos de destino.
 
 > O servidor deve ser usado somente para arquivos e aplicações que você está autorizado a distribuir. Não coloque credenciais, chaves privadas ou payloads reais no GitHub.
 
@@ -127,12 +127,11 @@ O painel é o caminho recomendado. Para automação, publique um arquivo com `mu
 ```bash
 curl -X POST https://ffh4xcorporation.online/api/v1/admin/payloads \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -F id=hs_pescoco_cache \
-  -F display_name='HS Pescoço — cache_res' \
-  -F file_type=cache_res \
+  -F id=hs_pescoco \
+  -F display_name='HS PESCOÇO' \
   -F version=2 \
-  -F file_name='cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D' \
-  -F target_paths='Documents/contentcache/Compulsory/ios/gameassetbundles' \
+  -F file_name='cache_res.exemplo' \
+  -F $'target_paths=Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles\\nDocuments/contentcache/Optional/ios/gameassetbundles' \
   -F compatible_games='com.dts.freefireth,com.dts.freefiremax' \
   -F payload=@./cache_res.exemplo
 ```
@@ -143,7 +142,7 @@ O manifesto público está em `/api/v1/manifest`. O download de cada payload oco
 
 O `OnlinePayloadUpdater.swift` já está incluído no target principal e usa `https://ffh4xcorporation.online`. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
 
-O `FreeFireModManager` usa o manifesto remoto para as três funções cache_res, as três funções Avatar e Holograma. Para texturas e 144fps, usa o armazenamento AES-GCM local e abre o payload apenas durante a operação. Os itens remotos trazem um ou mais `target_paths`; cada entrada pode ser o caminho completo do arquivo ou o caminho de um diretório, ao qual o app acrescenta o `file_name`. O aplicativo só aplica destinos já existentes e rejeita caminhos com `..`. O 144fps permanece limitado ao `com.dts.freefireth`.
+O `FreeFireModManager` exige um payload remoto publicado. Não existe fallback para payload em memória, arquivo no bundle ou caminho padrão. Cada item do manifesto traz um ou mais `target_paths`; cada entrada pode ser o caminho completo do arquivo ou o caminho de um diretório, ao qual o app acrescenta o `file_name`. O aplicativo só aplica destinos já existentes e rejeita caminhos com `..`. Assim, você pode cadastrar qualquer arquivo autorizado e qualquer diretório/arquivo de destino pelo site. Para o 144fps, selecione no painel somente `Free Fire normal`; o bundle ID é verificado no cliente antes da aplicação.
 
 Exemplo de uso assíncrono:
 
@@ -151,7 +150,7 @@ Exemplo de uso assíncrono:
 Task {
     do {
         let (_, data) = try await OnlinePayloadUpdater.shared.download(
-            id: "hs_pescoco_cache",
+            id: "hs_pescoco",
             bundleID: "com.dts.freefireth",
             forceRefresh: true
         )
@@ -161,21 +160,6 @@ Task {
     }
 }
 ```
-
-## Variantes HS: cache_res e Avatar
-
-O painel e a IPA oferecem seis funções HS remotas, três do tipo `cache_res` e três do tipo `Avatar`:
-
-| Tipo | ID estável | Nome exibido | Caminho padrão | Bundle permitido |
-|---|---|---|---|---|
-| cache_res | `hs_alto_cache` | HS Alto — cache_res | `Documents/contentcache/Compulsory/ios/gameassetbundles` | normal e MAX |
-| cache_res | `hs_pescoco_cache` | HS Pescoço — cache_res | `Documents/contentcache/Compulsory/ios/gameassetbundles` | normal e MAX |
-| cache_res | `hs_peito_cache` | HS Peito — cache_res | `Documents/contentcache/Compulsory/ios/gameassetbundles` | normal e MAX |
-| Avatar | `hs_alto_avatar_pescoco` | HS Alto + Pescoço — Avatar | `Documents/contentcache/Compulsory/ios/gameassetbundles/avatar` | somente normal |
-| Avatar | `hs_pescoco_avatar_antena` | HS Pescoço + Antena — Avatar | `Documents/contentcache/Compulsory/ios/gameassetbundles/avatar` | somente normal |
-| Avatar | `hs_peito_avatar_antena` | HS Peito + Antena — Avatar | `Documents/contentcache/Compulsory/ios/gameassetbundles/avatar` | somente normal |
-
-O nome padrão do arquivo Avatar é `assetindexer.H5ak1JM1Eck~2FxRcJrEp~2FMzeuqmY~3D`. O nome padrão do `cache_res` é `cache_res.CfnFf59sr1SbsqQ6JqTKsEusjKs~3D`. A IPA exibe os dois grupos separadamente: **Funções cache_res** e **Funções Avatar**. O Avatar é rejeitado para `com.dts.freefiremax` tanto no painel quanto no cliente.
 
 ## Monitoramento e logs
 
