@@ -37,8 +37,8 @@ struct SpiderWebBackground: View {
             let time = timeline.date.timeIntervalSinceReferenceDate
 
             Canvas { context, size in
-                let deepRed = Color(red: 0.62, green: 0.02, blue: 0.05)
-                let brightRed = Color(red: 1.00, green: 0.22, blue: 0.20)
+                let purple = Color(red: 0.66, green: 0.18, blue: 1.0)
+                let softPurple = Color(red: 0.82, green: 0.44, blue: 1.0)
 
                 for particle in particles {
                     drawParticle(
@@ -46,7 +46,7 @@ struct SpiderWebBackground: View {
                         particle: particle,
                         size: size,
                         time: time,
-                        color: particle.brightness > 0.68 ? brightRed : deepRed
+                        color: particle.brightness > 0.68 ? softPurple : purple
                     )
                 }
 
@@ -62,7 +62,7 @@ struct SpiderWebBackground: View {
                 context.fill(
                     Path(ellipseIn: glowRect),
                     with: .radialGradient(
-                        Gradient(colors: [brightRed.opacity(glowPulse), brightRed.opacity(0.0)]),
+                        Gradient(colors: [purple.opacity(glowPulse), purple.opacity(0.0)]),
                         center: center,
                         startRadius: 0,
                         endRadius: glowRadius

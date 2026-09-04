@@ -1,12 +1,9 @@
-name: Build unsigned IPA
+name: Build Unsigned IPA
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
-
-permissions:
-  contents: read
 
 jobs:
   build:
@@ -21,46 +18,25 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Build unsigned iOS app
-        shell: bash
+      - name: Build Unsigned IPA
         run: |
-          set -euo pipefail
-
-          rm -rf build
-          mkdir -p build
-
           xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
-            -scheme 3105 \
+            -alltargets \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath "$GITHUB_WORKSPACE/build/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=NO
-
-          app_path="$(find "$GITHUB_WORKSPACE/build/DerivedData/Build/Products" \
-            -maxdepth 2 -type d -name '*.app' -print -quit)"
-
-          if [[ -z "$app_path" ]]; then
-            echo "Nenhum .app foi encontrado após o build."
-            exit 1
-          fi
-
-          echo "App encontrado em: $app_path"
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+          
           mkdir -p build/Payload
-          cp -R "$app_path" build/Payload/
-
+          find . -name "*.app" -type d -exec cp -r {} build/Payload/ \;
           cd build
-          /usr/bin/zip -qry MenagerFF_unsigned.ipa Payload
-          test -s MenagerFF_unsigned.ipa
-          echo "IPA criado: $(pwd)/MenagerFF_unsigned.ipa"
+          zip -r MenagerFF_V27_FreeFireDirectBundle.ipa Payload
 
-      - name: Upload unsigned IPA
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MenagerFF_unsigned_IPA
-          path: build/MenagerFF_unsigned.ipa
-          if-no-files-found: error
-          retention-days: 14
+          name: MenagerFF_V27_IPA
+          path: build/MenagerFF_V27_FreeFireDirectBundle.ipa

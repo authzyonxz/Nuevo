@@ -1,28 +1,16 @@
 import SwiftUI
 
-/// Tokens visuais compartilhados pelo app. A lógica de negócio permanece fora deste arquivo.
 enum AppTheme {
-    static let accent = Color(red: 0.96, green: 0.12, blue: 0.18)
-    static let accentBright = Color(red: 1.00, green: 0.30, blue: 0.26)
-    static let accentSoft = Color(red: 0.95, green: 0.18, blue: 0.22)
-    static let accentDeep = Color(red: 0.35, green: 0.015, blue: 0.035)
-
-    static let pageBackground = Color(red: 0.018, green: 0.018, blue: 0.024)
-    static let consoleBackground = Color(red: 0.040, green: 0.040, blue: 0.050)
-    static let panel = Color(red: 0.070, green: 0.068, blue: 0.080)
-    static let panelElevated = Color(red: 0.105, green: 0.075, blue: 0.085)
-    static let fieldBackground = Color(red: 0.095, green: 0.090, blue: 0.105)
-
-    static let primaryText = Color.white
-    static let secondaryText = Color.white.opacity(0.52)
-    static let tertiaryText = Color.white.opacity(0.32)
-    static let divider = Color.white.opacity(0.085)
-    static let hairline = Color.white.opacity(0.12)
-
-    static let success = Color(red: 0.37, green: 0.92, blue: 0.62)
-    static let warning = Color(red: 1.00, green: 0.66, blue: 0.24)
-
-    static let pageInset: CGFloat = 18
+    static let accent = Color(
+        uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 1.00, green: 0.64, blue: 0.42, alpha: 1.00)
+                : UIColor(red: 0.85, green: 0.42, blue: 0.20, alpha: 1.00)
+        }
+    )
+    static let pageBackground = Color(uiColor: .systemBackground)
+    static let consoleBackground = Color(uiColor: .secondarySystemBackground)
+    static let pageInset: CGFloat = 16
     static let rowIconSize: CGFloat = 17
     static let rowIconFrame: CGFloat = 28
     static let fileRowIconSize: CGFloat = 17
@@ -31,8 +19,6 @@ enum AppTheme {
     static let appIconSize: CGFloat = 32
     static let emptyIconSize: CGFloat = 30
     static let selectionIconSize: CGFloat = 18
-    static let cardRadius: CGFloat = 22
-    static let rowRadius: CGFloat = 16
 }
 
 struct AppRowIcon: View {
@@ -43,14 +29,10 @@ struct AppRowIcon: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(tint.opacity(0.14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(tint.opacity(0.20), lineWidth: 1)
-                )
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(tint.opacity(0.12))
             Image(systemName: systemName)
-                .font(.system(size: symbolSize, weight: .semibold))
+                .font(.system(size: symbolSize, weight: .medium))
                 .foregroundStyle(tint)
         }
         .frame(width: frameSize, height: frameSize)
@@ -67,7 +49,7 @@ struct AppSearchField: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(AppTheme.secondaryText)
+                .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
 
             TextField(prompt, text: $text)
@@ -82,23 +64,21 @@ struct AppSearchField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.tertiaryText)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(clearLabel)
             }
         }
         .padding(.horizontal, 11)
-        .frame(minHeight: 38)
-        .background(AppTheme.fieldBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppTheme.hairline, lineWidth: 1)
+        .frame(minHeight: 36)
+        .background(
+            Color(uiColor: .secondarySystemFill),
+            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
         )
         .padding(.horizontal, AppTheme.pageInset)
         .padding(.vertical, 8)
-        .background(AppTheme.pageBackground)
+        .background(.bar)
     }
 }
 
@@ -114,7 +94,7 @@ struct AppLogo: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Image(systemName: "flame.fill")
+                Image(systemName: "slider.horizontal.3")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
