@@ -11,8 +11,7 @@
 		3105UP02 /* OnlinePayloadUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105UP01 /* OnlinePayloadUpdater.swift */; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
-		3105KAC02 /* KeyAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105KAC01; };
-		3105KCFG2 /* KeyAuthAppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105KCFG1; };
+		3105SEC02 /* FFH4XSecureClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105SEC01; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
 		3105A204 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A024; };
 		3105A205 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A025; };
@@ -164,10 +163,8 @@
 		3105A122 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105B123 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 
-			3105LM01 /* LicenseManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
-		3105KAC01 /* KeyAuthClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeyAuthClient.swift; sourceTree = "<group>"; };
-		3105KCFG1 /* KeyAuthAppConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeyAuthAppConfiguration.swift; sourceTree = "<group>"; };
-
+    3105LM01 /* LicenseManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
+    3105SEC01 /* FFH4XSecureClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FFH4XSecureClient.swift; sourceTree = "<group>"; };
     3105WEB01 /* SpiderWebBackground.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpiderWebBackground.swift; sourceTree = "<group>"; };
     3105MM01 /* FreeFireModManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FreeFireModManager.swift; sourceTree = "<group>"; };
 
@@ -297,8 +294,7 @@
 				3105A027 /* MG.swift */,
 
 								3105LM01 /* LicenseManager.swift */,
-								3105KAC01 /* KeyAuthClient.swift */,
-								3105KCFG1 /* KeyAuthAppConfiguration.swift */,
+				3105SEC01 /* FFH4XSecureClient.swift */,
 									                3105MM01 /* FreeFireModManager.swift */,
 
 					);
@@ -444,8 +440,7 @@
 				3105I201,
 
 				3105LMBF /* LicenseManager.swift in Sources */,
-				3105KAC02 /* KeyAuthClient.swift in Sources */,
-				3105KCFG2 /* KeyAuthAppConfiguration.swift in Sources */,
+				3105SEC02 /* FFH4XSecureClient.swift in Sources */,
 				                3105MMBF /* FreeFireModManager.swift in Sources */,
 
                 3105WEB02 /* SpiderWebBackground.swift in Sources */,
