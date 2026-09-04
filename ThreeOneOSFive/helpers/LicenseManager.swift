@@ -1,30 +1,6 @@
 import Combine
-import Foundation
+import Security
 import UIKit
-
-enum KeyAuthStage: Equatable {
-    case checkingPackage
-    case packageUnavailable
-    case startingSession
-    case waitingForDevice
-    case readyForKey
-    case authorizing
-    case authorized
-    case failed
-
-    var title: String {
-        switch self {
-        case .checkingPackage: return "Checking package"
-        case .packageUnavailable: return "Package indisponível"
-        case .startingSession: return "Preparando ativação"
-        case .waitingForDevice: return "Aguardando dispositivo"
-        case .readyForKey: return "Digite sua KEY"
-        case .authorizing: return "Validando KEY"
-        case .authorized: return "Acesso autorizado"
-        case .failed: return "Falha na autorização"
-        }
-    }
-}
 
 struct LicenseInfo: Codable {
     let status: String
@@ -37,333 +13,241 @@ struct LicenseInfo: Codable {
 final class LicenseManager: ObservableObject {
     static let shared = LicenseManager()
 
-    @Published var isAuthorized = false
-    @Published var hasStoredKey = false
-    @Published var isLoading = false
-    @Published var isValidatingActivation = false
-    @Published var errorMessage: String?
-    @Published var licenseInfo: LicenseInfo?
-    @Published var activationURL: URL?
-    @Published var stage: KeyAuthStage = .checkingPackage
-    @Published var stageMessage = "Verificando se o Package está ativo..."
-    @Published private(set) var deviceCaptured = false
+    @Published var isAuthorized: Bool = false
+    @Published var hasStoredKey: Bool = false
+    @Published var isLoading: Bool = false
+    @Published var isValidatingActivation: Bool = false
+    @Published var errorMessage: String? = nil
+    @Published var licenseInfo: LicenseInfo? = nil
 
-    private let keyAuth: KeyAuthClient?
-    private let sessionStore: KeyAuthSessionStore
-    private let licenseKeyStore: KeyAuthSessionStore
-    private var flowRunning = false
+    private let keychainService = "com.ffh4x.rage.license"
+    private let keychainAccount = "saved-key"
+    private let deviceAccount = "device-id"
+    private let product = "ruanwq"
+
+    // The client keeps the derived session key only in memory. The raw key is
+    // persisted in the existing Keychain entry solely for a fresh bootstrap.
+    private var secureClient: FFH4XSecureClient?
 
     init() {
-        let bundleNamespace = Bundle.main.bundleIdentifier ?? "com.example.app"
-        self.sessionStore = KeyAuthSessionStore(namespace: bundleNamespace + ".keyauth-session")
-        self.licenseKeyStore = KeyAuthSessionStore(namespace: bundleNamespace + ".keyauth-license")
-        self.keyAuth = try? KeyAuthClient(configuration: KeyAuthAppConfiguration.configuration)
-        self.hasStoredKey = (try? licenseKeyStore.load())?.isEmpty == false
+        hasStoredKey = loadSavedKey()?.isEmpty == false
     }
-
-    var canEnterKey: Bool { stage == .readyForKey || (stage == .failed && deviceCaptured) }
-    var isWaitingForDevice: Bool { stage == .waitingForDevice && !deviceCaptured }
-    var canObtainUDID: Bool { !deviceCaptured && !isLoading && stage != .checkingPackage && stage != .startingSession }
-    var canVerifyUDID: Bool { !deviceCaptured && !isLoading && stage == .waitingForDevice }
-
-    func refreshDeviceCapture() {
-        guard !deviceCaptured, !isLoading else { return }
-        guard let client = keyAuth,
-              let token = try? sessionStore.load(),
-              !token.isEmpty else {
-            beginAuthorization()
-            return
-        }
-        setStage(.startingSession, message: "Verificando se o UDID foi capturado...", loading: true)
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                let status = try await client.deviceSessionStatus(token: token)
-                self.deviceCaptured = status.captured || status.deviceRegistered
-                if self.deviceCaptured {
-                    self.setStage(.readyForKey, message: "UDID confirmado. Agora digite sua KEY.", loading: false)
-                } else {
-                    self.setStage(.waitingForDevice, message: "O UDID ainda não foi recebido. Instale o perfil e tente novamente.", loading: false)
-                }
-            } catch {
-                self.finishFailure(.waitingForDevice, message: self.userMessage(for: error))
-            }
-        }
-    }
-
-    func obtainUDID() {
-        guard !deviceCaptured else { return }
-        guard let token = try? sessionStore.load(), !token.isEmpty else {
-            beginAuthorization()
-            return
-        }
-        Task { [weak self] in
-            guard let self else { return }
-            await self.openActivationPortal(token: token)
-            self.setStage(.waitingForDevice, message: "Instale o perfil no Ajustes e retorne ao app para confirmar o UDID.", loading: false)
-        }
-    }
-
-    func loadSavedKey() -> String? { try? licenseKeyStore.load() }
 
     func deviceID() -> String {
-        UIDevice.current.identifierForVendor?.uuidString.lowercased() ?? "keyauth-installation"
+        if let stored = keychainRead(account: deviceAccount) {
+            return stored
+        }
+        let identifier = UIDevice.current.identifierForVendor?.uuidString.lowercased()
+            ?? UUID().uuidString.lowercased()
+        keychainSave(value: identifier, account: deviceAccount)
+        return identifier
     }
 
-    /// Entry point used by the original UI. The first request is always Package status.
-    func beginAuthorization() {
-        guard !flowRunning, !isAuthorized else { return }
-        flowRunning = true
-        setStage(.checkingPackage, message: "Verificando se o Package está ativo...", loading: true)
-        Task { [weak self] in
-            guard let self else { return }
-            defer { self.flowRunning = false }
-            do {
-                guard let client = self.keyAuth else { throw KeyAuthError.invalidConfiguration("cliente não configurado") }
-                let package = try await client.packageStatus()
-                guard package.available, package.status == "active" else {
-                    self.finishFailure(.packageUnavailable, message: "O Package \(package.name) não está ativo.")
-                    return
-                }
-                try await self.continueAuthorization(using: client)
-            } catch {
-                self.finishFailure(.failed, message: self.userMessage(for: error))
-            }
-        }
+    private func keychainSave(value: String, account: String) {
+        guard let data = value.data(using: .utf8) else { return }
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: account
+        ]
+        SecItemDelete(query as CFDictionary)
+
+        let item: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: account,
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+        SecItemAdd(item as CFDictionary, nil)
     }
 
-    /// Called when the app returns from Safari/Settings after the profile flow.
-    func resumeAuthorization() {
-        guard !isAuthorized, !flowRunning else { return }
-        if stage == .waitingForDevice {
-            refreshDeviceCapture()
-            return
-        }
-        guard stage != .readyForKey, stage != .failed, stage != .packageUnavailable else { return }
-        beginAuthorization()
+    private func keychainRead(account: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess, let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    func loadSavedKey() -> String? {
+        keychainRead(account: keychainAccount)
     }
 
     func validateForActivation(completion: @escaping (Bool, String?) -> Void) {
         guard let savedKey = loadSavedKey(), !savedKey.isEmpty else {
-            completion(false, "Digite uma KEY para ativar este dispositivo.")
+            isAuthorized = false
+            hasStoredKey = false
+            completion(false, "Cadastre uma key ativa no Perfil para ativar funções.")
             return
         }
+
         isValidatingActivation = true
         validateKey(savedKey) { [weak self] success, message in
-            self?.isValidatingActivation = false
-            completion(success, message)
+            guard let self else { return }
+            self.isValidatingActivation = false
+            completion(success, success ? nil : (message ?? "Key inválida, expirada ou desativada."))
         }
     }
 
     func validateKey(_ key: String, completion: @escaping (Bool, String?) -> Void) {
-        let normalizedKey = key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let normalizedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedKey.isEmpty else {
             completion(false, "Insira uma KEY válida.")
             return
         }
-        guard let client = keyAuth else {
-            finishFailure(.failed, message: "A configuração do Key Auth está indisponível.", completion: completion)
-            return
-        }
 
-        setStage(.authorizing, message: "Enviando a KEY para validação segura...", loading: true)
+        isLoading = true
+        errorMessage = nil
+
         Task { [weak self] in
             guard let self else { return }
+
             do {
-                let token = try await self.existingOrNewSession(using: client)
-                let status = try await client.deviceSessionStatus(token: token)
-                self.deviceCaptured = status.captured || status.deviceRegistered
-                guard self.deviceCaptured else {
-                    self.finishFailure(.waitingForDevice, message: "Toque em Obter UDID, instale o perfil e retorne ao app.", completion: completion)
-                    return
-                }
-                let authorization = try await client.activateSessionKey(token: token, licenseKey: normalizedKey)
-                try self.licenseKeyStore.save(normalizedKey)
-                self.finishSuccess(authorization, token: token, completion: completion)
+                // FFH4XSecureClient performs the AES-256-GCM bootstrap and
+                // uses a fresh nonce/request ID for every validation request.
+                let client = try FFH4XSecureClient(
+                    key: normalizedKey,
+                    product: product
+                )
+                let result = try await client.validateKey()
+                let info = LicenseInfo(
+                    status: result.status ?? "VIP ATIVO",
+                    productName: result.productName ?? result.product ?? product,
+                    expiresAt: result.expiresAt ?? "Vitalício",
+                    message: "Sucesso",
+                    sessionToken: nil
+                )
+
+                self.secureClient = client
+                self.isAuthorized = true
+                self.hasStoredKey = true
+                self.licenseInfo = info
+                self.keychainSave(value: normalizedKey, account: self.keychainAccount)
+                self.isLoading = false
+                completion(true, nil)
+            } catch let error as FFH4XSecureClient.ClientError {
+                self.secureClient?.clearSession()
+                self.secureClient = nil
+                self.isAuthorized = false
+                self.licenseInfo = nil
+                self.isLoading = false
+                self.errorMessage = self.userMessage(for: error)
+                completion(false, self.errorMessage)
             } catch {
-                self.finishFailure(.failed, message: self.userMessage(for: error), completion: completion)
+                self.secureClient?.clearSession()
+                self.secureClient = nil
+                self.isAuthorized = false
+                self.licenseInfo = nil
+                self.isLoading = false
+                self.errorMessage = "Não foi possível validar a KEY agora."
+                completion(false, self.errorMessage)
             }
         }
     }
 
     func recheckSecureSession(completion: @escaping (Bool, String?) -> Void) {
-        guard let client = keyAuth else {
-            completion(false, "A configuração do Key Auth está indisponível.")
-            return
-        }
-        guard let token = try? sessionStore.load(), !token.isEmpty else {
-            setState(authorized: false, info: nil, loading: false)
-            completion(false, "Nenhuma sessão Key Auth ativa. Faça a checagem inicial.")
+        guard let secureClient else {
+            completion(false, "Nenhuma sessão segura ativa.")
             return
         }
 
         Task { [weak self] in
-            guard let self else { return }
             do {
-                let status = try await client.deviceSessionStatus(token: token)
-                self.deviceCaptured = status.captured || status.deviceRegistered
-                guard self.deviceCaptured else {
-                    self.setState(authorized: false, info: nil, loading: false)
-                    self.setStage(.waitingForDevice, message: "Conclua a instalação do perfil do dispositivo.", loading: false)
-                    completion(false, self.stageMessage)
-                    return
+                let result = try await secureClient.checkSession()
+                guard let self else { return }
+                self.isAuthorized = result.valid
+                if !result.valid {
+                    self.secureClient = nil
+                    self.licenseInfo = nil
                 }
-                guard status.registered else {
-                    self.setState(authorized: false, info: nil, loading: false)
-                    self.setStage(.readyForKey, message: "O dispositivo foi identificado. Digite sua KEY.", loading: false)
-                    completion(false, self.stageMessage)
-                    return
-                }
-                let authorization = try await client.activateSessionKey(token: token)
-                self.finishSuccess(authorization, token: token, completion: completion)
-            } catch {
-                self.setState(authorized: false, info: nil, loading: false)
+                completion(result.valid, result.valid ? nil : "Sessão expirada ou revogada.")
+            } catch let error as FFH4XSecureClient.ClientError {
+                guard let self else { return }
+                self.isAuthorized = false
+                self.secureClient = nil
+                self.licenseInfo = nil
                 completion(false, self.userMessage(for: error))
-            }
-        }
-    }
-
-    func clearSavedKey() {
-        try? sessionStore.clear()
-        try? licenseKeyStore.clear()
-        activationURL = nil
-        deviceCaptured = false
-        setState(authorized: false, info: nil, loading: false)
-        hasStoredKey = false
-        setStage(.checkingPackage, message: "Pronto para iniciar uma nova ativação.", loading: false)
-        errorMessage = nil
-    }
-
-    private func continueAuthorization(using client: KeyAuthClient) async throws {
-        setStage(.startingSession, message: "Criando uma sessão curta de ativação...", loading: true)
-        let token = try await existingOrNewSession(using: client)
-        let status = try await client.deviceSessionStatus(token: token)
-        deviceCaptured = status.captured || status.deviceRegistered
-
-        if deviceCaptured {
-            if status.registered {
-                let authorization = try await client.activateSessionKey(token: token)
-                finishSuccess(authorization, token: token, completion: nil)
-            } else {
-                setStage(.readyForKey, message: "Dispositivo identificado. Agora digite sua KEY.", loading: false)
-            }
-        } else {
-            setStage(.waitingForDevice, message: "Toque em Obter UDID, instale o perfil e retorne ao app para obter o UDID.", loading: false)
-        }
-    }
-
-    private func existingOrNewSession(using client: KeyAuthClient) async throws -> String {
-        if let existing = try sessionStore.load(), !existing.isEmpty {
-            do {
-                let status = try await client.deviceSessionStatus(token: existing)
-                if status.status != "expired" { return existing }
             } catch {
-                try? sessionStore.clear()
+                guard let self else { return }
+                self.isAuthorized = false
+                self.secureClient = nil
+                self.licenseInfo = nil
+                completion(false, "Não foi possível verificar a sessão.")
             }
         }
-        let started = try await client.startDeviceSession()
-        try sessionStore.save(started.token)
-        return started.token
     }
 
-    private func openActivationPortal(token: String) async {
-        guard let baseURL = URL(string: KeyAuthAppConfiguration.baseURLString) else { return }
-        guard let url = URL(string: "/device/\(KeyAuthAppConfiguration.packageSlug)/\(token)", relativeTo: baseURL)?.absoluteURL else { return }
-        await MainActor.run {
-            self.activationURL = url
-            UIApplication.shared.open(url)
-        }
-    }
-
-    private func finishSuccess(_ result: AuthorizationResult, token: String, completion: ((Bool, String?) -> Void)?) {
-        let info = LicenseInfo(
-            status: result.claims.keyStatus.uppercased(),
-            productName: KeyAuthAppConfiguration.packageSlug,
-            expiresAt: Self.formatDate(result.claims.exp),
-            message: "Autorização Key Auth v2 ativa",
-            sessionToken: token
-        )
-        DispatchQueue.main.async {
-            self.isAuthorized = true
-            self.hasStoredKey = true
-            self.licenseInfo = info
-            self.errorMessage = nil
-            self.isLoading = false
-            self.stage = .authorized
-            self.stageMessage = "Acesso autorizado."
-            completion?(true, nil)
-        }
-    }
-
-    private func finishFailure(_ nextStage: KeyAuthStage, message: String, completion: ((Bool, String?) -> Void)? = nil) {
-        DispatchQueue.main.async {
-            self.isAuthorized = false
-            self.licenseInfo = nil
-            self.isLoading = false
-            self.stage = nextStage
-            self.stageMessage = message
-            self.errorMessage = message
-            completion?(false, message)
-        }
-    }
-
-    private func setStage(_ value: KeyAuthStage, message: String, loading: Bool) {
-        DispatchQueue.main.async {
-            self.stage = value
-            self.stageMessage = message
-            self.isLoading = loading
-        }
-    }
-
-    private func setState(authorized: Bool, info: LicenseInfo?, loading: Bool) {
-        DispatchQueue.main.async {
-            self.isAuthorized = authorized
-            self.licenseInfo = info
-            self.isLoading = loading
-        }
-    }
-
-    private func userMessage(for error: Error) -> String {
-        if let error = error as? KeyAuthError {
-            switch error {
-            case .server(let code): return messageForServerCode(code)
-            case .network(let cause): return "Falha de rede: \(cause.localizedDescription)"
-            case .invalidGrant: return "O servidor respondeu, mas o grant não pôde ser verificado. Verifique o kid/chave pública do app."
-            case .invalidChallenge: return "O challenge do servidor não corresponde a esta sessão."
-            case .keychain: return "Não foi possível acessar o armazenamento seguro."
-            case .sessionRequired: return "Sessão de dispositivo necessária."
-            case .invalidConfiguration(let value): return "Configuração Key Auth inválida: \(value)"
-            case .invalidResponse: return "Resposta incompleta do servidor. Toque em Verificar novamente."
-            default: return error.localizedDescription
+    private func userMessage(for error: FFH4XSecureClient.ClientError) -> String {
+        switch error {
+        case .invalidKey:
+            return "KEY inválida."
+        case .server(let code, _):
+            return messageForServerCode(code)
+        case .http(let status, let code, _):
+            if status == 429 || code == "E_RATE_LIMITED" {
+                return "Muitas tentativas. Aguarde alguns minutos."
             }
+            if let code {
+                return messageForServerCode(code)
+            }
+            return "Não foi possível validar a KEY agora."
+        case .cryptographicFailure:
+            return "Falha ao autenticar a comunicação com o servidor."
+        case .keychain:
+            return "Não foi possível acessar o armazenamento seguro."
+        default:
+            return "Não foi possível validar a KEY agora."
         }
-        return "Falha inesperada: \(error.localizedDescription)"
     }
 
     private func messageForServerCode(_ code: String) -> String {
         switch code {
-        case "PACKAGE_UNAVAILABLE": return "Este Package está pausado ou indisponível."
-        case "PACKAGE_NOT_FOUND": return "O Package configurado não existe no Key Auth."
-        case "KEY_INVALID": return "A KEY não existe ou não pertence ao Package configurado."
-        case "KEY_UNAVAILABLE", "KEY_PAUSED", "KEY_BANNED", "KEY_DELETED": return "Esta KEY não pode ser usada no momento."
-        case "KEY_EXPIRED": return "Esta KEY está expirada."
-        case "DEVICE_MISMATCH": return "Esta KEY está vinculada a outro dispositivo."
-        case "DEVICE_ALREADY_REGISTERED": return "Já existe outra KEY ativa neste dispositivo."
-        case "DEVICE_NOT_CAPTURED": return "O UDID ainda não foi obtido. Instale o perfil do dispositivo primeiro."
-        case "SESSION_NOT_FOUND", "SESSION_EXPIRED": return "A sessão expirou. Inicie a ativação novamente."
-        case "AUTHENTICATION_FAILED": return "Cliente ou assinatura do Key Auth inválidos."
-        case "REPLAY_DETECTED": return "A solicitação já foi usada ou expirou. Tente novamente."
-        case "RATE_LIMITED": return "Muitas tentativas. Aguarde alguns minutos."
-        default: return "Erro do Key Auth: \(code)"
+        case "E_INVALID_KEY":
+            return "KEY inválida."
+        case "E_WRONG_PRODUCT":
+            return "Esta KEY pertence a outro produto."
+        case "E_BANNED_KEY":
+            return "Esta KEY está banida."
+        case "E_EXPIRED_KEY":
+            return "Esta KEY está expirada."
+        case "E_DEVICE_MISMATCH":
+            return "Esta KEY já está vinculada a outro dispositivo."
+        case "E_KEY_INACTIVE", "E_DISABLED_KEY":
+            return "Esta KEY está desativada."
+        case "E_RATE_LIMITED":
+            return "Muitas tentativas. Aguarde alguns minutos."
+        case "E_REPLAY":
+            return "A solicitação expirou. Tente novamente."
+        case "E_STALE_REQUEST":
+            return "A solicitação expirou. Verifique a conexão e tente novamente."
+        case "E_AUTHENTICATION_FAILED":
+            return "Não foi possível autenticar a comunicação com o servidor."
+        case "E_INVALID_SESSION":
+            return "Sua sessão expirou. Valide a KEY novamente."
+        default:
+            return "Não foi possível validar a KEY agora."
         }
     }
 
-    private static func formatDate(_ timestamp: Int64) -> String {
-        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+    func clearSavedKey() {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: keychainAccount
+        ]
+        SecItemDelete(query as CFDictionary)
+        secureClient?.clearSession()
+        secureClient = nil
+        isAuthorized = false
+        hasStoredKey = false
+        licenseInfo = nil
+        errorMessage = nil
     }
 }
