@@ -22,10 +22,9 @@ struct ContentView: View {
             validateEntryKey()
         }
         .onChange(of: licenseManager.isAuthorized) { authorized in
-            if !authorized && didCheckEntry {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    showKeyGate = true
-                }
+            guard didCheckEntry else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                showKeyGate = !authorized
             }
         }
     }
