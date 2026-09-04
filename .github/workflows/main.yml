@@ -31,7 +31,7 @@ jobs:
 
           xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
-            -alltargets \
+            -scheme 3105 \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath "$GITHUB_WORKSPACE/build/DerivedData" \
