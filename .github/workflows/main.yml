@@ -1,9 +1,12 @@
-name: Build Unsigned IPA
+name: Build unsigned IPA
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -18,25 +21,46 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Build Unsigned IPA
+      - name: Build unsigned iOS app
+        shell: bash
         run: |
+          set -euo pipefail
+
+          rm -rf build
+          mkdir -p build
+
           xcodebuild build \
             -project ThreeOneOSFive.xcodeproj \
             -alltargets \
             -configuration Release \
             -sdk iphoneos \
+            -derivedDataPath "$GITHUB_WORKSPACE/build/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            AD_HOC_CODE_SIGNING_ALLOWED=NO
 
+          app_path="$(find "$GITHUB_WORKSPACE/build/DerivedData/Build/Products" \
+            -maxdepth 2 -type d -name '*.app' -print -quit)"
+
+          if [[ -z "$app_path" ]]; then
+            echo "Nenhum .app foi encontrado após o build."
+            exit 1
+          fi
+
+          echo "App encontrado em: $app_path"
           mkdir -p build/Payload
-          find . -name "*.app" -type d -exec cp -r {} build/Payload/ \;
-          cd build
-          zip -r MenagerFF_V27_FreeFireDirectBundle.ipa Payload
+          cp -R "$app_path" build/Payload/
 
-      - name: Upload Artifact
+          cd build
+          /usr/bin/zip -qry MenagerFF_unsigned.ipa Payload
+          test -s MenagerFF_unsigned.ipa
+          echo "IPA criado: $(pwd)/MenagerFF_unsigned.ipa"
+
+      - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: MenagerFF_V27_IPA
-          path: build/MenagerFF_V27_FreeFireDirectBundle.ipa
+          name: MenagerFF_unsigned_IPA
+          path: build/MenagerFF_unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
