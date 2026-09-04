@@ -27,7 +27,7 @@ jobs:
           rm -rf build
           xcodebuild \
             -project ThreeOneOSFive.xcodeproj \
-            -target 3105 \
+            -scheme 3105 \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
