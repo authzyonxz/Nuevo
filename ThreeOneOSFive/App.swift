@@ -144,7 +144,8 @@ class AppState: ObservableObject {
         guard applicable else { return }
 
         refreshKernelExploitStatus()
-        maybeAutoRunKernelExploit()
+        // Exploit execution is intentionally manual. Starting kernel work on launch
+        // can leave native race threads active while iOS terminates the app.
     }
 
     private func maybeAutoRunKernelExploit() {
