@@ -103,6 +103,14 @@ enum ContainerStore {
         let detail = lookupError.map(String.init) ?? "unavailable"
         log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
+        // LaunchServices can already know the installed app's container even
+        // when the direct MCM activation call refuses a new lookup.
+        if let apiMatch = installedAppsFromAPI().first(where: { $0.bundleID == bundleID }),
+           isApplicationContainerPath(apiMatch.containerPath) {
+            log("patch: LaunchServices API resolved \(bundleID)")
+            return apiMatch.containerPath
+        }
+
         // Fallback for iOS builds where MCM refuses to hand out sandbox
         // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
         // walk and read each container's MCM metadata plist directly. The
