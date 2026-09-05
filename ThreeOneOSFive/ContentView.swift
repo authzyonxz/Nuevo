@@ -363,9 +363,9 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 5) {
-                            Text("FUNÇÕES")
+                            Text("LUXO")
                                 .font(.system(size: 28, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
+                                .foregroundColor(Color(red: 0.72, green: 0.28, blue: 1.0))
                             Text("MenagerFF")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(secondaryText)
