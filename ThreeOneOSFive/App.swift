@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Darwin
 
 @main
 struct ThreeOneOSFiveApp: App {
@@ -87,6 +88,10 @@ struct ThreeOneOSFiveApp: App {
                 }
             }
             .onChange(of: scenePhase) { phase in
+                if phase == .background {
+                    log("app: entered background — terminating process to drop exploit state")
+                    Darwin.exit(0)
+                }
                 guard phase == .active, !showOnboarding else { return }
                 appState.detectSupport()
             }
