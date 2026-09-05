@@ -12,7 +12,7 @@ Este projeto é a versão modificada do **3105**. A tela existente de Patch foi 
 | Validação | HTTPS, status HTTP, tamanho e SHA-256 são conferidos antes da importação |
 | Ativação | O botão **LIGAR** importa o pacote e chama `DevicePatchService.apply` localmente |
 | Desativação | O botão **DESLIGAR** usa o recibo nativo e chama `DevicePatchService.restore` |
-| Segurança | O token do alvo fica no Keychain e não é gravado no código-fonte |
+| Distribuição | Os quatro canais são públicos para leitura, sem ID ou token de dispositivo |
 | Visual | Fundo preto, teias brancas animadas, Dynamic Type e redução de movimento |
 
 ## Fazer a build no Xcode
@@ -23,20 +23,14 @@ Abra `ThreeOneOSFive.xcodeproj` em um Mac com uma versão do Xcode compatível c
 
 ## Conectar ao site
 
-No 3105 Update Studio, abra **Bundle Studio**, cadastre um alvo controlado por você e copie a **URL HTTPS do painel**, o **ID do alvo** e o **token do dispositivo** exibido uma única vez. No DK IPA, toque no botão de ajustes, informe esses três valores e escolha **Salvar e conectar**.
-
-| Campo do DK IPA | Valor do site |
-|---|---|
-| URL do painel | Origem HTTPS do 3105 Update Studio |
-| ID do alvo | Número gerado ao cadastrar o dispositivo |
-| Token do dispositivo | Token secreto mostrado após o cadastro ou renovação |
+Nenhuma configuração é necessária. O DK IPA consulta diretamente os quatro canais públicos do 3105 Update Studio em `https://update3105-n73qampn.manus.space`. Basta abrir o app ou puxar a tela para atualizar os pacotes publicados.
 
 ## Criar e usar um pacote
 
-No site, selecione o alvo e a Função 1–4. Envie um ou mais arquivos comuns, informe o Bundle ID do aplicativo de destino e defina o caminho relativo de cada arquivo dentro do container. O backend cria automaticamente o envelope `.3105`, criptografa o payload e calcula o SHA-256. Depois, publique a versão na função desejada.
+No site, selecione somente a Função 1–4. Envie um ou mais arquivos comuns, informe o Bundle ID do aplicativo de destino e defina o caminho relativo de cada arquivo dentro do container. O backend cria automaticamente o envelope `.3105`, criptografa o payload e calcula o SHA-256. Depois, publique a versão para todos os DK IPA.
 
 No DK IPA, atualize a lista e toque em **LIGAR**. O app baixa o pacote daquela função, valida e aplica localmente. Para desfazer, toque em **DESLIGAR**; o recibo gerado na aplicação é usado para restaurar os arquivos originais.
 
 ## Observações de segurança
 
-Use apenas Bundle IDs, caminhos e dispositivos que você controla. O host/IP cadastrado é inventário: o site não abre conexões ou executa comandos nesse endereço. A comunicação parte do DK IPA para o painel HTTPS, e pacotes com hash, tamanho ou resposta divergentes são recusados.
+Use apenas Bundle IDs, caminhos e aplicativos que você controla. A leitura dos canais é pública, mas a criação e a publicação continuam protegidas pelo login do painel. Pacotes com resposta, tamanho ou hash divergentes são recusados pelo DK IPA antes da aplicação.
