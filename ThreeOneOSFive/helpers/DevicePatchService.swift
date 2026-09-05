@@ -83,6 +83,9 @@ enum DevicePatchService {
         bundleIDs: [String],
         operation: ([String: URL]) throws -> T
     ) throws -> T {
+        if KernelExploit.requiresSandboxEscape && !KernelExploit.hasSandboxAccess() {
+            throw PatchPackageError.sandboxAccessUnavailable(bundleIDs.joined(separator: ", "))
+        }
         var roots: [String: URL] = [:]
 
         for bundleID in bundleIDs {

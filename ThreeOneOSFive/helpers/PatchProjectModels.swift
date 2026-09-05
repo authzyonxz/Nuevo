@@ -179,6 +179,7 @@ enum PatchPackageError: Error, Equatable {
     case invalidProject
     case keychainFailed
     case targetAppUnavailable(String)
+    case sandboxAccessUnavailable(String)
     case symbolicLinkUnsupported
     case targetOccupied(String)
     case projectAlreadyApplied
@@ -206,6 +207,7 @@ extension PatchPackageError: LocalizedError {
         case .invalidProject: return "patch.error.invalid_project"
         case .keychainFailed: return "patch.error.keychain"
         case .targetAppUnavailable: return "patch.error.app_unavailable"
+        case .sandboxAccessUnavailable: return "patch.error.app_unavailable"
         case .targetOccupied: return "patch.error.target_occupied"
         case .projectAlreadyApplied: return "patch.error.already_applied"
         case .restoreTargetsChanged: return "patch.error.restore_targets_changed"
@@ -222,6 +224,9 @@ extension PatchPackageError: LocalizedError {
     }
 
     var errorDescription: String? {
+        if case .sandboxAccessUnavailable(let bundleID) = self {
+            return "O acesso à sandbox não está ativo para \(bundleID). Execute o exploit suportado no aparelho físico e tente novamente."
+        }
         let message = String(localized: String.LocalizationValue(localizationKey))
         if let localizationArgument {
             return String(format: message, localizationArgument)
@@ -231,7 +236,7 @@ extension PatchPackageError: LocalizedError {
 
     var localizationArgument: String? {
         switch self {
-        case .targetAppUnavailable(let bundleID), .targetOccupied(let bundleID):
+        case .targetAppUnavailable(let bundleID), .targetOccupied(let bundleID), .sandboxAccessUnavailable(let bundleID):
             return bundleID
         case .restoreTargetsChanged(let paths):
             return paths.joined(separator: "\n")
