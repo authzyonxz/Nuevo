@@ -149,6 +149,17 @@ class AppState: ObservableObject {
             throw PatchPackageError.sandboxAccessUnavailable("iOS \(AppInfo.osVersion)")
         }
 
+        switch KernelExploit.currentAccessPath {
+        case .badQuery:
+            exploitStatus = .success(method: "ContainerManager/bad_query")
+            log("app: selected ContainerManager bad_query path; kernel exploit not started")
+            return
+        case .unsupported:
+            throw PatchPackageError.sandboxAccessUnavailable("iOS \(AppInfo.osVersion) / \(AppInfo.osBuild)")
+        case .kernelOffsets:
+            break
+        }
+
         refreshKernelExploitStatus()
         if exploitStatus.isSuccess {
             log("app: privileged session already active for requested operation")
@@ -183,6 +194,7 @@ class AppState: ObservableObject {
     @MainActor
     func finishPrivilegedOperation(reason: String) {
         kernelExploitRunning = false
+        KernelExploit.cleanup()
         exploitStatus = .notStarted
         log("app: privileged operation ended — \(reason); no background operation retained")
     }

@@ -1,6 +1,12 @@
 import Foundation
 
 enum ExploitSupportPolicy {
+    enum AccessPath: Equatable {
+        case kernelOffsets
+        case badQuery
+        case unsupported
+    }
+
     static let verifiedIOS17Range = "17.0–17.7.x"
     static let verifiedIOS18Range = "18.0–18.7.1"
     static let verifiedIOS26Range = "26.0–26.6.1"
@@ -10,6 +16,12 @@ enum ExploitSupportPolicy {
         (2, nil, "24A5370h"),
         (3, 1, "24A5380h"),
         (4, 2, "24A5390f")
+    ]
+
+    // Keep iOS 26.6 and 26.6.1 build-gated; earlier verified point releases
+    // remain version-gated until a complete build table is available.
+    static let verifiedIOS26Builds: Set<String> = [
+        "23G71", "23G82", "23G83"
     ]
 
     static func iOS27BetaNumber(for build: String) -> Int? {
@@ -22,29 +34,33 @@ enum ExploitSupportPolicy {
 
     static func supportsKernelExploit(major: Int, minor: Int, patch: Int) -> Bool {
         guard minor >= 0, patch >= 0 else { return false }
-
-        if major == 17 {
-            return minor <= 7
-        }
-
-        if major == 18 {
-            return minor < 7 || (minor == 7 && patch <= 1)
-        }
-
+        if major == 17 { return minor <= 7 }
+        if major == 18 { return minor < 7 || (minor == 7 && patch <= 1) }
         return false
     }
 
-    static func isSupported(major: Int, minor: Int, patch: Int, build: String) -> Bool {
+    static func supportsBadQuery(major: Int, minor: Int, patch: Int, build: String) -> Bool {
+        guard major == 26, minor >= 0, patch >= 0 else { return false }
+        if minor < 6 { return true }
+        if minor == 6, patch <= 1 { return verifiedIOS26Builds.contains(build) }
+        return false
+    }
+
+    static func accessPath(major: Int, minor: Int, patch: Int, build: String) -> AccessPath {
         if supportsKernelExploit(major: major, minor: minor, patch: patch) {
-            return true
+            return .kernelOffsets
         }
-
-        if major == 26 {
-            guard minor >= 0, patch >= 0 else { return false }
-            return minor < 6 || (minor == 6 && patch <= 1)
+        if supportsBadQuery(major: major, minor: minor, patch: patch, build: build) {
+            return .badQuery
         }
+        if major == 27, minor == 0, patch == 0,
+           iOS27BetaNumber(for: build) != nil {
+            return .badQuery
+        }
+        return .unsupported
+    }
 
-        guard major == 27, minor == 0, patch == 0 else { return false }
-        return iOS27BetaNumber(for: build) != nil
+    static func isSupported(major: Int, minor: Int, patch: Int, build: String) -> Bool {
+        accessPath(major: major, minor: minor, patch: patch, build: build) != .unsupported
     }
 }
