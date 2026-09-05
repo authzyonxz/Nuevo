@@ -1,14 +1,13 @@
 # Alterações do design — MenagerFF
 
-A interface foi adaptada ao estilo das imagens de referência, mantendo a estrutura funcional do projeto e os nomes das funções existentes.
+A interface permanece no estilo das imagens de referência, e a tela principal agora exibe exatamente quatro funções Avatar, nesta ordem: **HS ALTO + PESCOÇO**, **HS PESCOÇO**, **AIMBOT** e **HS ALTO**.
 
-| Área | Alteração aplicada |
+| Área | Comportamento mantido |
 | --- | --- |
-| Tela de key | Fundo preto, campo “Digite sua key” e botão branco “ENTRAR”, mantendo a mesma validação e exibição de erros. |
-| Tela de funções | Cabeçalho central, ícones de Free Fire Normal e Free Fire Max no topo, contorno no aplicativo selecionado, lista escura de funções e navegação inferior minimalista. |
-| Ativação | Ligar uma chave agora apenas seleciona a função; nenhuma injeção é feita nesse momento. |
-| Injeção | Após selecionar uma função, aparece o botão “INJETAR (40%)”, que chama o fluxo original de aplicação. |
-| Lobby | O botão “LOBBY” abre o aplicativo correspondente ao bundle ID selecionado no topo. |
-| Desativação | Desligar uma função já aplicada continua chamando a restauração original. Uma seleção ainda não injetada é apenas cancelada. |
+| Tela de key | Campo “Digite sua key”, botão “ENTRAR” e mesma validação existente. |
+| Ativação | Ligar uma chave somente seleciona a função. |
+| Injeção | O botão “INJETAR (40%)” chama o fluxo original `applyMod`. |
+| Lobby | O botão “LOBBY” abre o jogo selecionado pelo bundle ID. |
+| Desativação | Desligar uma função aplicada chama a restauração original `restoreMod`. |
 
-A validação estática confirmou que o arquivo Swift modificado não contém erros sintáticos, que a ativação não chama diretamente a injeção, que a desativação continua usando `restoreMod`, que o botão de injeção usa `applyMod` e que o Lobby utiliza `openApplicationForBundleID`. A compilação final para iOS ainda deve ser executada no Xcode em macOS, pois o ambiente de preparação não possui o SDK da Apple.
+Os quatro IDs Avatar necessários para publicação estão no arquivo `IDENTIFICADORES_DOS_PAYLOADS.md`; todos usam o bundle ID `com.dts.freefireth`. A validação estática confirmou a sintaxe Swift, a ordem das quatro funções e a preservação dos fluxos de seleção, injeção, restauração e Lobby. A compilação iOS final deve ser executada no Xcode em macOS.

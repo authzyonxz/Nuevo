@@ -314,8 +314,6 @@ struct HomeView: View {
                     }
 
                     modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
-                    modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
-                    modSection(title: "DESEMPENHO", mods: performanceMods)
 
                     if shouldShowActions {
                         actionButtons
@@ -436,12 +434,10 @@ struct HomeView: View {
     }
 
     private var aimbotMods: [ModType] {
-        [.hsAltoCache, .hsAltoAvatarPescoco, .hsPescocoCache, .hsPescocoAvatarAntena, .hsPeitoCache, .hsPeitoAvatarAntena]
+        [.hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena, .hsAltoCache]
     }
 
-    private var hologramMods: [ModType] { [.hologramaArmas] }
-    private var performanceMods: [ModType] { [.fps144] }
-    private var visibleMods: [ModType] { aimbotMods + hologramMods + performanceMods }
+    private var visibleMods: [ModType] { aimbotMods }
 
     private var pendingMods: [ModType] {
         visibleMods.filter { selectedMods.contains($0) && !modManager.activeMods.contains($0) }
