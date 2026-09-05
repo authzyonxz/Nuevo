@@ -81,8 +81,6 @@ class AppState: ObservableObject {
     @Published var unsupportedMessage: String?
     @Published var kernelExploitRunning = false
 
-    private var autoRunAttempted = false
-
     var kernelExploitApplicable: Bool {
         KernelExploit.isApplicable(
             major: AppInfo.versionTuple.major,
@@ -125,16 +123,6 @@ class AppState: ObservableObject {
         refreshKernelExploitStatus()
         // Exploit execution is intentionally manual. Starting kernel work on launch
         // can leave native race threads active while iOS terminates the app.
-    }
-
-    private func maybeAutoRunKernelExploit() {
-        guard !kernelExploitRunning,
-              !exploitStatus.isSuccess,
-              !exploitStatus.isFailed,
-              !autoRunAttempted else { return }
-        autoRunAttempted = true
-        log("app: starting kernel exploit automatically")
-        runKernelExploitIfNeeded()
     }
 
     private func refreshKernelExploitStatus() {
