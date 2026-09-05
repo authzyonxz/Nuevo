@@ -25,11 +25,40 @@ struct FileEntry: Identifiable, Hashable {
     let path: String
     let isDirectory: Bool
     let size: Int64
+    let modifiedAt: Date?
+    let childCount: Int?
 
     var id: String { path }
     var sizeText: String {
-        if isDirectory { return "—" }
+        guard size >= 0 else { return "—" }
         return ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+    }
+
+    init(
+        name: String,
+        path: String,
+        isDirectory: Bool,
+        size: Int64,
+        modifiedAt: Date? = nil,
+        childCount: Int? = nil
+    ) {
+        self.name = name
+        self.path = path
+        self.isDirectory = isDirectory
+        self.size = size
+        self.modifiedAt = modifiedAt
+        self.childCount = childCount
+    }
+
+    func withDirectorySummary(_ summary: FileBrowserDirectorySummary?) -> FileEntry {
+        FileEntry(
+            name: name,
+            path: path,
+            isDirectory: isDirectory,
+            size: summary?.byteCount ?? -2,
+            modifiedAt: modifiedAt,
+            childCount: summary?.childCount
+        )
     }
 }
 
@@ -39,13 +68,7 @@ enum ContainerStore {
     static let appDataRoot = "/var/mobile/Containers/Data/Application"
     static let systemDataRoot = "/var/mobile/Containers/Data/System"
     private static var shouldUseBadQuery: Bool {
-        let v = AppInfo.versionTuple
-        return ExploitSupportPolicy.accessPath(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        ) == .badQuery
+        ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 26
     }
     private static let applicationBundleRoots: [(path: String, nested: Bool)] = [
         ("/var/containers/Bundle/Application", true),
@@ -68,17 +91,7 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
-        let version = AppInfo.versionTuple
-        let build = AppInfo.osBuild
-        let backend = ExploitSupportPolicy.accessPath(
-            major: version.major,
-            minor: version.minor,
-            patch: version.patch,
-            build: build
-        )
-        log("container: resolve start bundle=\(bundleID) ios=\(version.major).\(version.minor).\(version.patch) build=\(build) backend=\(String(describing: backend))")
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
-            log("container: invalid bundle identifier bundle=\(bundleID)")
             return nil
         }
         var lookupError: NSString?
@@ -88,17 +101,16 @@ enum ContainerStore {
             return path
         }
         let detail = lookupError.map(String.init) ?? "unavailable"
-        log("container: MHA-C2 failed bundle=\(bundleID) detail=\(detail)")
+        log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
         // Fallback for iOS builds where MCM refuses to hand out sandbox
         // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
         // walk and read each container's MCM metadata plist directly. The
         // raw reads only succeed when the sandbox escape is active.
         if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bundleID) {
-            log("container: metadata scan resolved bundle=\(bundleID) path=\(scanned)")
+            log("patch: filesystem metadata scan resolved \(bundleID)")
             return scanned
         }
-        log("container: resolution failed bundle=\(bundleID) mcm=failed metadataScan=failed")
         return nil
     }
 
@@ -108,15 +120,9 @@ enum ContainerStore {
             log("patch: metadata scan skipped — sandbox access not active")
             return nil
         }
-        let traversalHandle = shouldUseBadQuery ? grantContainerAccess(appDataRoot) : -1
-        log("container: metadata scan root=\(appDataRoot) badQuery=\(shouldUseBadQuery) handle=\(traversalHandle)")
-        defer {
-            if traversalHandle >= 0 { bad_query_release(traversalHandle) }
-        }
         let dirs = enumerateDirectories(path: appDataRoot)
-        log("container: metadata scan enumerated directories=\(dirs.count)")
         guard !dirs.isEmpty else {
-            log("container: metadata scan failed reason=no-directories")
+            log("patch: metadata scan unavailable — no containers enumerated")
             return nil
         }
         for dir in dirs {
@@ -517,15 +523,10 @@ enum ContainerStore {
     }
 
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
-        guard shouldUseBadQuery else {
-            log("container: access skipped path=\(containerPath) reason=backend-not-badQuery")
-            return -1
-        }
+        guard shouldUseBadQuery else { return -1 }
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
         var pathC = clean.utf8CString.map { Int8($0) }
-        let handle = bad_query(&pathC, true, nil, false)
-        log("container: access request path=\(clean) handle=\(handle) build=\(AppInfo.osBuild)")
-        return handle
+        return bad_query(&pathC, true, nil, false)
     }
 
     static func containersFromFilesystem() -> [InstalledApp] {
@@ -721,8 +722,19 @@ enum ContainerStore {
             let full = (path as NSString).appendingPathComponent(item)
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: full, isDirectory: &isDir) else { continue }
-            let size = isDir.boolValue ? 0 : ((try? fm.attributesOfItem(atPath: full)[.size] as? Int64) ?? 0)
-            entries.append(FileEntry(name: item, path: full, isDirectory: isDir.boolValue, size: size))
+            let attributes = try? fm.attributesOfItem(atPath: full)
+            let size = isDir.boolValue
+                ? -1
+                : (attributes?[.size] as? NSNumber)?.int64Value ?? 0
+            entries.append(
+                FileEntry(
+                    name: item,
+                    path: full,
+                    isDirectory: isDir.boolValue,
+                    size: size,
+                    modifiedAt: attributes?[.modificationDate] as? Date
+                )
+            )
         }
         return entries.sorted {
             if $0.isDirectory != $1.isDirectory { return $0.isDirectory }
