@@ -79,8 +79,12 @@ struct PatchOnlyView: View {
                         guard case .success(let urls) = result, let url = urls.first else {
                             return
                         }
-                        statusMessage = "Arquivo recebido. Preparando o patch..."
                         errorMessage = nil
+                        guard url.pathExtension.lowercased() == "3105" else {
+                            errorMessage = "Selecione o arquivo de patch com extensão .3105. Uma IPA não é um pacote de patch."
+                            return
+                        }
+                        statusMessage = "Arquivo recebido. Preparando o patch..."
                         store.importPackage(at: url)
                     },
                     onCancel: {
@@ -88,6 +92,13 @@ struct PatchOnlyView: View {
                     }
                 )
                 .ignoresSafeArea()
+            }
+            .alert(item: $store.alert) { alert in
+                Alert(
+                    title: Text(language.text(alert.titleKey)),
+                    message: Text(alert.message(language: language)),
+                    dismissButton: .default(Text(language.text("common.ok")))
+                )
             }
             .alert("Falha", isPresented: Binding(
                 get: { errorMessage != nil },
