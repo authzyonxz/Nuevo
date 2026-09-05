@@ -146,6 +146,12 @@ enum ContainerStore {
 
     // MARK: Primary — MobileInstallation / LSApplicationWorkspace
 
+    static func isKnownInstalledApp(bundleID: String) -> Bool {
+        let raw = installedAppInfo() as? [String: [String: Any]] ?? [:]
+        if raw.keys.contains(bundleID) { return true }
+        return applicationBundleMetadataCatalog()[bundleID] != nil
+    }
+
     static func installedAppsFromAPI() -> [InstalledApp] {
         let raw = installedAppInfo() as? [String: [String: Any]] ?? [:]
         var apps: [InstalledApp] = []

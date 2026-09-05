@@ -91,6 +91,11 @@ enum DevicePatchService {
         for bundleID in bundleIDs {
             guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
                   ContainerStore.isApplicationContainerPath(path) else {
+                if ContainerStore.isKnownInstalledApp(bundleID: bundleID) {
+                    log("patch: app installed but container unavailable for \(bundleID); no files changed")
+                    throw PatchPackageError.targetContainerUnavailable(bundleID)
+                }
+                log("patch: bundle ID not present in installed app inventory: \(bundleID); no files changed")
                 throw PatchPackageError.targetAppUnavailable(bundleID)
             }
             roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
