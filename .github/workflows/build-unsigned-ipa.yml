@@ -2,54 +2,87 @@ name: Build unsigned IPA
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "ThreeOneOSFive/**"
+      - "ThreeOneOSFive.xcodeproj/**"
+      - ".github/workflows/build-unsigned-ipa.yml"
 
 permissions:
   contents: read
 
+concurrency:
+  group: unsigned-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    runs-on: macos-14
-    timeout-minutes: 45
+    name: Build DK IPA without signing
+    runs-on: macos-15
+    timeout-minutes: 30
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show Xcode toolchain
+      - name: Show Xcode environment
         run: |
-          xcode-select -p
+          set -euo pipefail
           xcodebuild -version
-          xcodebuild -showsdks
+          xcodebuild -project ThreeOneOSFive.xcodeproj -list
 
       - name: Build app without code signing
         run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/logs"
           set -o pipefail
-          rm -rf build Payload 3105-unsigned.ipa
           xcodebuild \
             -project ThreeOneOSFive.xcodeproj \
             -scheme 3105 \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
-            -derivedDataPath build/DerivedData \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY='' \
-            build | tee build.log
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build | tee "$RUNNER_TEMP/logs/xcodebuild.log"
 
-          APP_PATH="$(find build/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -1)"
-          test -n "$APP_PATH"
-          test -f "$APP_PATH/Info.plist"
-          mkdir -p Payload
-          cp -R "$APP_PATH" Payload/3105.app
-          /usr/bin/zip -qry 3105-unsigned.ipa Payload
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH=$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos" -maxdepth 1 -type d -name '*.app' -print -quit)
+          if [[ -z "$APP_PATH" ]]; then
+            echo "No .app product was found."
+            exit 1
+          fi
 
-      - name: Upload unsigned IPA and build log
-        if: always()
+          rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/output"
+          mkdir -p "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/output"
+          cp -R "$APP_PATH" "$RUNNER_TEMP/Payload/"
+          find "$RUNNER_TEMP/Payload" -type d -name '_CodeSignature' -prune -exec rm -rf {} +
+          find "$RUNNER_TEMP/Payload" -type f -name 'CodeResources' -delete
+          xattr -cr "$RUNNER_TEMP/Payload"
+
+          if codesign -dv "$RUNNER_TEMP/Payload/$(basename "$APP_PATH")" >/dev/null 2>&1; then
+            echo "The app unexpectedly contains a code signature."
+            exit 1
+          fi
+
+          cd "$RUNNER_TEMP"
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload output/DK-IPA-unsigned.ipa
+          unzip -t output/DK-IPA-unsigned.ipa
+          shasum -a 256 output/DK-IPA-unsigned.ipa | tee output/DK-IPA-unsigned.sha256
+          cp logs/xcodebuild.log output/xcodebuild.log
+
+      - name: Upload unsigned IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 3105-unsigned-ipa
-          path: |
-            3105-unsigned.ipa
-            build.log
-          if-no-files-found: warn
-          retention-days: 14
+          name: DK-IPA-unsigned-${{ github.run_number }}
+          path: ${{ runner.temp }}/output/*
+          if-no-files-found: error
+          retention-days: 30

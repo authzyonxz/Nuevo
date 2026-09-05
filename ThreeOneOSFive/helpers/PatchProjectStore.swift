@@ -28,6 +28,7 @@ final class PatchProjectStore: ObservableObject {
     @Published var alert: PatchStoreAlert?
     @Published var unlockErrorKey: String?
     @Published private(set) var lastImportedProjectID: UUID?
+    @Published private(set) var lastImportEventID = UUID()
 
     private struct PendingUnlock {
         let data: Data
@@ -43,6 +44,40 @@ final class PatchProjectStore: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             let loadedItems = PatchProjectLibrary.load()
             await self?.finishInitialLoad(loadedItems)
+        }
+    }
+
+    func importOnlinePackage(data: Data) async throws -> UUID {
+        guard !isBusy else { throw PatchPackageError.invalidProject }
+        isBusy = true
+        do {
+            let summary = try await Task.detached(priority: .userInitiated) {
+                try PatchPackageCodec.inspect(data)
+            }.value
+            guard !summary.isPasswordProtected else {
+                throw PatchPackageError.privatePatchRequiresPassword
+            }
+            let existingURL = existingPackageURL(for: summary.packageID)
+            let needsPassword = try await Task.detached(priority: .userInitiated) {
+                try Self.persistImportedPackage(
+                    data: data,
+                    summary: summary,
+                    existingURL: existingURL,
+                    password: nil,
+                    origin: nil
+                ) != nil
+            }.value
+            guard !needsPassword else {
+                throw PatchPackageError.privatePatchRequiresPassword
+            }
+            reload()
+            isBusy = false
+            lastImportedProjectID = summary.packageID
+            lastImportEventID = UUID()
+            return summary.packageID
+        } catch {
+            isBusy = false
+            throw error
         }
     }
 
@@ -426,6 +461,7 @@ final class PatchProjectStore: ObservableObject {
         reload()
         isBusy = false
         lastImportedProjectID = projectID
+        lastImportEventID = UUID()
         alert = PatchStoreAlert(titleKey: "common.done", messageKey: successMessageKey)
     }
 
