@@ -288,76 +288,61 @@ struct PatchOnlyView: View {
     }
 
     private var functionGrid: some View {
-        LazyVGrid(columns: functionColumns, spacing: 12) {
-            ForEach(DKFunctionKey.allCases) { key in functionCard(key) }
+        VStack(spacing: 12) {
+            ForEach(DKFunctionKey.allCases) { key in functionRow(key) }
         }
     }
 
-    private var functionColumns: [GridItem] {
-        if dynamicTypeSize.isAccessibilitySize {
-            return [GridItem(.flexible())]
-        }
-        return [GridItem(.adaptive(minimum: 155), spacing: 12)]
-    }
-
-    private func functionCard(_ key: DKFunctionKey) -> some View {
+    private func functionRow(_ key: DKFunctionKey) -> some View {
         let remote = manifest?.functions.first { $0.key == key }
         let bundle = remote?.bundle
         let active = localStates[key] != nil
         let busy = busyFunction == key
-        return VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(key.number)
-                    .font(.caption.monospaced().weight(.bold))
-                    .foregroundStyle(active ? .black : .white.opacity(0.45))
-                    .frame(width: 34, height: 34)
-                    .background(active ? .white : .white.opacity(0.07), in: Circle())
-                Spacer()
-                Circle()
-                    .fill(active ? .white : .white.opacity(0.16))
-                    .frame(width: 7, height: 7)
-                    .shadow(color: .white.opacity(active ? 0.9 : 0), radius: 7)
-            }
+        let disabled = busy || busyFunction != nil || (!active && bundle == nil)
+        return HStack(spacing: 16) {
+            Text(key.number)
+                .font(.caption.monospaced().weight(.bold))
+                .foregroundStyle(active ? .black : .white.opacity(0.45))
+                .frame(width: 34, height: 34)
+                .background(active ? .white : .white.opacity(0.07), in: Circle())
             VStack(alignment: .leading, spacing: 5) {
                 Text(key.title)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .tracking(0.8)
                     .foregroundStyle(.white)
-                Text(bundle.map { "\($0.name) · v\($0.version)" } ?? "Sem pacote publicado")
+                Text(bundle.map { "\($0.name) · v\($0.version)" } ?? "Nenhum pacote publicado")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.48))
-                    .lineLimit(2)
-                    .frame(minHeight: 30, alignment: .topLeading)
-            }
-            Text(bundle?.knowledge.first ?? "Aguardando publicação")
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(bundle == nil ? 0.26 : 0.38))
-                .lineLimit(2)
-                .frame(minHeight: 28, alignment: .topLeading)
-            Button {
-                if active { restore(function: key) }
-                else { activate(function: key, remote: remote) }
-            } label: {
-                HStack(spacing: 7) {
-                    if busy { ProgressView().tint(active ? .black : .white) }
-                    else { Image(systemName: active ? "power" : "arrow.down.circle.fill") }
-                    Text(active ? "DESLIGAR" : "LIGAR")
-                        .font(.caption.monospaced().weight(.bold))
+                    .lineLimit(1)
+                if let knowledge = bundle?.knowledge.first {
+                    Text(knowledge)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.34))
+                        .lineLimit(1)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 42)
-                .foregroundStyle(active ? .black : .white)
-                .background(active ? .white : .white.opacity(0.08), in: RoundedRectangle(cornerRadius: 13))
-                .overlay(RoundedRectangle(cornerRadius: 13).stroke(.white.opacity(active ? 0 : 0.14)))
             }
-            .disabled(busy || busyFunction != nil || (!active && bundle == nil))
-            .accessibilityLabel(active ? "Desligar \(key.title)" : "Ligar \(key.title)")
-            .accessibilityValue(bundle.map { "\($0.name), versão \($0.version)" } ?? "Sem pacote publicado")
-            .accessibilityHint(active ? "Restaura os arquivos originais desta função" : "Baixa, valida e aplica o pacote publicado")
+            Spacer(minLength: 8)
+            if busy { ProgressView().tint(.white).frame(width: 52) }
+            else {
+                Toggle("", isOn: Binding(
+                    get: { active },
+                    set: { enabled in
+                        if enabled { activate(function: key, remote: remote) }
+                        else { restore(function: key) }
+                    }
+                ))
+                .labelsHidden()
+                .tint(.green)
+                .disabled(disabled)
+                .accessibilityLabel(active ? "Desligar \(key.title)" : "Ligar \(key.title)")
+                .accessibilityValue(bundle.map { "\($0.name), versão \($0.version)" } ?? "Sem pacote publicado")
+                .accessibilityHint(active ? "Desliga e restaura os arquivos originais" : "Baixa, valida e aplica o pacote publicado")
+            }
         }
-        .padding(16)
-        .background(.black.opacity(0.78), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(.white.opacity(active ? 0.32 : 0.11)))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(.black.opacity(0.78), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(active ? 0.32 : 0.11)))
     }
 
     @MainActor
