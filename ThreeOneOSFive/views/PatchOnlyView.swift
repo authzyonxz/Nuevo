@@ -179,6 +179,7 @@ private enum DKLocalStateStore {
 struct PatchOnlyView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var store: PatchProjectStore
     @State private var manifest: DKManifest?
     @State private var localStates: [DKFunctionKey: DKLocalFunctionState] = [:]
@@ -376,6 +377,15 @@ struct PatchOnlyView: View {
                 let project = item.summary.schemaVersion >= 2 && item.canInspectContents
                     ? try PatchProjectLibrary.synchronizeWorkspace(item: item)
                     : baseProject
+                workingMessage = "Preparando acesso protegido e aplicando \(key.title)..."
+                var privilegedSessionStarted = false
+                defer {
+                    if privilegedSessionStarted {
+                        appState.finishPrivilegedOperation(reason: "apply \(key.rawValue)")
+                    }
+                }
+                try await appState.preparePrivilegedSession()
+                privilegedSessionStarted = true
                 _ = try await Task.detached(priority: .userInitiated) {
                     try DevicePatchService.apply(project: project)
                 }.value
@@ -406,6 +416,15 @@ struct PatchOnlyView: View {
         statusMessage = nil
         Task {
             do {
+                workingMessage = "Preparando acesso protegido e restaurando \(key.title)..."
+                var privilegedSessionStarted = false
+                defer {
+                    if privilegedSessionStarted {
+                        appState.finishPrivilegedOperation(reason: "restore \(key.rawValue)")
+                    }
+                }
+                try await appState.preparePrivilegedSession()
+                privilegedSessionStarted = true
                 try await Task.detached(priority: .userInitiated) { try DevicePatchService.restore(receipt: receipt) }.value
                 DKLocalStateStore.clear(key)
                 localStates[key] = nil

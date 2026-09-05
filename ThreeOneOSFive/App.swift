@@ -155,30 +155,54 @@ class AppState: ObservableObject {
         }
     }
 
-    func runKernelExploitIfNeeded() {
+    @MainActor
+    func preparePrivilegedSession() async throws {
+        guard isSupported else {
+            throw PatchPackageError.sandboxAccessUnavailable("iOS \(AppInfo.osVersion)")
+        }
+
         refreshKernelExploitStatus()
-        guard !kernelExploitRunning,
-              !exploitStatus.isSuccess,
-              !exploitStatus.isFailed else { return }
+        if exploitStatus.isSuccess {
+            log("app: privileged session already active for requested operation")
+            return
+        }
+
+        if kernelExploitRunning {
+            while kernelExploitRunning {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+            if exploitStatus.isSuccess { return }
+        }
+
         kernelExploitRunning = true
         exploitStatus = .notStarted
-        log("app: running kernel exploit on background...")
-        DispatchQueue.global(qos: .userInitiated).async {
-            let ok = KernelExploit.run()
-            DispatchQueue.main.async {
-                self.kernelExploitRunning = false
-                if ok {
-                    self.exploitStatus = .success(method: "kexploit")
-                    if KernelExploit.requiresSandboxEscape {
-                        log("app: kernel exploit success — sandbox access verified")
-                    } else {
-                        log("app: kernel exploit success — kernel access active")
-                    }
-                } else {
-                    self.exploitStatus = .failed(method: "kexploit", code: -1)
-                    log("app: kernel exploit failed — relaunch the app before retrying")
-                }
-            }
+        log("app: starting privileged session on demand for patch operation")
+        let ok = await Task.detached(priority: .userInitiated) {
+            KernelExploit.run()
+        }.value
+        kernelExploitRunning = false
+
+        guard ok else {
+            exploitStatus = .failed(method: "kexploit", code: -1)
+            log("app: privileged session failed — operation stopped")
+            throw PatchPackageError.sandboxAccessUnavailable(AppInfo.osVersion)
+        }
+
+        exploitStatus = .success(method: "kexploit")
+        log("app: privileged session ready for this foreground operation")
+    }
+
+    @MainActor
+    func finishPrivilegedOperation(reason: String) {
+        kernelExploitRunning = false
+        exploitStatus = .notStarted
+        log("app: privileged operation ended — \(reason); no background operation retained")
+    }
+
+    @MainActor
+    func runKernelExploitIfNeeded() {
+        Task {
+            _ = try? await preparePrivilegedSession()
         }
     }
 }
