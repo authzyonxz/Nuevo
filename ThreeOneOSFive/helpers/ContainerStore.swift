@@ -91,7 +91,10 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
+        let version = AppInfo.versionTuple
+        log("container: resolve start bundle=\(bundleID) ios=\(version.major).\(version.minor).\(version.patch) build=\(AppInfo.osBuild) backend=\(String(describing: KernelExploit.currentAccessPath))")
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
+            log("container: invalid bundle identifier bundle=\(bundleID)")
             return nil
         }
         var lookupError: NSString?
@@ -103,14 +106,8 @@ enum ContainerStore {
         let detail = lookupError.map(String.init) ?? "unavailable"
         log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
-        // LaunchServices can already know the installed app's container even
-        // when the direct MCM activation call refuses a new lookup.
-        if let apiMatch = installedAppsFromAPI().first(where: { $0.bundleID == bundleID }),
-           isApplicationContainerPath(apiMatch.containerPath) {
-            log("patch: LaunchServices API resolved \(bundleID)")
-            return apiMatch.containerPath
-        }
-
+        // Match MenagerFF: after MCM fails, use the metadata scan with the
+        // access path selected for this iOS build.
         // Fallback for iOS builds where MCM refuses to hand out sandbox
         // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
         // walk and read each container's MCM metadata plist directly. The
@@ -128,7 +125,13 @@ enum ContainerStore {
             log("patch: metadata scan skipped — sandbox access not active")
             return nil
         }
+        let traversalHandle = shouldUseBadQuery ? grantContainerAccess(appDataRoot) : -1
+        log("container: metadata scan root=\(appDataRoot) badQuery=\(shouldUseBadQuery) handle=\(traversalHandle)")
+        defer {
+            if traversalHandle >= 0 { bad_query_release(traversalHandle) }
+        }
         let dirs = enumerateDirectories(path: appDataRoot)
+        log("container: metadata scan enumerated directories=\(dirs.count)")
         guard !dirs.isEmpty else {
             log("patch: metadata scan unavailable — no containers enumerated")
             return nil
