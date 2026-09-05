@@ -101,10 +101,10 @@ struct PatchOnlyView: View {
                 selectInitialProjectIfNeeded()
                 consumeExternalImport()
             }
-            .onChange(of: draftCoordinator.importRequest?.id) { _, _ in
+            .onChange(of: draftCoordinator.importRequest?.id) { _ in
                 consumeExternalImport()
             }
-            .onChange(of: store.lastImportedProjectID) { _, projectID in
+            .onChange(of: store.lastImportedProjectID) { projectID in
                 guard let projectID,
                       projectID != lastAutoAppliedImportID else { return }
                 lastAutoAppliedImportID = projectID
