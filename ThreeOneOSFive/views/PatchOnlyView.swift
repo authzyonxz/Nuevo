@@ -469,34 +469,60 @@ private struct DKMeshBackground: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 24, paused: reduceMotion)) { timeline in
             Canvas { context, size in
-                let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate * 0.16
-                let points = (0..<42).map { index -> CGPoint in
-                    let x = seeded(index * 2 + 1) * size.width
-                    let baseY = size.height * (0.08 + seeded(index * 2 + 2) * 0.78)
-                    let wave = sin(time + Double(index) * 0.71 + Double(x) * 0.008) * 15
-                    return CGPoint(x: x, y: baseY + wave)
-                }
-                for first in points.indices {
-                    for second in points.indices where second > first {
-                        let a = points[first]
-                        let b = points[second]
-                        let distance = hypot(a.x - b.x, a.y - b.y)
-                        guard distance < 118 else { continue }
-                        var path = Path()
-                        path.move(to: a)
-                        path.addLine(to: b)
-                        context.stroke(path, with: .color(.white.opacity((1 - distance / 118) * 0.18)), lineWidth: 0.55)
-                    }
-                }
-                for (index, point) in points.enumerated() {
-                    let radius = index.isMultiple(of: 8) ? 1.7 : 0.9
-                    let rect = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
-                    context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(index.isMultiple(of: 8) ? 0.8 : 0.36)))
-                }
+                let animationTime = reduceMotion
+                    ? 0
+                    : timeline.date.timeIntervalSinceReferenceDate * 0.16
+                drawMesh(context: &context, size: size, time: animationTime)
             }
         }
         .opacity(0.92)
         .mask(LinearGradient(colors: [.clear, .white, .white.opacity(0.65), .clear], startPoint: .top, endPoint: .bottom))
+    }
+
+    private func drawMesh(context: inout GraphicsContext, size: CGSize, time: Double) {
+        let points = makePoints(size: size, time: time)
+        drawConnections(points: points, context: &context)
+        drawNodes(points: points, context: &context)
+    }
+
+    private func makePoints(size: CGSize, time: Double) -> [CGPoint] {
+        (0..<42).map { index in
+            let x = seeded(index * 2 + 1) * size.width
+            let baseY = size.height * (0.08 + seeded(index * 2 + 2) * 0.78)
+            let phase = time + Double(index) * 0.71 + Double(x) * 0.008
+            return CGPoint(x: x, y: baseY + sin(phase) * 15)
+        }
+    }
+
+    private func drawConnections(points: [CGPoint], context: inout GraphicsContext) {
+        for first in points.indices {
+            for second in points.indices where second > first {
+                let start = points[first]
+                let end = points[second]
+                let distance = hypot(start.x - end.x, start.y - end.y)
+                guard distance < 118 else { continue }
+                var path = Path()
+                path.move(to: start)
+                path.addLine(to: end)
+                let opacity = (1 - distance / 118) * 0.18
+                context.stroke(path, with: .color(.white.opacity(opacity)), lineWidth: 0.55)
+            }
+        }
+    }
+
+    private func drawNodes(points: [CGPoint], context: inout GraphicsContext) {
+        for (index, point) in points.enumerated() {
+            let highlighted = index.isMultiple(of: 8)
+            let radius = highlighted ? 1.7 : 0.9
+            let rect = CGRect(
+                x: point.x - radius,
+                y: point.y - radius,
+                width: radius * 2,
+                height: radius * 2
+            )
+            let opacity = highlighted ? 0.8 : 0.36
+            context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(opacity)))
+        }
     }
 
     private func seeded(_ value: Int) -> Double {
