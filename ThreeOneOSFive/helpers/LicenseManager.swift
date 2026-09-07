@@ -23,7 +23,7 @@ final class LicenseManager: ObservableObject {
     private let keychainService = "com.ffh4x.rage.license"
     private let keychainAccount = "saved-key"
     private let deviceAccount = "device-id"
-    private let product = "granjeiro"
+    private let product = "ruanwq"
 
     // The client keeps the derived session key only in memory. The raw key is
     // persisted in the existing Keychain entry solely for a fresh bootstrap.
