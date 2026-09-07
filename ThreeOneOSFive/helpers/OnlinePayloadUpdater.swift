@@ -66,7 +66,7 @@ final class OnlinePayloadUpdater {
     func manifest(forceRefresh: Bool = false) async throws -> Manifest {
         if !forceRefresh, let cachedManifest { return cachedManifest }
         guard baseURL.scheme == "https" else { throw UpdateError.invalidBaseURL }
-        let url = baseURL.appendingPathComponent("api/v1/manifest")
+        let url = baseURL.appendingPathComponent("configurar/api/v1/manifest")
         let (data, response) = try await session.data(from: url)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw UpdateError.invalidResponse }
         let decoded = try JSONDecoder().decode(Manifest.self, from: data)
