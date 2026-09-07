@@ -115,7 +115,7 @@ public final class FFH4XSecureClient {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    public init(baseURL: URL = URL(string: "https://ffh4xcorporation.online")!, key: String, product: String) throws {
+    public init(baseURL: URL = URL(string: "https://https://keyauthv2.org")!, key: String, product: String) throws {
         guard baseURL.scheme?.lowercased() == "https", !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw ClientError.invalidKey
         }

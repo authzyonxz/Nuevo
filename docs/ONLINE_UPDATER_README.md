@@ -97,7 +97,7 @@ Crie um bloco para o seu domínio em `/etc/nginx/sites-available/menagerff-updat
 ```nginx
 server {
     listen 80;
-    server_name ffh4xcorporation.online;
+    server_name https://keyauthv2.org;
 
     client_max_body_size 250M;
     location / {
@@ -115,17 +115,17 @@ Depois habilite e emita o certificado:
 ```bash
 sudo ln -s /etc/nginx/sites-available/menagerff-updater /etc/nginx/sites-enabled/menagerff-updater
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d ffh4xcorporation.online
+sudo certbot --nginx -d https://keyauthv2.org
 ```
 
-Acesse `https://ffh4xcorporation.online/configurar`, informe o token administrativo e publique cada payload. A aba **Monitoramento** permite testar a saúde da API e atualizar manualmente a lista de eventos.
+Acesse `https://https://keyauthv2.org/configurar`, informe o token administrativo e publique cada payload. A aba **Monitoramento** permite testar a saúde da API e atualizar manualmente a lista de eventos.
 
 ## Publicação pela API
 
 O painel é o caminho recomendado. Para automação, publique um arquivo com `multipart/form-data`:
 
 ```bash
-curl -X POST https://ffh4xcorporation.online/api/v1/admin/payloads \
+curl -X POST https://https://keyauthv2.org/api/v1/admin/payloads \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -F id=hs_pescoco_cache \
   -F display_name='HS Pescoço — cache_res' \
@@ -141,7 +141,7 @@ O manifesto público está em `/api/v1/manifest`. O download de cada payload oco
 
 ## Integração no iOS
 
-O `OnlinePayloadUpdater.swift` já está incluído no target principal e usa `https://ffh4xcorporation.online`. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
+O `OnlinePayloadUpdater.swift` já está incluído no target principal e usa `https://https://keyauthv2.org`. O método `download(id:bundleID:)` somente retorna dados quando o item está habilitado, é compatível com o bundle ID, possui o tamanho esperado e bate com o SHA-256 do manifesto.
 
 O `FreeFireModManager` usa o manifesto remoto para as três funções cache_res, as três funções Avatar e Holograma. Para texturas e 144fps, usa o armazenamento AES-GCM local e abre o payload apenas durante a operação. Os itens remotos trazem um ou mais `target_paths`; cada entrada pode ser o caminho completo do arquivo ou o caminho de um diretório, ao qual o app acrescenta o `file_name`. O aplicativo só aplica destinos já existentes e rejeita caminhos com `..`. O 144fps permanece limitado ao `com.dts.freefireth`.
 
@@ -190,8 +190,8 @@ No painel, selecione o **ID estável** e o **nome exibido** nas listas, marque `
 ```bash
 sudo systemctl status menagerff-updater
 sudo journalctl -u menagerff-updater -n 100 --no-pager
-curl -fsS https://ffh4xcorporation.online/api/v1/health
-curl -fsS https://ffh4xcorporation.online/api/v1/manifest | jq
+curl -fsS https://https://keyauthv2.org/api/v1/health
+curl -fsS https://https://keyauthv2.org/api/v1/manifest | jq
 ```
 
 Se o iOS não baixar um arquivo, confira primeiro HTTPS, `compatible_games`, `enabled`, `size` e `sha256`. Não desative a validação de hash para contornar erro de publicação.

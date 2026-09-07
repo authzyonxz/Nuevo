@@ -395,8 +395,15 @@ enum PatchTransaction {
             if record.originalExisted {
                 let backup = transactionDirectory.appendingPathComponent(record.backupFilename!)
                 try atomicCopy(backup, to: target, fileManager: fileManager)
+                guard let expectedDigest = record.originalDigest,
+                      try digestFile(target) == expectedDigest else {
+                    throw PatchPackageError.restoreFailed
+                }
             } else if fileManager.fileExists(atPath: target.path) {
                 try fileManager.removeItem(at: target)
+                guard !fileManager.fileExists(atPath: target.path) else {
+                    throw PatchPackageError.restoreFailed
+                }
             }
         }
 

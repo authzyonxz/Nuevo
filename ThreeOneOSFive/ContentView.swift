@@ -314,6 +314,7 @@ struct HomeView: View {
                     }
 
                     modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
+                    modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
 
                     if shouldShowActions {
                         actionButtons
@@ -434,10 +435,14 @@ struct HomeView: View {
     }
 
     private var aimbotMods: [ModType] {
-        [.hsAltoAvatarPescoco, .hsPescocoAvatarAntena, .hsPeitoAvatarAntena, .hsAltoCache]
+        [.hsAlto, .hsPescoco, .hsPeito]
     }
 
-    private var visibleMods: [ModType] { aimbotMods }
+    private var hologramMods: [ModType] {
+        [.hologramaArmas]
+    }
+
+    private var visibleMods: [ModType] { aimbotMods + hologramMods }
 
     private var pendingMods: [ModType] {
         visibleMods.filter { selectedMods.contains($0) && !modManager.activeMods.contains($0) }
@@ -533,10 +538,19 @@ struct HomeView: View {
     }
 
     private func openLobby() {
-        let opened = openApplicationForBundleID(selectedGame.bundleID)
-        guard !opened else { return }
-        alertMessage = "Não foi possível abrir \(selectedGame.rawValue). Verifique se o aplicativo está instalado."
-        showAlert = true
+        modManager.restoreActiveModsBeforeLobby { success, message in
+            guard success else {
+                alertMessage = message
+                showAlert = true
+                return
+            }
+
+            selectedMods.removeAll()
+            let opened = openApplicationForBundleID(selectedGame.bundleID)
+            guard !opened else { return }
+            alertMessage = "Não foi possível abrir \(selectedGame.rawValue). Verifique se o aplicativo está instalado."
+            showAlert = true
+        }
     }
 }
 

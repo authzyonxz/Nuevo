@@ -52,7 +52,7 @@ final class OnlinePayloadUpdater {
     }
 
     // Substitua por https://SEU-DOMINIO, sem terminar com barra.
-    private let baseURL = URL(string: "https://ffh4xcorporation.online")!
+    private let baseURL = URL(string: "https://https://keyauthv2.org")!
     private let session: URLSession
     private var cachedManifest: Manifest?
 
