@@ -277,6 +277,8 @@ final class LicenseManager: ObservableObject {
             return "Não foi possível validar o acesso."
         case .packageMismatch:
             return "A configuração do Package não corresponde ao aplicativo."
+        case .responseDecodingFailed:
+            return "O servidor retornou uma resposta incompatível. Atualize o aplicativo."
         case .timestampExpired: return "Ajuste a data e hora do dispositivo automaticamente."
         case .invalidSecret, .invalidEnvelope, .invalidServerResponse, .signatureInvalid, .cryptoFailure:
             return "Falha ao autenticar a comunicação com o servidor."

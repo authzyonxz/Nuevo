@@ -91,6 +91,7 @@ public final class FFH4XSecureClient {
         case http(status: Int, code: String?)
         case server(code: String)
         case packageMismatch
+        case responseDecodingFailed
         case cryptoFailure
 
         public var errorDescription: String? {
@@ -102,6 +103,7 @@ public final class FFH4XSecureClient {
             case .http(let status, let code): return "HTTP \(status)\(code.map { " [\($0)]" } ?? "")"
             case .server(let code): return code
             case .packageMismatch: return "O Package recebido não corresponde à configuração do aplicativo."
+            case .responseDecodingFailed: return "O servidor retornou uma resposta incompatível. Atualize o aplicativo."
             }
         }
     }
@@ -193,7 +195,8 @@ public final class FFH4XSecureClient {
 
     public func activate(token: String, key: String) async throws -> ActivationResult {
         let normalized = key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        guard !normalized.isEmpty else { throw ClientError.server(code: "KEY_INVALID") }
+        let validFormat = normalized.range(of: #"^(?:[A-Z0-9]+-[A-Z1-9]{8}|[A-Z1-9]{11,15})$"#, options: .regularExpression) != nil
+        guard validFormat else { throw ClientError.server(code: "KEY_INVALID") }
         let result = try await post(path: "/api/v1/device/session/activate", payload: ActivatePayload(token: token, key: normalized), response: ActivationResult.self)
         guard result.package.publicId == expectedPackagePublicId,
               result.package.name == expectedPackageName else {
@@ -264,7 +267,12 @@ public final class FFH4XSecureClient {
         guard iv.count == 12, tag.count == 16 else { throw ClientError.invalidEnvelope }
         let box = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data: iv), ciphertext: ciphertext, tag: tag)
         let clear = try AES.GCM.open(box, using: aesKey, authenticating: Data(aad.utf8))
-        return try decoder.decode(T.self, from: clear)
+        do {
+            return try decoder.decode(T.self, from: clear)
+        } catch {
+            log("keyauth: response decoding failed for \(path): \(String(describing: error))")
+            throw ClientError.responseDecodingFailed
+        }
     }
 
     private static func randomBytes(count: Int) throws -> Data {
