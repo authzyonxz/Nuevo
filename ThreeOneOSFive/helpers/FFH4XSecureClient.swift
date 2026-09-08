@@ -44,6 +44,12 @@ public final class FFH4XSecureClient {
         public let status: String
     }
 
+    public struct AccessPackageSummary: Decodable {
+        public let publicId: String
+        public let name: String
+        public let status: String?
+    }
+
     public struct AccessStatus: Decodable {
         public let registered: Bool
         public let deviceRegistered: Bool
@@ -53,7 +59,7 @@ public final class FFH4XSecureClient {
         public let durationDays: Int?
         public let activatedAt: Int64?
         public let expiresAt: Int64?
-        public let package: PackageSummary?
+        public let package: AccessPackageSummary?
     }
 
     public struct SessionStatus: Decodable {
