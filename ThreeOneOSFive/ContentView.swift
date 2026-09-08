@@ -578,8 +578,6 @@ struct ModRowReference: View {
 // MARK: - Config View
 struct ProfileView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @State private var showKeyAlert = false
-    @State private var keyAlertMessage = ""
 
     private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
 
@@ -660,7 +658,6 @@ struct ProfileView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
 
-                        configRow(title: "Revendedor", value: "", color: .clear)
                         configRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
                         configRow(title: "Package", value: "EXTERNAL - iOS", color: .cyan)
                         configRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
@@ -674,34 +671,10 @@ struct ProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
 
-                    Button(action: {
-                        licenseManager.clearSavedKey()
-                        keyAlertMessage = "Key removida. A janela de key aparecerá novamente na próxima entrada."
-                        showKeyAlert = true
-                    }) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("LIMPAR / TROCAR KEY")
-                        }
-                        .font(.system(size: 12, weight: .heavy, design: .rounded))
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.red.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(Color.red.opacity(0.28), lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-
                     Spacer(minLength: 92)
                 }
                 .padding(.horizontal, 18)
             }
-        }
-        .alert("Status da key", isPresented: $showKeyAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(keyAlertMessage)
         }
     }
 
