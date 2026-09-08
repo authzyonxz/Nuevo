@@ -1,202 +1,179 @@
 import SwiftUI
 import UIKit
 
+@available(iOS 16.0, *)
 struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @State private var selectedTab: Int = 0
-    @State private var showKeyGate = false
-    @State private var didCheckEntry = false
+    @State private var selectedTab = 0
+    @State private var didStartFlow = false
 
     var body: some View {
         ZStack {
-            MainTabView(selectedTab: $selectedTab)
-
-            if showKeyGate {
-                KeyGateOverlay(isPresented: $showKeyGate)
-                    .environmentObject(licenseManager)
-                    .transition(.opacity)
-                    .zIndex(10)
+            if licenseManager.isAuthorized {
+                MainTabView(selectedTab: $selectedTab)
+            } else {
+                KeyAuthGateView().environmentObject(licenseManager)
             }
         }
         .onAppear {
-            validateEntryKey()
-        }
-        .onChange(of: licenseManager.isAuthorized) { authorized in
-            if !authorized && didCheckEntry {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    showKeyGate = true
-                }
-            }
-        }
-    }
-
-    private func validateEntryKey() {
-        guard !didCheckEntry else { return }
-        didCheckEntry = true
-        showKeyGate = true
-
-        guard let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty else {
-            return
-        }
-
-        // A API é consultada somente ao entrar no app, usando a mesma
-        // rotina protegida e o mesmo payload já existente.
-        licenseManager.validateKey(savedKey) { success, _ in
-            withAnimation(.easeOut(duration: 0.2)) {
-                showKeyGate = !success
-            }
+            guard !didStartFlow else { return }
+            didStartFlow = true
+            licenseManager.bootstrap()
         }
     }
 }
 
-// MARK: - Entry Key Gate
-struct KeyGateOverlay: View {
+@available(iOS 16.0, *)
+struct KeyAuthGateView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @Binding var isPresented: Bool
     @State private var inputKey = ""
-    @State private var message = ""
 
     var body: some View {
         ZStack {
-            Color.black
-                .ignoresSafeArea()
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 18) {
+                Image(systemName: iconName)
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(.green)
+                    .frame(width: 64, height: 64)
+                    .background(Color.green.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            VStack(spacing: 14) {
-                SecureField("Digite sua key", text: $inputKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(.password)
-                    .submitLabel(.go)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                Text(title)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
-                    .tint(.white)
-                    .padding(.horizontal, 18)
-                    .frame(height: 52)
-                    .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .onSubmit(validate)
+                    .multilineTextAlignment(.center)
 
-                if !message.isEmpty {
-                    Text(message)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.red.opacity(0.95))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 8)
-                }
+                Text(message)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.58))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Button(action: validate) {
-                    Group {
-                        if licenseManager.isLoading {
-                            ProgressView()
-                                .tint(.black)
-                        } else {
-                            Text("ENTRAR")
-                        }
+                if licenseManager.pendingWebURL != nil,
+                   licenseManager.flowState == .openingDeviceRegistration || licenseManager.flowState == .waitingForDevice {
+                    Button {
+                        licenseManager.openPendingRegistration()
+                    } label: {
+                        Label("Identificar este iPhone", systemImage: "safari")
+                            .frame(maxWidth: .infinity)
                     }
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .buttonStyle(KeyAuthPrimaryButtonStyle())
+                    .accessibilityIdentifier("open-device-registration")
                 }
-                .buttonStyle(.plain)
-                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.72 : 1)
+
+                if licenseManager.flowState == .askingForKey {
+                    keyEntry
+                } else if licenseManager.flowState == .authorized {
+                    successView
+                } else if case .failure = licenseManager.flowState {
+                    Button("TENTAR NOVAMENTE") { licenseManager.retryBootstrap() }
+                        .buttonStyle(KeyAuthPrimaryButtonStyle())
+                }
+
+                if licenseManager.isLoading {
+                    ProgressView().tint(.white).padding(.top, 4)
+                }
             }
-            .padding(.horizontal, 20)
-            .frame(maxWidth: 390)
-            .offset(y: -28)
+            .padding(.horizontal, 24)
+            .frame(maxWidth: 420)
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var keyEntry: some View {
+        VStack(spacing: 12) {
+            TextField("Digite sua Key", text: $inputKey)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .textContentType(.password)
+                .submitLabel(.go)
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .frame(height: 54)
+                .background(Color.white.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .onSubmit { validate() }
+
+            Button("CONFIRMAR KEY") { validate() }
+                .buttonStyle(KeyAuthPrimaryButtonStyle())
+                .disabled(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || licenseManager.isLoading)
+
+            if let error = licenseManager.errorMessage {
+                Text(error)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(.red.opacity(0.95))
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    private var successView: some View {
+        VStack(spacing: 10) {
+            Label("Ativação concluída", systemImage: "checkmark.shield.fill")
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundColor(.green)
+            if let info = licenseManager.licenseInfo {
+                Text(info.productName).foregroundColor(.white).font(.headline)
+                Text("Expira em: \(info.expiresAt)")
+                    .font(.system(size: 13, design: .rounded))
+                    .foregroundColor(.white.opacity(0.55))
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private var title: String {
+        switch licenseManager.flowState {
+        case .checkingPackage: return "Checking package"
+        case .openingDeviceRegistration, .waitingForDevice: return "Identifique este iPhone"
+        case .askingForKey: return "Digite sua Key"
+        case .activatingKey: return "Validando acesso"
+        case .authorized: return "Acesso autorizado"
+        case .failure: return "Não foi possível continuar"
+        }
+    }
+
+    private var message: String {
+        switch licenseManager.flowState {
+        case .checkingPackage: return "Verificando o Package EXTERNAL - iOS..."
+        case .openingDeviceRegistration: return "Instale o perfil temporário para registrar o UDID deste dispositivo."
+        case .waitingForDevice: return "Baixe o perfil, abra Ajustes > Perfil Baixado, instale e depois retorne ao app."
+        case .askingForKey: return "O dispositivo foi registrado. Informe a Key para ativar o acesso."
+        case .activatingKey: return "Confirmando a Key e vinculando este dispositivo..."
+        case .authorized: return "Sua Key foi confirmada pelo servidor."
+        case .failure(let value): return value
+        }
+    }
+
+    private var iconName: String {
+        switch licenseManager.flowState {
+        case .authorized: return "checkmark.shield.fill"
+        case .checkingPackage, .activatingKey: return "lock.shield"
+        case .openingDeviceRegistration, .waitingForDevice: return "iphone"
+        case .askingForKey: return "key.fill"
+        case .failure: return "exclamationmark.shield"
+        }
     }
 
     private func validate() {
-        let key = inputKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { return }
-        message = ""
-        licenseManager.validateKey(key) { success, error in
-            if success {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    isPresented = false
-                }
-            } else {
-                message = error ?? "Key inválida ou expirada."
-            }
-        }
+        let value = inputKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return }
+        licenseManager.validateKey(value) { _, _ in }
     }
 }
 
-// MARK: - Login View (MenagerFF)
-struct LoginView: View {
-    @Binding var inputKey: String
-    var timeRemaining: Int
-    var onLogin: () -> Void
-    @EnvironmentObject var licenseManager: LicenseManager
-
-    var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
-
-            VStack(spacing: 14) {
-                SecureField("Digite sua key", text: $inputKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .textContentType(.password)
-                    .submitLabel(.go)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundColor(.white)
-                    .tint(.white)
-                    .padding(.horizontal, 18)
-                    .frame(height: 52)
-                    .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .onSubmit(onLogin)
-
-                if let err = licenseManager.errorMessage, !err.isEmpty {
-                    Text(err)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.red.opacity(0.95))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 8)
-                }
-
-                Button(action: onLogin) {
-                    Group {
-                        if licenseManager.isLoading {
-                            ProgressView()
-                                .tint(.black)
-                        } else {
-                            Text("ENTRAR")
-                        }
-                    }
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.72 : 1)
-            }
-            .padding(.horizontal, 20)
-            .frame(maxWidth: 390)
-            .offset(y: -28)
-        }
-        .preferredColorScheme(.dark)
+@available(iOS 16.0, *)
+private struct KeyAuthPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .heavy, design: .rounded))
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(Color.white.opacity(configuration.isPressed ? 0.72 : 1))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -685,7 +662,7 @@ struct ProfileView: View {
 
                         configRow(title: "Revendedor", value: "", color: .clear)
                         configRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
-                        configRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
+                        configRow(title: "Package", value: "EXTERNAL - iOS", color: .cyan)
                         configRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
                         configRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
                         configRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)

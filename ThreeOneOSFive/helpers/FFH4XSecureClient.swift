@@ -2,296 +2,288 @@ import CryptoKit
 import Foundation
 import Security
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
 public final class FFH4XSecureClient {
-    public struct ValidationResult: Decodable {
-        public let valid: Bool
-        public let product: String?
-        public let productName: String?
-        public let expiresAt: String?
-        public let durationDays: Int?
-        public let status: String?
-        public let sessionExpiresAt: String?
-        public let reason: String?
-        public let error: String?
-        public let requestId: String
+    public struct Configuration {
+        public let baseURL: URL
+        public let clientId: String
+        public let sharedSecretBase64URL: String
+        public let packagePublicId: String
+        public let packageSlug: String
+        public let packageName: String
+
+        public static let externalIOS = Configuration(
+            baseURL: URL(string: "https://keyauthv2.org")!,
+            clientId: "ka_2QI_FnOHu2ILkUHs-dhOT9w0",
+            sharedSecretBase64URL: "rwiddAZvOwN2cieVHRP9Ai2rfL9ZMSaz4NhjzEQR0w0",
+            packagePublicId: "5d933aad-02da-4f37-a509-dfffee5600ed",
+            packageSlug: "external1",
+            packageName: "EXTERNAL - iOS"
+        )
     }
 
-    public struct SessionResult: Decodable {
-        public let valid: Bool
-        public let product: String?
-        public let expiresAt: String?
-        public let sessionExpiresAt: String?
+    public struct PackageStatus: Decodable {
+        public let available: Bool
+        public let status: String
+        public let publicId: String
+        public let name: String
+        public let slug: String
+    }
+
+    public struct StartSessionResult: Decodable {
+        public let token: String
+        public let expiresAt: Int64
+        public let profileUrl: URL
+        public let webUrl: URL
+    }
+
+    public struct PackageSummary: Decodable {
+        public let publicId: String
+        public let name: String
+        public let slug: String
+        public let status: String
+    }
+
+    public struct AccessStatus: Decodable {
+        public let registered: Bool
+        public let deviceRegistered: Bool
         public let reason: String?
-        public let error: String?
-        public let requestId: String
+        public let key: String?
+        public let status: String?
+        public let durationDays: Int?
+        public let activatedAt: Int64?
+        public let expiresAt: Int64?
+        public let package: PackageSummary?
+    }
+
+    public struct SessionStatus: Decodable {
+        public let status: String
+        public let expiresAt: Int64
+        public let captured: Bool
+        public let deviceRegistered: Bool
+        public let registered: Bool
+        public let access: AccessStatus?
+        public let package: PackageSummary
+    }
+
+    public struct ActivationResult: Decodable {
+        public let valid: Bool
+        public let key: String
+        public let status: String
+        public let package: ActivatedPackage
+        public let durationDays: Int
+        public let activatedAt: Int64
+        public let expiresAt: Int64
+        public let device: String
+    }
+
+    public struct ActivatedPackage: Decodable {
+        public let publicId: String
+        public let name: String
     }
 
     public enum ClientError: Error, LocalizedError {
-        case invalidBaseURL
-        case invalidKey
+        case invalidSecret
+        case invalidEnvelope
         case invalidServerResponse
-        case http(status: Int, code: String?, message: String?)
-        case cryptographicFailure
-        case server(code: String, message: String)
-        case keychain(OSStatus)
+        case timestampExpired
+        case signatureInvalid
+        case http(status: Int, code: String?)
+        case server(code: String)
+        case packageMismatch
+        case cryptoFailure
 
         public var errorDescription: String? {
             switch self {
-            case .invalidBaseURL: return "URL base inválida."
-            case .invalidKey: return "KEY inválida."
-            case .invalidServerResponse: return "Resposta inválida do servidor."
-            case .http(let status, let code, let message): return "HTTP \(status)\(code.map { " [\($0)]" } ?? ""): \(message ?? "erro")"
-            case .cryptographicFailure: return "Falha ao autenticar ou descriptografar a mensagem."
-            case .server(let code, let message): return "\(code): \(message)"
-            case .keychain(let status): return "Keychain error: \(status)"
+            case .invalidSecret: return "Configuração segura inválida."
+            case .invalidEnvelope, .invalidServerResponse: return "Resposta inválida do servidor."
+            case .timestampExpired: return "O relógio do dispositivo está incorreto."
+            case .signatureInvalid, .cryptoFailure: return "Falha ao autenticar a comunicação com o servidor."
+            case .http(let status, let code): return "HTTP \(status)\(code.map { " [\($0)]" } ?? "")"
+            case .server(let code): return code
+            case .packageMismatch: return "O Package recebido não corresponde à configuração do aplicativo."
             }
         }
     }
 
-    private struct Payload: Codable {
+    private struct EmptyPayload: Codable {}
+    private struct SessionPayload: Encodable { let token: String }
+    private struct ActivatePayload: Encodable { let token: String; let key: String }
+    private struct APIResponse<T: Decodable>: Decodable {
+        let ok: Bool
+        let data: T?
+        let error: ErrorBody?
+    }
+    private struct ErrorBody: Decodable { let code: String }
+    private struct Envelope: Codable {
+        let version: Int
+        let clientId: String
+        let timestamp: Int64
         let nonce: String
+        let iv: String
         let ciphertext: String
         let tag: String
-    }
-
-    private struct Envelope: Codable {
-        let v: Int
-        let alg: String
-        let keyId: String
-        let clientNonce: String
-        let timestamp: Int64
-        let requestId: String
-        let sessionId: String?
-        let serverNonce: String?
-        let payload: Payload
-    }
-
-    private struct PlainError: Decodable {
-        let valid: Bool?
-        let error: String?
-        let code: String?
-        let requestId: String?
-    }
-
-    private struct BootstrapRequest: Encodable {
-        let keyId: String
-        let deviceId: String
-        let product: String
-    }
-
-    private struct SessionCheckRequest: Encodable {
-        let action: String
-    }
-
-    private struct Context {
-        let keyId: String
-        let clientNonceB64: String
-        let timestamp: Int64
-        let requestId: String
-        let sessionId: String
-    }
-
-    private struct SessionState {
-        let sessionId: String
-        let clientNonce: Data
-        let clientNonceB64: String
-        let serverNonceB64: String
-        let key: SymmetricKey
-    }
-
-    private struct HTTPResult {
-        let response: HTTPURLResponse
-        let envelope: Envelope?
-        let plainError: PlainError?
+        let signature: String
     }
 
     private let baseURL: URL
-    private let key: String
-    private let product: String
-    private let keyId: String
-    private let deviceId: String
-    private var session: SessionState?
+    private let clientId: String
+    private let expectedPackagePublicId: String
+    private let expectedPackageSlug: String
+    private let expectedPackageName: String
+    private let aesKey: SymmetricKey
+    private let hmacKey: SymmetricKey
+    private let session: URLSession
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    public init(baseURL: URL = URL(string: "https://ffh4xcorporation.online")!, key: String, product: String) throws {
-        guard baseURL.scheme?.lowercased() == "https", !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw ClientError.invalidKey
+    public init(configuration: Configuration = .externalIOS) throws {
+        guard configuration.baseURL.scheme?.lowercased() == "https",
+              configuration.clientId.hasPrefix("ka_") else {
+            throw ClientError.invalidEnvelope
         }
-        let normalizedKey = key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        self.baseURL = baseURL
-        self.key = normalizedKey
-        self.product = product
-        self.keyId = SHA256.hash(data: Data(normalizedKey.utf8)).base64URLString
-        self.deviceId = try KeychainStore.deviceIdentifier()
-    }
-
-    public func validateKey() async throws -> ValidationResult {
-        let clientNonce = try Self.randomBytes(count: 16)
-        let clientNonceB64 = clientNonce.base64URLString
-        let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
-        let requestId = UUID().uuidString.lowercased()
-        let context = Context(keyId: keyId, clientNonceB64: clientNonceB64, timestamp: timestamp, requestId: requestId, sessionId: "")
-        let bootstrapKey = deriveKey(salt: clientNonce, info: "ffh4x-secure-v1/bootstrap")
-        let payload = try seal(BootstrapRequest(keyId: keyId, deviceId: deviceId, product: product), using: bootstrapKey, aad: makeAAD(direction: "request", path: "/api/secure/validate-key", context: context))
-        let envelope = Envelope(v: 1, alg: "A256GCM", keyId: keyId, clientNonce: clientNonceB64, timestamp: timestamp, requestId: requestId, sessionId: nil, serverNonce: nil, payload: payload)
-        let result = try await post(path: "/api/secure/validate-key", envelope: envelope)
-
-        guard let responseEnvelope = result.envelope else { throw decodeHTTPError(result) }
-        guard let serverNonceB64 = responseEnvelope.serverNonce,
-              let sessionId = responseEnvelope.sessionId,
-              let serverNonce = Data(base64URL: serverNonceB64) else {
-            if let failure: ValidationResult = try? open(responseEnvelope.payload, using: bootstrapKey, aad: makeAAD(direction: "response", path: "/api/secure/validate-key", context: context)) {
-                throw ClientError.server(code: failure.reason ?? "E_INVALID_KEY", message: failure.error ?? "A KEY não foi aceita.")
-            }
-            throw decodeHTTPError(result)
+        let secret = try Data(base64URL: configuration.sharedSecretBase64URL)
+        guard secret.count == 32 else { throw ClientError.invalidSecret }
+        guard UUID(uuidString: configuration.packagePublicId) != nil,
+              !configuration.packageSlug.isEmpty,
+              !configuration.packageName.isEmpty else {
+            throw ClientError.packageMismatch
         }
-        let sessionKey = deriveKey(salt: clientNonce + serverNonce, info: "ffh4x-secure-v1/session")
-        let responseContext = Context(keyId: keyId, clientNonceB64: clientNonceB64, timestamp: timestamp, requestId: requestId, sessionId: sessionId)
-        let validation: ValidationResult = try open(responseEnvelope.payload, using: sessionKey, aad: makeAAD(direction: "response", path: "/api/secure/validate-key", context: responseContext))
-        guard validation.valid else { throw ClientError.server(code: "E_INVALID_KEY", message: "A KEY não foi aceita.") }
-        session = SessionState(sessionId: sessionId, clientNonce: clientNonce, clientNonceB64: clientNonceB64, serverNonceB64: serverNonceB64, key: sessionKey)
-        return validation
+        baseURL = configuration.baseURL
+        clientId = configuration.clientId
+        expectedPackagePublicId = configuration.packagePublicId
+        expectedPackageSlug = configuration.packageSlug
+        expectedPackageName = configuration.packageName
+        let material = SymmetricKey(data: secret)
+        let salt = Data("keyforge-secure-v1".utf8)
+        aesKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: material, salt: salt, info: Data("client-payload-encryption".utf8), outputByteCount: 32)
+        hmacKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: material, salt: salt, info: Data("client-request-signature".utf8), outputByteCount: 32)
+        let sessionConfiguration = URLSessionConfiguration.ephemeral
+        sessionConfiguration.timeoutIntervalForRequest = 20
+        sessionConfiguration.timeoutIntervalForResource = 30
+        session = URLSession(configuration: sessionConfiguration)
     }
 
-    public func checkSession() async throws -> SessionResult {
-        guard let session else { throw ClientError.server(code: "E_NO_SESSION", message: "Nenhuma sessão ativa.") }
-        let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
-        let requestId = UUID().uuidString.lowercased()
-        let context = Context(keyId: keyId, clientNonceB64: session.clientNonceB64, timestamp: timestamp, requestId: requestId, sessionId: session.sessionId)
-        let payload = try seal(SessionCheckRequest(action: "check"), using: session.key, aad: makeAAD(direction: "request", path: "/api/secure/session/check", context: context))
-        let envelope = Envelope(v: 1, alg: "A256GCM", keyId: keyId, clientNonce: session.clientNonceB64, timestamp: timestamp, requestId: requestId, sessionId: session.sessionId, serverNonce: session.serverNonceB64, payload: payload)
-        let result = try await post(path: "/api/secure/session/check", envelope: envelope)
-        guard let responseEnvelope = result.envelope else { throw decodeHTTPError(result) }
-        let responseContext = Context(keyId: keyId, clientNonceB64: session.clientNonceB64, timestamp: timestamp, requestId: requestId, sessionId: session.sessionId)
-        let check: SessionResult = try open(responseEnvelope.payload, using: session.key, aad: makeAAD(direction: "response", path: "/api/secure/session/check", context: responseContext))
-        if !check.valid { self.session = nil }
-        return check
+    public func packageStatus() async throws -> PackageStatus {
+        let package = try await post(path: "/api/v1/package/status", payload: EmptyPayload(), response: PackageStatus.self)
+        guard package.publicId == expectedPackagePublicId,
+              package.slug == expectedPackageSlug,
+              package.name == expectedPackageName,
+              package.status == "active",
+              package.available else {
+            throw ClientError.packageMismatch
+        }
+        return package
     }
 
-    public func clearSession() {
-        session = nil
+    public func startSession() async throws -> StartSessionResult {
+        try await post(path: "/api/v1/device/session/start", payload: EmptyPayload(), response: StartSessionResult.self)
     }
 
-    private func post(path: String, envelope: Envelope) async throws -> HTTPResult {
-        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw ClientError.invalidBaseURL }
-        var request = URLRequest(url: url)
+    public func sessionStatus(token: String) async throws -> SessionStatus {
+        let status = try await post(path: "/api/v1/device/session/status", payload: SessionPayload(token: token), response: SessionStatus.self)
+        guard status.package.publicId == expectedPackagePublicId,
+              status.package.slug == expectedPackageSlug,
+              status.package.name == expectedPackageName,
+              status.package.status == "active" else {
+            throw ClientError.packageMismatch
+        }
+        return status
+    }
+
+    public func activate(token: String, key: String) async throws -> ActivationResult {
+        let normalized = key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !normalized.isEmpty else { throw ClientError.server(code: "KEY_INVALID") }
+        let result = try await post(path: "/api/v1/device/session/activate", payload: ActivatePayload(token: token, key: normalized), response: ActivationResult.self)
+        guard result.package.publicId == expectedPackagePublicId,
+              result.package.name == expectedPackageName else {
+            throw ClientError.packageMismatch
+        }
+        return result
+    }
+
+    private func post<Payload: Encodable, Response: Decodable>(path: String, payload: Payload, response: Response.Type) async throws -> Response {
+        let envelope = try makeEnvelope(payload: payload, method: "POST", path: path)
+        var request = URLRequest(url: baseURL.appendingPathComponent(path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))))
         request.httpMethod = "POST"
+        request.setValue(clientId, forHTTPHeaderField: "X-KeyAuth-Client")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.httpBody = try encoder.encode(envelope)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw ClientError.invalidServerResponse }
-        let secureEnvelope = try? decoder.decode(Envelope.self, from: data)
-        let plainError = try? decoder.decode(PlainError.self, from: data)
-        return HTTPResult(response: http, envelope: secureEnvelope, plainError: plainError)
-    }
 
-    private func decodeHTTPError(_ result: HTTPResult) -> ClientError {
-        ClientError.http(status: result.response.statusCode, code: result.plainError?.code, message: result.plainError?.error)
-    }
-
-    private func deriveKey(salt: Data, info: String) -> SymmetricKey {
-        HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: Data(key.utf8)), salt: salt, info: Data(info.utf8), outputByteCount: 32)
-    }
-
-    private func makeAAD(direction: String, path: String, context: Context) -> Data {
-        Data([
-            "ffh4x-secure-v1", direction, "POST", path, "1", context.keyId,
-            context.clientNonceB64, String(context.timestamp), context.requestId, context.sessionId
-        ].joined(separator: "|").utf8)
-    }
-
-    private func seal<T: Encodable>(_ value: T, using key: SymmetricKey, aad: Data) throws -> Payload {
-        do {
-            let sealed = try AES.GCM.seal(encoder.encode(value), using: key, nonce: AES.GCM.Nonce(), authenticating: aad)
-            return Payload(nonce: Data(sealed.nonce).base64URLString, ciphertext: sealed.ciphertext.base64URLString, tag: sealed.tag.base64URLString)
-        } catch {
-            throw ClientError.cryptographicFailure
+        let (data, responseObject) = try await session.data(for: request)
+        guard let http = responseObject as? HTTPURLResponse else { throw ClientError.invalidServerResponse }
+        guard let responseEnvelope = try? decoder.decode(Envelope.self, from: data) else {
+            throw ClientError.http(status: http.statusCode, code: nil)
         }
+        let decoded: APIResponse<Response>
+        do {
+            decoded = try decrypt(responseEnvelope, as: APIResponse<Response>.self, method: "POST", path: path)
+        } catch {
+            if let errorResponse = try? decrypt(responseEnvelope, as: APIResponse<EmptyPayload>.self, method: "POST", path: path),
+               let code = errorResponse.error?.code {
+                throw ClientError.server(code: code)
+            }
+            throw error
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            throw ClientError.http(status: http.statusCode, code: decoded.error?.code)
+        }
+        guard decoded.ok, let value = decoded.data else {
+            throw ClientError.server(code: decoded.error?.code ?? "REQUEST_FAILED")
+        }
+        return value
     }
 
-    private func open<T: Decodable>(_ payload: Payload, using key: SymmetricKey, aad: Data) throws -> T {
-        do {
-            guard let nonceData = Data(base64URL: payload.nonce),
-                  let ciphertext = Data(base64URL: payload.ciphertext),
-                  let tag = Data(base64URL: payload.tag) else { throw ClientError.cryptographicFailure }
-            let nonce = try AES.GCM.Nonce(data: nonceData)
-            let sealed = try AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag)
-            return try decoder.decode(T.self, from: AES.GCM.open(sealed, using: key, authenticating: aad))
-        } catch {
-            throw ClientError.cryptographicFailure
-        }
+    private func makeEnvelope<T: Encodable>(payload: T, method: String, path: String) throws -> Envelope {
+        let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
+        let nonce = try Self.randomBytes(count: 18).base64URL
+        let ivData = try Self.randomBytes(count: 12)
+        let iv = ivData.base64URL
+        let aad = "v1|\(clientId)|\(timestamp)|\(nonce)|\(method.uppercased())|\(path)"
+        let plaintext = try encoder.encode(payload)
+        let sealed = try AES.GCM.seal(plaintext, using: aesKey, nonce: AES.GCM.Nonce(data: ivData), authenticating: Data(aad.utf8))
+        let ciphertext = sealed.ciphertext.base64URL
+        let tag = sealed.tag.base64URL
+        let signedData = Data("\(aad)|\(iv)|\(ciphertext)|\(tag)".utf8)
+        let signature = Data(HMAC<SHA256>.authenticationCode(for: signedData, using: hmacKey)).base64URL
+        return Envelope(version: 1, clientId: clientId, timestamp: timestamp, nonce: nonce, iv: iv, ciphertext: ciphertext, tag: tag, signature: signature)
+    }
+
+    private func decrypt<T: Decodable>(_ envelope: Envelope, as type: T.Type, method: String, path: String) throws -> T {
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        guard abs(now - envelope.timestamp) <= 5 * 60 * 1000 else { throw ClientError.timestampExpired }
+        guard envelope.version == 1, envelope.clientId == clientId else { throw ClientError.invalidEnvelope }
+        let aad = "v1|\(clientId)|\(envelope.timestamp)|\(envelope.nonce)|\(method.uppercased())|\(path)"
+        let signedData = Data("\(aad)|\(envelope.iv)|\(envelope.ciphertext)|\(envelope.tag)".utf8)
+        let expectedSignature = Data(HMAC<SHA256>.authenticationCode(for: signedData, using: hmacKey)).base64URL
+        guard expectedSignature == envelope.signature else { throw ClientError.signatureInvalid }
+        let iv = try Data(base64URL: envelope.iv)
+        let ciphertext = try Data(base64URL: envelope.ciphertext)
+        let tag = try Data(base64URL: envelope.tag)
+        guard iv.count == 12, tag.count == 16 else { throw ClientError.invalidEnvelope }
+        let box = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data: iv), ciphertext: ciphertext, tag: tag)
+        let clear = try AES.GCM.open(box, using: aesKey, authenticating: Data(aad.utf8))
+        return try decoder.decode(T.self, from: clear)
     }
 
     private static func randomBytes(count: Int) throws -> Data {
         var data = Data(count: count)
         let status = data.withUnsafeMutableBytes { SecRandomCopyBytes(kSecRandomDefault, count, $0.baseAddress!) }
-        guard status == errSecSuccess else { throw ClientError.cryptographicFailure }
-        return data
-    }
-}
-
-@available(iOS 15.0, *)
-private enum KeychainStore {
-    static func deviceIdentifier() throws -> String {
-        let account = "ffh4x.device-id"
-        if let data = try? read(account: account), let value = String(data: data, encoding: .utf8), !value.isEmpty { return value }
-        let value = UUID().uuidString.lowercased()
-        try save(Data(value.utf8), account: account)
-        return value
-    }
-
-    private static func save(_ data: Data, account: String) throws {
-        let query: [CFString: Any] = [
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrAccount: account,
-            kSecValueData: data,
-            kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ]
-        SecItemDelete(query as CFDictionary)
-        let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess else { throw FFH4XSecureClient.ClientError.keychain(status) }
-    }
-
-    private static func read(account: String) throws -> Data {
-        let query: [CFString: Any] = [
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrAccount: account,
-            kSecReturnData: true,
-            kSecMatchLimit: kSecMatchLimitOne
-        ]
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { throw FFH4XSecureClient.ClientError.keychain(status) }
+        guard status == errSecSuccess else { throw ClientError.cryptoFailure }
         return data
     }
 }
 
 private extension Data {
-    var base64URLString: String {
-        base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
-    }
-
-    init?(base64URL value: String) {
+    init(base64URL value: String) throws {
         var base64 = value.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
         base64 += String(repeating: "=", count: (4 - base64.count % 4) % 4)
-        self.init(base64Encoded: base64)
+        guard let data = Data(base64Encoded: base64) else { throw FFH4XSecureClient.ClientError.invalidSecret }
+        self = data
     }
 
-    static func + (lhs: Data, rhs: Data) -> Data {
-        var value = lhs
-        value.append(rhs)
-        return value
-    }
-}
-
-private extension SHA256.Digest {
-    var base64URLString: String {
-        Data(self).base64URLString
+    var base64URL: String {
+        base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
     }
 }

@@ -1,5 +1,7 @@
 import Combine
+import Foundation
 import Security
+import SwiftUI
 import UIKit
 
 struct LicenseInfo: Codable {
@@ -8,246 +10,305 @@ struct LicenseInfo: Codable {
     let expiresAt: String
     let message: String
     let sessionToken: String?
+    let keyPreview: String?
+    let durationDays: Int?
 }
 
+@available(iOS 16.0, *)
 final class LicenseManager: ObservableObject {
     static let shared = LicenseManager()
 
-    @Published var isAuthorized: Bool = false
-    @Published var hasStoredKey: Bool = false
-    @Published var isLoading: Bool = false
-    @Published var isValidatingActivation: Bool = false
-    @Published var errorMessage: String? = nil
-    @Published var licenseInfo: LicenseInfo? = nil
+    enum FlowState: Equatable {
+        case checkingPackage
+        case openingDeviceRegistration
+        case waitingForDevice
+        case askingForKey
+        case activatingKey
+        case authorized
+        case failure(String)
+    }
 
-    private let keychainService = "com.ffh4x.rage.license"
+    @Published var isAuthorized = false
+    @Published var hasStoredKey = false
+    @Published var isLoading = false
+    @Published var isValidatingActivation = false
+    @Published var errorMessage: String?
+    @Published var licenseInfo: LicenseInfo?
+    @Published var flowState: FlowState = .checkingPackage
+    @Published var pendingWebURL: URL?
+
+    private let keychainService = "com.ffh4x.rage.keyauth"
     private let keychainAccount = "saved-key"
-    private let deviceAccount = "device-id"
-    private let product = "ruanwq"
-
-    // The client keeps the derived session key only in memory. The raw key is
-    // persisted in the existing Keychain entry solely for a fresh bootstrap.
-    private var secureClient: FFH4XSecureClient?
+    private let sessionAccount = "device-session-token"
+    private let client: FFH4XSecureClient?
+    private var hasBootstrapped = false
 
     init() {
-        hasStoredKey = loadSavedKey()?.isEmpty == false
+        client = try? FFH4XSecureClient()
+        hasStoredKey = keychainRead(account: keychainAccount)?.isEmpty == false
     }
 
-    func deviceID() -> String {
-        if let stored = keychainRead(account: deviceAccount) {
-            return stored
+    func bootstrap(completion: ((Bool, String?) -> Void)? = nil) {
+        guard !hasBootstrapped else {
+            completion?(isAuthorized, isAuthorized ? nil : errorMessage)
+            return
         }
-        let identifier = UIDevice.current.identifierForVendor?.uuidString.lowercased()
-            ?? UUID().uuidString.lowercased()
-        keychainSave(value: identifier, account: deviceAccount)
-        return identifier
+        hasBootstrapped = true
+        flowState = .checkingPackage
+        isLoading = true
+        errorMessage = nil
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                guard let client = self.client else { throw FFH4XSecureClient.ClientError.invalidSecret }
+                let package = try await client.packageStatus()
+                guard package.available, package.status == "active", package.slug == "external1" else {
+                    throw FFH4XSecureClient.ClientError.server(code: "PACKAGE_UNAVAILABLE")
+                }
+                if let token = keychainRead(account: sessionAccount), !token.isEmpty {
+                    try await inspectSession(token: token, client: client)
+                } else {
+                    let session = try await client.startSession()
+                    save(value: session.token, account: sessionAccount)
+                    pendingWebURL = session.webUrl
+                    flowState = .openingDeviceRegistration
+                    isLoading = false
+                    openPendingRegistration()
+                    completion?(false, "Instale o perfil do dispositivo para continuar.")
+                    return
+                }
+                isLoading = false
+                completion?(isAuthorized, isAuthorized ? nil : errorMessage)
+            } catch let error as FFH4XSecureClient.ClientError {
+                finishFailure(message(for: error))
+                completion?(false, errorMessage)
+            } catch {
+                finishFailure("Não foi possível conectar ao servidor.")
+                completion?(false, errorMessage)
+            }
+        }
     }
 
-    private func keychainSave(value: String, account: String) {
-        guard let data = value.data(using: .utf8) else { return }
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: account
-        ]
-        SecItemDelete(query as CFDictionary)
-
-        let item: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ]
-        SecItemAdd(item as CFDictionary, nil)
+    func resumeAfterSafari() {
+        guard flowState == .openingDeviceRegistration || flowState == .waitingForDevice else { return }
+        flowState = .waitingForDevice
+        isLoading = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let client = self.client, let token = self.keychainRead(account: self.sessionAccount) else {
+                self.finishFailure("Sessão de dispositivo não encontrada.")
+                return
+            }
+            do {
+                try await inspectSession(token: token, client: client)
+                isLoading = false
+            } catch let error as FFH4XSecureClient.ClientError {
+                finishFailure(message(for: error))
+            } catch {
+                finishFailure("Não foi possível verificar o dispositivo.")
+            }
+        }
     }
 
-    private func keychainRead(account: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-
-    func loadSavedKey() -> String? {
-        keychainRead(account: keychainAccount)
+    func retryBootstrap() {
+        hasBootstrapped = false
+        bootstrap()
     }
 
     func validateForActivation(completion: @escaping (Bool, String?) -> Void) {
-        guard let savedKey = loadSavedKey(), !savedKey.isEmpty else {
-            isAuthorized = false
-            hasStoredKey = false
-            completion(false, "Cadastre uma key ativa no Perfil para ativar funções.")
-            return
-        }
-
-        isValidatingActivation = true
-        validateKey(savedKey) { [weak self] success, message in
-            guard let self else { return }
-            self.isValidatingActivation = false
-            completion(success, success ? nil : (message ?? "Key inválida, expirada ou desativada."))
-        }
+        bootstrap(completion: completion)
     }
 
     func validateKey(_ key: String, completion: @escaping (Bool, String?) -> Void) {
-        let normalizedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedKey.isEmpty else {
+        let normalized = key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !normalized.isEmpty else {
             completion(false, "Insira uma KEY válida.")
+            return
+        }
+        guard let client, let token = keychainRead(account: sessionAccount), !token.isEmpty else {
+            completion(false, "Identifique este dispositivo antes de informar a KEY.")
             return
         }
 
         isLoading = true
+        isValidatingActivation = true
+        flowState = .activatingKey
         errorMessage = nil
-
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-
             do {
-                // FFH4XSecureClient performs the AES-256-GCM bootstrap and
-                // uses a fresh nonce/request ID for every validation request.
-                let client = try FFH4XSecureClient(
-                    key: normalizedKey,
-                    product: product
+                let result = try await client.activate(token: token, key: normalized)
+                guard result.valid, result.status == "active" else {
+                    throw FFH4XSecureClient.ClientError.server(code: "KEY_INVALID")
+                }
+                save(value: normalized, account: keychainAccount)
+                hasStoredKey = true
+                isAuthorized = true
+                licenseInfo = LicenseInfo(
+                    status: result.status,
+                    productName: result.package.name,
+                    expiresAt: Self.formatDate(result.expiresAt),
+                    message: "Ativação concluída",
+                    sessionToken: token,
+                    keyPreview: result.key,
+                    durationDays: result.durationDays
                 )
-                let result = try await client.validateKey()
-                let info = LicenseInfo(
-                    status: result.status ?? "VIP ATIVO",
-                    productName: result.productName ?? result.product ?? product,
-                    expiresAt: result.expiresAt ?? "Vitalício",
-                    message: "Sucesso",
-                    sessionToken: nil
-                )
-
-                self.secureClient = client
-                self.isAuthorized = true
-                self.hasStoredKey = true
-                self.licenseInfo = info
-                self.keychainSave(value: normalizedKey, account: self.keychainAccount)
-                self.isLoading = false
+                flowState = .authorized
+                isLoading = false
+                isValidatingActivation = false
                 completion(true, nil)
             } catch let error as FFH4XSecureClient.ClientError {
-                self.secureClient?.clearSession()
-                self.secureClient = nil
-                self.isAuthorized = false
-                self.licenseInfo = nil
-                self.isLoading = false
-                self.errorMessage = self.userMessage(for: error)
-                completion(false, self.errorMessage)
+                isLoading = false
+                isValidatingActivation = false
+                isAuthorized = false
+                flowState = .failure(message(for: error))
+                errorMessage = message(for: error)
+                completion(false, errorMessage)
             } catch {
-                self.secureClient?.clearSession()
-                self.secureClient = nil
-                self.isAuthorized = false
-                self.licenseInfo = nil
-                self.isLoading = false
-                self.errorMessage = "Não foi possível validar a KEY agora."
-                completion(false, self.errorMessage)
+                isLoading = false
+                isValidatingActivation = false
+                isAuthorized = false
+                flowState = .failure("Não foi possível validar a KEY agora.")
+                errorMessage = "Não foi possível validar a KEY agora."
+                completion(false, errorMessage)
             }
         }
     }
 
     func recheckSecureSession(completion: @escaping (Bool, String?) -> Void) {
-        guard let secureClient else {
-            completion(false, "Nenhuma sessão segura ativa.")
+        guard let client, let token = keychainRead(account: sessionAccount), !token.isEmpty else {
+            isAuthorized = false
+            completion(false, "Sessão de dispositivo não encontrada.")
             return
         }
-
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             do {
-                let result = try await secureClient.checkSession()
-                guard let self else { return }
-                self.isAuthorized = result.valid
-                if !result.valid {
-                    self.secureClient = nil
-                    self.licenseInfo = nil
-                }
-                completion(result.valid, result.valid ? nil : "Sessão expirada ou revogada.")
+                try await inspectSession(token: token, client: client)
+                completion(isAuthorized, isAuthorized ? nil : errorMessage)
             } catch let error as FFH4XSecureClient.ClientError {
-                guard let self else { return }
-                self.isAuthorized = false
-                self.secureClient = nil
-                self.licenseInfo = nil
-                completion(false, self.userMessage(for: error))
+                isAuthorized = false
+                flowState = .failure(message(for: error))
+                completion(false, message(for: error))
             } catch {
-                guard let self else { return }
-                self.isAuthorized = false
-                self.secureClient = nil
-                self.licenseInfo = nil
+                isAuthorized = false
                 completion(false, "Não foi possível verificar a sessão.")
             }
         }
     }
 
-    private func userMessage(for error: FFH4XSecureClient.ClientError) -> String {
-        switch error {
-        case .invalidKey:
-            return "KEY inválida."
-        case .server(let code, _):
-            return messageForServerCode(code)
-        case .http(let status, let code, _):
-            if status == 429 || code == "E_RATE_LIMITED" {
-                return "Muitas tentativas. Aguarde alguns minutos."
-            }
-            if let code {
-                return messageForServerCode(code)
-            }
-            return "Não foi possível validar a KEY agora."
-        case .cryptographicFailure:
-            return "Falha ao autenticar a comunicação com o servidor."
-        case .keychain:
-            return "Não foi possível acessar o armazenamento seguro."
-        default:
-            return "Não foi possível validar a KEY agora."
+    private func inspectSession(token: String, client: FFH4XSecureClient) async throws {
+        let status = try await client.sessionStatus(token: token)
+        guard status.package.slug == "external1", status.package.status == "active" else {
+            throw FFH4XSecureClient.ClientError.server(code: "PACKAGE_UNAVAILABLE")
         }
+        guard status.deviceRegistered else {
+            isAuthorized = false
+            flowState = .waitingForDevice
+            let session = try await client.startSession()
+            save(value: session.token, account: sessionAccount)
+            pendingWebURL = session.webUrl
+            return
+        }
+        guard status.registered, let access = status.access, access.status == "active" else {
+            isAuthorized = false
+            flowState = .askingForKey
+            errorMessage = nil
+            return
+        }
+        isAuthorized = true
+        flowState = .authorized
+        let savedKey = keychainRead(account: keychainAccount)
+        hasStoredKey = savedKey?.isEmpty == false
+        licenseInfo = LicenseInfo(
+            status: access.status ?? "active",
+            productName: access.package?.name ?? status.package.name,
+            expiresAt: Self.formatDate(access.expiresAt ?? status.expiresAt),
+            message: "Acesso autorizado",
+            sessionToken: token,
+            keyPreview: access.key,
+            durationDays: access.durationDays
+        )
     }
 
-    private func messageForServerCode(_ code: String) -> String {
-        switch code {
-        case "E_INVALID_KEY":
-            return "KEY inválida."
-        case "E_WRONG_PRODUCT":
-            return "Esta KEY pertence a outro produto."
-        case "E_BANNED_KEY":
-            return "Esta KEY está banida."
-        case "E_EXPIRED_KEY":
-            return "Esta KEY está expirada."
-        case "E_DEVICE_MISMATCH":
-            return "Esta KEY já está vinculada a outro dispositivo."
-        case "E_KEY_INACTIVE", "E_DISABLED_KEY":
-            return "Esta KEY está desativada."
-        case "E_RATE_LIMITED":
-            return "Muitas tentativas. Aguarde alguns minutos."
-        case "E_REPLAY":
-            return "A solicitação expirou. Tente novamente."
-        case "E_STALE_REQUEST":
-            return "A solicitação expirou. Verifique a conexão e tente novamente."
-        case "E_AUTHENTICATION_FAILED":
-            return "Não foi possível autenticar a comunicação com o servidor."
-        case "E_INVALID_SESSION":
-            return "Sua sessão expirou. Valide a KEY novamente."
-        default:
-            return "Não foi possível validar a KEY agora."
-        }
+    func openPendingRegistration() {
+        guard let pendingWebURL else { return }
+        UIApplication.shared.open(pendingWebURL)
+        flowState = .waitingForDevice
     }
 
     func clearSavedKey() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount
-        ]
-        SecItemDelete(query as CFDictionary)
-        secureClient?.clearSession()
-        secureClient = nil
+        keychainDelete(account: keychainAccount)
+        keychainDelete(account: sessionAccount)
         isAuthorized = false
         hasStoredKey = false
         licenseInfo = nil
+        pendingWebURL = nil
         errorMessage = nil
+        hasBootstrapped = false
+        flowState = .checkingPackage
+    }
+
+    private func finishFailure(_ message: String) {
+        isLoading = false
+        isValidatingActivation = false
+        isAuthorized = false
+        errorMessage = message
+        flowState = .failure(message)
+    }
+
+    private func message(for error: FFH4XSecureClient.ClientError) -> String {
+        switch error {
+        case .server(let code):
+            switch code {
+            case "PACKAGE_UNAVAILABLE": return "O Package EXTERNAL - iOS está indisponível."
+            case "KEY_INVALID": return "A KEY não pertence a este Package."
+            case "KEY_UNAVAILABLE": return "A KEY está pausada, banida ou removida."
+            case "KEY_EXPIRED": return "A KEY expirou."
+            case "DEVICE_MISMATCH": return "A KEY está vinculada a outro dispositivo."
+            case "DEVICE_ALREADY_REGISTERED": return "Este dispositivo já possui outra KEY ativa."
+            case "SESSION_EXPIRED", "SESSION_NOT_FOUND": return "A sessão expirou. Gere um novo perfil."
+            case "RATE_LIMITED": return "Muitas tentativas. Aguarde alguns minutos."
+            default: return "Não foi possível validar o acesso."
+            }
+        case .http(_, let code):
+            if code == "RATE_LIMITED" { return "Muitas tentativas. Aguarde alguns minutos." }
+            return "Não foi possível validar o acesso."
+        case .packageMismatch:
+            return "A configuração do Package não corresponde ao aplicativo."
+        case .timestampExpired: return "Ajuste a data e hora do dispositivo automaticamente."
+        case .invalidSecret, .invalidEnvelope, .invalidServerResponse, .signatureInvalid, .cryptoFailure:
+            return "Falha ao autenticar a comunicação com o servidor."
+        }
+    }
+
+    private static func formatDate(_ milliseconds: Int64) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(milliseconds) / 1000)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
+    private func save(value: String, account: String) {
+        guard let data = value.data(using: .utf8) else { return }
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keychainService, kSecAttrAccount as String: account]
+        SecItemDelete(query as CFDictionary)
+        let item: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keychainService, kSecAttrAccount as String: account, kSecValueData as String: data, kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly]
+        SecItemAdd(item as CFDictionary, nil)
+    }
+
+    private func keychainRead(account: String) -> String? {
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keychainService, kSecAttrAccount as String: account, kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
+        var result: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private func keychainDelete(account: String) {
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: keychainService, kSecAttrAccount as String: account]
+        SecItemDelete(query as CFDictionary)
     }
 }
