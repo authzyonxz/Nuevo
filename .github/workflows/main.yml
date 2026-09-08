@@ -40,6 +40,11 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            SWIFT_OPTIMIZATION_LEVEL=-O \
+            SWIFT_COMPILATION_MODE=wholemodule \
+            DEAD_CODE_STRIPPING=YES \
+            STRIP_INSTALLED_PRODUCT=YES \
+            COPY_PHASE_STRIP=YES \
             build
 
       - name: Package unsigned IPA

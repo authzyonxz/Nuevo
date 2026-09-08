@@ -30,7 +30,7 @@ struct KeyAuthGateView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            AnimatedNetworkBackground().ignoresSafeArea()
             VStack(spacing: 18) {
                 Image(systemName: iconName)
                     .font(.system(size: 28, weight: .semibold))
@@ -177,13 +177,78 @@ private struct KeyAuthPrimaryButtonStyle: ButtonStyle {
     }
 }
 
+@available(iOS 16.0, *)
+private struct AnimatedNetworkBackground: View {
+    private struct Node {
+        let x: CGFloat
+        let y: CGFloat
+        let phase: Double
+        let radius: CGFloat
+    }
+
+    private let nodes: [Node] = [
+        .init(x: 0.08, y: 0.16, phase: 0.2, radius: 2.0),
+        .init(x: 0.22, y: 0.35, phase: 1.4, radius: 1.7),
+        .init(x: 0.37, y: 0.13, phase: 2.2, radius: 2.2),
+        .init(x: 0.51, y: 0.28, phase: 0.8, radius: 1.8),
+        .init(x: 0.68, y: 0.18, phase: 2.8, radius: 2.0),
+        .init(x: 0.86, y: 0.34, phase: 1.1, radius: 1.6),
+        .init(x: 0.14, y: 0.58, phase: 2.5, radius: 1.8),
+        .init(x: 0.34, y: 0.51, phase: 0.4, radius: 2.1),
+        .init(x: 0.59, y: 0.63, phase: 1.8, radius: 1.7),
+        .init(x: 0.78, y: 0.52, phase: 2.9, radius: 2.0),
+        .init(x: 0.28, y: 0.82, phase: 1.0, radius: 1.6),
+        .init(x: 0.57, y: 0.86, phase: 2.0, radius: 2.0),
+        .init(x: 0.88, y: 0.78, phase: 0.6, radius: 1.8)
+    ]
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+            Canvas { context, size in
+                let time = timeline.date.timeIntervalSinceReferenceDate
+                let points = nodes.enumerated().map { index, node -> CGPoint in
+                    let driftX = sin(time * 0.16 + node.phase + Double(index)) * 0.012
+                    let driftY = cos(time * 0.13 + node.phase * 1.7) * 0.010
+                    return CGPoint(x: (node.x + driftX) * size.width, y: (node.y + driftY) * size.height)
+                }
+
+                for i in points.indices {
+                    for j in (i + 1)..<points.count {
+                        let dx = points[i].x - points[j].x
+                        let dy = points[i].y - points[j].y
+                        let distance = sqrt(dx * dx + dy * dy)
+                        let limit = min(size.width, size.height) * 0.30
+                        guard distance < limit else { continue }
+                        var path = Path()
+                        path.move(to: points[i])
+                        path.addLine(to: points[j])
+                        let alpha = max(0.025, 0.13 * (1.0 - distance / limit))
+                        context.stroke(path, with: .color(.white.opacity(alpha)), lineWidth: 0.65)
+                    }
+                }
+
+                for (index, point) in points.enumerated() {
+                    let pulse = 0.75 + 0.25 * sin(time * 1.4 + nodes[index].phase)
+                    let radius = nodes[index].radius * pulse
+                    let glow = CGRect(x: point.x - radius * 3.5, y: point.y - radius * 3.5, width: radius * 7, height: radius * 7)
+                    context.fill(Path(ellipseIn: glow), with: .color(.white.opacity(0.035)))
+                    let dot = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
+                    context.fill(Path(ellipseIn: dot), with: .color(.white.opacity(0.72)))
+                }
+            }
+            .background(Color.black)
+            .overlay(Color.black.opacity(0.18))
+        }
+    }
+}
+
 // MARK: - Main Tab View
 struct MainTabView: View {
     @Binding var selectedTab: Int
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.black
+            AnimatedNetworkBackground()
                 .ignoresSafeArea()
 
             Group {
@@ -206,7 +271,7 @@ struct MainTabView: View {
             .padding(.horizontal, 18)
             .padding(.top, 8)
             .padding(.bottom, 16)
-            .background(Color.black)
+            .background(Color.black.opacity(0.86))
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(Color.white.opacity(0.07))
