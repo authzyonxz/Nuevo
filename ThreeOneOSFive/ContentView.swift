@@ -856,39 +856,60 @@ struct TexturesView: View {
             Text("TEXTURAS DISPONÍVEIS")
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundColor(secondaryText)
-            textureCard(.texturaAlok1, imageName: "AlokTexturePreview1")
-            textureCard(.texturaAlok2, imageName: "AlokTexturePreview2")
-            textureCard(.texturaAlok3, imageName: "AlokTexturePreview3")
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                textureCard(.texturaAlok1, imageName: "AlokTexturePreview1")
+                textureCard(.texturaAlok2, imageName: "AlokTexturePreview2")
+                textureCard(.texturaAlok3, imageName: "AlokTexturePreview3")
+            }
         }
     }
 
     @ViewBuilder
     private func textureCard(_ mod: ModType, imageName: String) -> some View {
         VStack(spacing: 0) {
-            HStack(spacing: 14) {
+            ZStack(alignment: .topTrailing) {
                 Image(imageName)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 104, height: 78)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(modManager.displayName(for: mod))
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                    Text(modManager.activeMods.contains(mod) ? "ATIVA" : "Pronta para ativar")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(modManager.activeMods.contains(mod) ? .green : secondaryText)
-                    Text("Usar personagem alok despertar para funcionar a textura")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(secondaryText)
-                        .lineLimit(2)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 132)
+                    .clipped()
+                LinearGradient(
+                    colors: [.black.opacity(0.18), .clear, .black.opacity(0.16)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                if modManager.activeMods.contains(mod) {
+                    Label("ATIVA", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(.black.opacity(0.72), in: Capsule())
+                        .padding(9)
                 }
-                Spacer(minLength: 4)
+            }
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(modManager.displayName(for: mod))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("Usar personagem Alok despertado")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundColor(secondaryText)
+                    .lineLimit(2)
+                    .frame(height: 26, alignment: .topLeading)
                 if modManager.isProcessing {
-                    ProgressView().tint(.white).frame(width: 51, height: 31)
+                    ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Toggle("", isOn: Binding(
+                    Toggle("Ativar", isOn: Binding(
                         get: { modManager.activeMods.contains(mod) },
                         set: { enabled in
                             if enabled {
@@ -904,17 +925,14 @@ struct TexturesView: View {
                             }
                         }
                     ))
-                    .labelsHidden()
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundColor(secondaryText)
                     .toggleStyle(.switch)
                     .tint(.green)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 15)
-            VStack(alignment: .leading, spacing: 4) {
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 15)
+            .padding(.vertical, 14)
         }
         .background(panel)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
