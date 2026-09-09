@@ -487,11 +487,12 @@ struct HomeView: View {
     private var visibleMods: [ModType] { aimbotMods + hologramMods }
 
     private var pendingMods: [ModType] {
-        visibleMods.filter { selectedMods.contains($0) && !modManager.activeMods.contains($0) }
+        aimbotMods.filter { selectedMods.contains($0) && !modManager.activeMods.contains($0) }
     }
 
     private var shouldShowActions: Bool {
-        !selectedMods.isEmpty || !modManager.activeMods.isEmpty
+        !selectedMods.filter { aimbotMods.contains($0) }.isEmpty ||
+            !modManager.activeMods.filter { aimbotMods.contains($0) }.isEmpty
     }
 
     private var actionButtons: some View {
@@ -532,6 +533,14 @@ struct HomeView: View {
 
     private func handleToggle(mod: ModType, isOn: Bool) {
         if isOn {
+            guard aimbotMods.contains(mod) else {
+                modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
+                    alertMessage = msg
+                    showAlert = true
+                }
+                return
+            }
+
             if let activeInSection = modManager.activeMods.first(where: { $0.sectionName == mod.sectionName && $0 != mod }) {
                 alertMessage = "Desative \(modManager.displayName(for: activeInSection)) antes de selecionar outra função deste grupo."
                 showAlert = true
@@ -608,11 +617,11 @@ struct ModRowReference: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(displayName.uppercased())
-                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                    .font(.system(size: 15, weight: .regular, design: .default))
                     .foregroundColor(.white)
                 Text(mod.subtitle)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.38))
+                    .font(.system(size: 11, weight: .regular, design: .default))
+                    .foregroundColor(.white.opacity(0.46))
                     .lineLimit(2)
             }
 

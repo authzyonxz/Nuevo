@@ -30,9 +30,9 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var subtitle: String {
         switch self {
-        case .hsAlto: return "Função Aimbot HS Alto."
-        case .hsPescoco: return "Função Aimbot HS Pescoço."
-        case .hsPeito: return "Função Aimbot HS Alto + Pescoço."
+        case .hsAlto: return "HS acima da cabeça do inimigo."
+        case .hsPescoco: return "HS no pescoço do inimigo."
+        case .hsPeito: return "HS acima da cabeça e no pescoço."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
         case .fps144: return "Funciona no Free Fire normal em dispositivos iOS com tela 120Hz."
