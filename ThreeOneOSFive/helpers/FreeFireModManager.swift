@@ -58,7 +58,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hologramaArmas:
             return "FUNÇÕES DE HOLOGRAMA"
         case .cacheHsPescoco, .cacheHsAlto, .cacheHsPeito, .cacheBalaMagica:
-            return "FUNÇÕES CACHE"
+            return "FUNÇÕES AIMBOT"
         case .texturaAlok1, .texturaAlok2, .texturaAlok3:
             return "TEXTURAS"
         case .fps144:

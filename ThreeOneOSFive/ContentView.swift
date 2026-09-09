@@ -361,7 +361,7 @@ struct HomeView: View {
                         modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
                         modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
                     } else {
-                        modSection(title: "FUNÇÕES CACHE", mods: cacheMods)
+                        modSection(title: "FUNÇÕES AIMBOT", mods: cacheMods)
                     }
 
                     if selectedFunctionTab == 0 && shouldShowActions {
@@ -438,7 +438,7 @@ struct HomeView: View {
     private var functionTabPicker: some View {
         HStack(spacing: 0) {
             functionTabButton(title: "FUNÇÕES AVATAR", index: 0)
-            functionTabButton(title: "FUNÇÕES CACHE", index: 1)
+            functionTabButton(title: "FUNÇÕES AIMBOT", index: 1)
         }
         .padding(4)
         .background(Color.white.opacity(0.06))
