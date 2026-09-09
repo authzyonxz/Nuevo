@@ -335,6 +335,7 @@ struct HomeView: View {
     @EnvironmentObject var licenseManager: LicenseManager
     @StateObject private var modManager = FreeFireModManager.shared
     @State private var selectedGame: GameChoice = .freeFire
+    @State private var selectedFunctionTab = 0
     @State private var selectedMods: Set<ModType> = []
     @State private var alertMessage: String = ""
     @State private var showAlert: Bool = false
@@ -350,15 +351,20 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     header
                     gamePicker
+                    functionTabPicker
 
                     if showLogs {
                         diagnosticPanel
                     }
 
-                    modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
-                    modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
+                    if selectedFunctionTab == 0 {
+                        modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
+                        modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
+                    } else {
+                        modSection(title: "FUNÇÕES CACHE", mods: cacheMods)
+                    }
 
-                    if shouldShowActions {
+                    if selectedFunctionTab == 0 && shouldShowActions {
                         actionButtons
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
@@ -429,6 +435,33 @@ struct HomeView: View {
         }
     }
 
+    private var functionTabPicker: some View {
+        HStack(spacing: 0) {
+            functionTabButton(title: "FUNÇÕES AVATAR", index: 0)
+            functionTabButton(title: "FUNÇÕES CACHE", index: 1)
+        }
+        .padding(4)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func functionTabButton(title: String, index: Int) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.18)) {
+                selectedFunctionTab = index
+            }
+        } label: {
+            Text(title)
+                .font(.system(size: 10, weight: .heavy, design: .default))
+                .foregroundColor(selectedFunctionTab == index ? .black : .white.opacity(0.48))
+                .frame(maxWidth: .infinity)
+                .frame(height: 38)
+                .background(selectedFunctionTab == index ? Color.white : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var diagnosticPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("DIAGNÓSTICO")
@@ -482,6 +515,10 @@ struct HomeView: View {
 
     private var hologramMods: [ModType] {
         [.hologramaArmas]
+    }
+
+    private var cacheMods: [ModType] {
+        [.cacheHsPescoco, .cacheHsAlto, .cacheHsPeito, .cacheBalaMagica]
     }
 
     private var visibleMods: [ModType] { aimbotMods + hologramMods }

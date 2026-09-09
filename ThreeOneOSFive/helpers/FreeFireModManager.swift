@@ -6,6 +6,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS ALTO + PESCOÇO"
     case hologramaArmas = "HOLOGRAMA ARMAS"
+    case cacheHsPescoco = "HS PESCOÇO"
+    case cacheHsAlto = "HS ALTO"
+    case cacheHsPeito = "HS PEITO"
+    case cacheBalaMagica = "BALA MÁGICA"
     case texturaAlok1 = "Skin Instaplayer"
     case texturaAlok2 = "Skin Mandela"
     case texturaAlok3 = "Skin RuokFF"
@@ -21,6 +25,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A02")!
         case .hsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A03")!
         case .hologramaArmas: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A04")!
+        case .cacheHsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A21")!
+        case .cacheHsAlto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A22")!
+        case .cacheHsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A23")!
+        case .cacheBalaMagica: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A24")!
         case .texturaAlok1: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A11")!
         case .texturaAlok2: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A12")!
         case .texturaAlok3: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A13")!
@@ -34,6 +42,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPescoco: return "HS no pescoço do inimigo."
         case .hsPeito: return "HS acima da cabeça e no pescoço."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
+        case .cacheHsPescoco: return "Função Cache — configure o payload no atualizador."
+        case .cacheHsAlto: return "Função Cache — configure o payload no atualizador."
+        case .cacheHsPeito: return "Função Cache — configure o payload no atualizador."
+        case .cacheBalaMagica: return "Função Cache — configure o payload no atualizador."
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
         case .fps144: return "Funciona no Free Fire normal em dispositivos iOS com tela 120Hz."
         }
@@ -45,6 +57,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
             return "FUNÇÕES DE AIMBOT"
         case .hologramaArmas:
             return "FUNÇÕES DE HOLOGRAMA"
+        case .cacheHsPescoco, .cacheHsAlto, .cacheHsPeito, .cacheBalaMagica:
+            return "FUNÇÕES CACHE"
         case .texturaAlok1, .texturaAlok2, .texturaAlok3:
             return "TEXTURAS"
         case .fps144:
@@ -93,7 +107,9 @@ class FreeFireModManager: ObservableObject {
                 let ids: [ModType: String] = [
                     .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
                     .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
-                    .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
+                    .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144",
+                    .cacheHsPescoco: "cache_hs_pescoco_v1", .cacheHsAlto: "cache_hs_alto_v1",
+                    .cacheHsPeito: "cache_hs_peito_v1", .cacheBalaMagica: "cache_bala_magica_v1"
                 ]
                 let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ids.compactMap { (mod: ModType, id: String) -> (ModType, String)? in
                     guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
@@ -134,7 +150,9 @@ class FreeFireModManager: ObservableObject {
         }
         let remoteIDs: [ModType: String] = [
             .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
-            .hologramaArmas: "holograma_armas"
+            .hologramaArmas: "holograma_armas", .cacheHsPescoco: "cache_hs_pescoco_v1",
+            .cacheHsAlto: "cache_hs_alto_v1", .cacheHsPeito: "cache_hs_peito_v1",
+            .cacheBalaMagica: "cache_bala_magica_v1"
         ]
         guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
