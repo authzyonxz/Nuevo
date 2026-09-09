@@ -40,12 +40,12 @@ struct KeyAuthGateView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 Text(title)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .default))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
 
                 Text(message)
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .font(.system(size: 14, weight: .medium, design: .default))
                     .foregroundColor(.white.opacity(0.58))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -88,7 +88,7 @@ struct KeyAuthGateView: View {
                 .autocorrectionDisabled()
                 .textContentType(.password)
                 .submitLabel(.go)
-                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .font(.system(size: 16, weight: .medium, design: .default))
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .frame(height: 54)
@@ -102,7 +102,7 @@ struct KeyAuthGateView: View {
 
             if let error = licenseManager.errorMessage {
                 Text(error)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 12, weight: .medium, design: .default))
                     .foregroundColor(.red.opacity(0.95))
                     .multilineTextAlignment(.center)
             }
@@ -112,12 +112,12 @@ struct KeyAuthGateView: View {
     private var successView: some View {
         VStack(spacing: 10) {
             Label("Ativação concluída", systemImage: "checkmark.shield.fill")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .font(.system(size: 16, weight: .bold, design: .default))
                 .foregroundColor(.green)
             if let info = licenseManager.licenseInfo {
                 Text(info.productName).foregroundColor(.white).font(.headline)
                 Text("Expira em: \(info.expiresAt)")
-                    .font(.system(size: 13, design: .rounded))
+                    .font(.system(size: 13, design: .default))
                     .foregroundColor(.white.opacity(0.55))
             }
         }
@@ -168,7 +168,7 @@ struct KeyAuthGateView: View {
 private struct KeyAuthPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .heavy, design: .rounded))
+            .font(.system(size: 13, weight: .heavy, design: .default))
             .foregroundColor(.black)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
@@ -300,7 +300,7 @@ struct TabButton: View {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
                 Text(title)
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(.system(size: 9, weight: .semibold, design: .default))
             }
             .foregroundColor(isSelected ? .white : .white.opacity(0.34))
             .frame(maxWidth: .infinity)
@@ -382,7 +382,7 @@ struct HomeView: View {
             Color.clear.frame(width: 32, height: 32)
             Spacer()
             Text("FUNÇÕES")
-                .font(.system(size: 15, weight: .heavy, design: .rounded))
+                .font(.system(size: 15, weight: .heavy, design: .default))
                 .foregroundColor(.white)
             Spacer()
             Button { showLogs.toggle() } label: {
@@ -411,7 +411,7 @@ struct HomeView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                         Text(game == .freeFire ? "Free Fire Normal" : "Free Fire Max")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .font(.system(size: 11, weight: .bold, design: .default))
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -432,11 +432,11 @@ struct HomeView: View {
     private var diagnosticPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("DIAGNÓSTICO")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.system(size: 10, weight: .bold, design: .default))
                 .foregroundColor(.white.opacity(0.48))
             ScrollView {
                 Text(modManager.debugLogs.isEmpty ? "Nenhum registro ainda." : modManager.debugLogs)
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.system(size: 9, design: .default))
                     .foregroundColor(.green.opacity(0.8))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -454,7 +454,7 @@ struct HomeView: View {
     private func modSection(title: String, mods: [ModType]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.system(size: 11, weight: .medium, design: .default))
                 .foregroundColor(secondaryText)
 
             VStack(spacing: 0) {
@@ -505,7 +505,7 @@ struct HomeView: View {
                         Text("INJETAR (40%)")
                     }
                 }
-                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .font(.system(size: 12, weight: .heavy, design: .default))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
@@ -518,7 +518,7 @@ struct HomeView: View {
 
             Button(action: openLobby) {
                 Text("LOBBY")
-                    .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    .font(.system(size: 12, weight: .heavy, design: .default))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
@@ -689,10 +689,10 @@ struct ProfileView: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("CONFIG")
-                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .font(.system(size: 28, weight: .heavy, design: .default))
                                 .foregroundColor(.white)
                             Text("Informações e proteção do dispositivo")
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .font(.system(size: 11, weight: .medium, design: .default))
                                 .foregroundColor(.white.opacity(0.45))
                         }
                         Spacer()
@@ -709,10 +709,10 @@ struct ProfileView: View {
 
                         VStack(alignment: .leading, spacing: 5) {
                             Text("STATUS DA LICENÇA")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .font(.system(size: 10, weight: .bold, design: .default))
                                 .foregroundColor(.white.opacity(0.45))
                             Text(licenseManager.licenseInfo?.status ?? "Sem key registrada")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .font(.system(size: 16, weight: .bold, design: .default))
                                 .foregroundColor(licenseManager.isAuthorized ? .green : .orange)
                         }
                         Spacer()
@@ -727,7 +727,7 @@ struct ProfileView: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text("DETALHES DO SISTEMA")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .font(.system(size: 10, weight: .bold, design: .default))
                             .foregroundColor(.white.opacity(0.45))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
@@ -755,11 +755,11 @@ struct ProfileView: View {
     private func configRow(title: String, value: String, color: Color) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(title)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.system(size: 11, weight: .medium, design: .default))
                 .foregroundColor(.white.opacity(0.48))
             Spacer(minLength: 10)
             Text(value)
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .default))
                 .foregroundColor(color)
                 .multilineTextAlignment(.trailing)
                 .lineLimit(2)
@@ -818,10 +818,10 @@ struct TexturesView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         VStack(alignment: .leading, spacing: 4) {
                             Text("TEXTURAS")
-                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .font(.system(size: 28, weight: .heavy, design: .default))
                                 .foregroundColor(.white)
                             Text("Personalize o visual do Free Fire")
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .font(.system(size: 11, weight: .medium, design: .default))
                                 .foregroundColor(secondaryText)
                         }
                         Spacer()
@@ -847,7 +847,7 @@ struct TexturesView: View {
                     withAnimation(.easeOut(duration: 0.18)) { selectedGame = game }
                 } label: {
                     Text(game == .freeFire ? "FREE FIRE" : "FREE FIRE MAX")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(.system(size: 10, weight: .bold, design: .default))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 36)
@@ -863,7 +863,7 @@ struct TexturesView: View {
     private var textureSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("TEXTURAS DISPONÍVEIS")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.system(size: 11, weight: .bold, design: .default))
                 .foregroundColor(secondaryText)
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 12),
@@ -893,7 +893,7 @@ struct TexturesView: View {
                 )
                 if modManager.activeMods.contains(mod) {
                     Label("ATIVA", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .font(.system(size: 9, weight: .bold, design: .default))
                         .foregroundColor(.green)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
@@ -906,12 +906,12 @@ struct TexturesView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(modManager.displayName(for: mod))
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 14, weight: .bold, design: .default))
                     .foregroundColor(.white)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text("Usar personagem Alok despertado")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .default))
                     .foregroundColor(secondaryText)
                     .lineLimit(2)
                     .frame(height: 26, alignment: .topLeading)
@@ -934,7 +934,7 @@ struct TexturesView: View {
                             }
                         }
                     ))
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .font(.system(size: 10, weight: .semibold, design: .default))
                     .foregroundColor(secondaryText)
                     .toggleStyle(.switch)
                     .tint(.green)
