@@ -437,8 +437,8 @@ struct HomeView: View {
 
     private var functionTabPicker: some View {
         HStack(spacing: 0) {
-            functionTabButton(title: "FUNÇÕES AVATAR", index: 0)
-            functionTabButton(title: "FUNÇÕES AIMBOT", index: 1)
+            functionTabButton(title: "FUNÇÕES AVATAR\n(SEM RISCO)", index: 0)
+            functionTabButton(title: "FUNÇÕES CACHE\n(RISCO)", index: 1)
         }
         .padding(4)
         .background(Color.white.opacity(0.06))
