@@ -6,10 +6,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS ALTO + PESCOÇO"
     case hologramaArmas = "HOLOGRAMA ARMAS"
-    case cacheHsPescoco = "HS PESCOÇO"
-    case cacheHsAlto = "HS ALTO"
-    case cacheHsPeito = "HS PEITO"
-    case cacheBalaMagica = "BALA MÁGICA"
+    case cacheHsPescoco = "CACHE HS PESCOÇO"
+    case cacheHsAlto = "CACHE HS ALTO"
+    case cacheHsPeito = "CACHE HS PEITO"
+    case cacheBalaMagica = "CACHE BALA MÁGICA"
     case texturaAlok1 = "Skin Instaplayer"
     case texturaAlok2 = "Skin Mandela"
     case texturaAlok3 = "Skin RuokFF"
@@ -94,6 +94,10 @@ class FreeFireModManager: ObservableObject {
         switch mod {
         case .hsAlto, .hsPescoco, .hsPeito:
             return mod.rawValue
+        case .cacheHsPescoco: return "HS PESCOÇO"
+        case .cacheHsAlto: return "HS ALTO"
+        case .cacheHsPeito: return "HS PEITO"
+        case .cacheBalaMagica: return "BALA MÁGICA"
         default:
             return remoteDisplayNames[mod] ?? mod.rawValue
         }
