@@ -148,7 +148,8 @@ class FreeFireModManager: ObservableObject {
     }
 
     private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping ((OnlinePayloadUpdater.RemotePayload, Data)?) -> Void) {
-        guard [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas].contains(mod) else {
+        guard [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas,
+               .cacheHsPescoco, .cacheHsAlto, .cacheHsPeito, .cacheBalaMagica].contains(mod) else {
             completion(nil)
             return
         }
