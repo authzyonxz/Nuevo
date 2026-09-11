@@ -109,11 +109,11 @@ class FreeFireModManager: ObservableObject {
             do {
                 let manifest = try await OnlinePayloadUpdater.shared.manifest(forceRefresh: true)
                 let ids: [ModType: String] = [
-                    .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
+                    .hsAlto: "avatar_hs_alto", .hsPescoco: "avatar_hs_pescoco", .hsPeito: "avatar_hs_alto_pescoco",
                     .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
                     .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144",
-                    .cacheHsPescoco: "cache_hs_pescoco_v1", .cacheHsAlto: "cache_hs_alto_v1",
-                    .cacheHsPeito: "cache_hs_peito_v1", .cacheBalaMagica: "cache_bala_magica_v1"
+                    .cacheHsPescoco: "cache_hs_pescoco", .cacheHsAlto: "cache_hs_alto",
+                    .cacheHsPeito: "cache_hs_peito", .cacheBalaMagica: "cache_bala_magica"
                 ]
                 let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ids.compactMap { (mod: ModType, id: String) -> (ModType, String)? in
                     guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
@@ -154,10 +154,10 @@ class FreeFireModManager: ObservableObject {
             return
         }
         let remoteIDs: [ModType: String] = [
-            .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
-            .hologramaArmas: "holograma_armas", .cacheHsPescoco: "cache_hs_pescoco_v1",
-            .cacheHsAlto: "cache_hs_alto_v1", .cacheHsPeito: "cache_hs_peito_v1",
-            .cacheBalaMagica: "cache_bala_magica_v1"
+            .hsAlto: "avatar_hs_alto", .hsPescoco: "avatar_hs_pescoco", .hsPeito: "avatar_hs_alto_pescoco",
+            .hologramaArmas: "holograma_armas", .cacheHsPescoco: "cache_hs_pescoco",
+            .cacheHsAlto: "cache_hs_alto", .cacheHsPeito: "cache_hs_peito",
+            .cacheBalaMagica: "cache_bala_magica"
         ]
         guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
