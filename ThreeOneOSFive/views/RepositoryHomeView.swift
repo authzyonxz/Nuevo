@@ -14,13 +14,6 @@ struct RepositoryHomeView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 28) {
                     supportOverview
-                    if feed.isEmpty {
-                        emptyContent
-                    } else {
-                        featuredFeed
-                        recentPackages
-                    }
-
                 }
                 .frame(maxWidth: 720)
                 .frame(maxWidth: .infinity)
@@ -29,10 +22,6 @@ struct RepositoryHomeView: View {
                 .padding(.bottom, 32)
             }
             .background(Color(uiColor: .systemGroupedBackground))
-            .refreshable {
-                await store.refreshAllAndWait()
-                rebuildFeed()
-            }
             .navigationTitle("3105")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -44,15 +33,6 @@ struct RepositoryHomeView: View {
             }
             .navigationDestination(for: RepositoryPackageRecord.self) { record in
                 RepositoryPackageDetailView(record: record)
-            }
-            .onAppear {
-                store.refreshAllIfNeeded()
-                if feed.isEmpty {
-                    rebuildFeed()
-                }
-            }
-            .onChange(of: store.packages) { _ in
-                rebuildFeed()
             }
         }
     }
@@ -75,6 +55,28 @@ struct RepositoryHomeView: View {
             Text("Versão atual: iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(AppTheme.accent)
+            Label(
+                ExploitSupportPolicy.isSupported(
+                    major: AppInfo.versionTuple.major,
+                    minor: AppInfo.versionTuple.minor,
+                    patch: AppInfo.versionTuple.patch,
+                    build: AppInfo.osBuild
+                ) ? "Compatível: SIM" : "Compatível: NÃO",
+                systemImage: ExploitSupportPolicy.isSupported(
+                    major: AppInfo.versionTuple.major,
+                    minor: AppInfo.versionTuple.minor,
+                    patch: AppInfo.versionTuple.patch,
+                    build: AppInfo.osBuild
+                ) ? "checkmark.circle.fill" : "xmark.circle.fill"
+            )
+            .foregroundStyle(
+                ExploitSupportPolicy.isSupported(
+                    major: AppInfo.versionTuple.major,
+                    minor: AppInfo.versionTuple.minor,
+                    patch: AppInfo.versionTuple.patch,
+                    build: AppInfo.osBuild
+                ) ? .green : .red
+            )
         }
         .padding(AppTheme.contentCardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -5,7 +5,7 @@ struct FunctionPayloadsView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var patchStore: PatchProjectStore
     @EnvironmentObject private var repositoryStore: PackageRepositoryStore
-    @AppStorage("function.payload.server") private var serverURL = ""
+    @AppStorage("function.payload.server") private var serverURL = "https://keyauthv2.org/manifest.json"
     @State private var enabled: Set<Int> = []
     @State private var projectIDs: [Int: UUID] = [:]
     @State private var isWorking = Set<Int>()
@@ -16,27 +16,6 @@ struct FunctionPayloadsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    HStack(spacing: 10) {
-                        Image(systemName: "server.rack")
-                            .foregroundStyle(AppTheme.accent)
-                        TextField("URL do manifest.json", text: $serverURL)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .keyboardType(.URL)
-                    }
-                    Button {
-                        connectServer()
-                    } label: {
-                        Label("Conectar servidor de payloads", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    Text("O servidor deve publicar um manifest.json com as funções 1–5 e arquivos .3105.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } header: {
-                    Text("Payload online")
-                }
-
                 Section {
                     ForEach(slots, id: \.self) { slot in
                         functionRow(slot)
@@ -59,7 +38,10 @@ struct FunctionPayloadsView: View {
                 Text(alert ?? "")
             }
             .onAppear {
-                if !serverURL.isEmpty, repositoryStore.sources.isEmpty {
+                if serverURL.isEmpty {
+                    serverURL = "https://keyauthv2.org/manifest.json"
+                }
+                if !repositoryStore.sources.contains(where: { $0.manifestURL.absoluteString == serverURL }) {
                     _ = repositoryStore.addSource(rawURL: serverURL)
                 }
             }
@@ -70,17 +52,15 @@ struct FunctionPayloadsView: View {
         let record = packageRecord(for: slot)
         let busy = isWorking.contains(slot)
         return HStack(spacing: 14) {
-            Image(systemName: "function")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(record == nil ? .secondary : AppTheme.accent)
-                .frame(width: 30)
             VStack(alignment: .leading, spacing: 4) {
                 Text("FUNÇÃO - \(slot)")
                     .font(.headline)
-                Text(record?.package.name ?? "Nenhum payload publicado")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if let name = record?.package.name {
+                    Text(name)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             Spacer()
             if busy {
@@ -105,16 +85,6 @@ struct FunctionPayloadsView: View {
                     || $0.package.tags.contains(where: { $0.lowercased() == key })
             )
         }
-    }
-
-    private func connectServer() {
-        let trimmed = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            alert = "Informe a URL HTTPS do manifest.json."
-            return
-        }
-        _ = repositoryStore.addSource(rawURL: trimmed)
-        repositoryStore.refreshAll()
     }
 
     private func setEnabled(_ value: Bool, slot: Int) {
