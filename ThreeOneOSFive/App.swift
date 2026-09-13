@@ -27,6 +27,11 @@ struct ThreeOneOSFiveApp: App {
                 }
         }
         .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                if !licenseManager.isAuthorized {
+                    licenseManager.resumeAfterSafari()
+                }
+            }
             if newPhase == .background {
                 KernelExploit.cleanup()
             }

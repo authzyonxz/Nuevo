@@ -36,9 +36,9 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPeito: return "HS NO PEITO DO INIMIGO"
         case .hologramaArmas: return "BALA MÁGICA"
 #else
-        case .hsAlto: return "Função Aimbot HS Alto."
-        case .hsPescoco: return "Função Aimbot HS Pescoço."
-        case .hsPeito: return "Função Aimbot HS Alto + Pescoço."
+        case .hsAlto: return "HS acima da cabeça do inimigo."
+        case .hsPescoco: return "HS no pescoço do inimigo."
+        case .hsPeito: return "HS acima da cabeça e no pescoço."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
 #endif
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."

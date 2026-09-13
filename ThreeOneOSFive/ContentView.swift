@@ -1,202 +1,244 @@
 import SwiftUI
 import UIKit
 
+@available(iOS 16.0, *)
 struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @State private var selectedTab: Int = 0
-    @State private var showKeyGate = false
-    @State private var didCheckEntry = false
+    @State private var selectedTab = 0
+    @State private var didStartFlow = false
 
     var body: some View {
         ZStack {
-            MainTabView(selectedTab: $selectedTab)
-
-            if showKeyGate {
-                KeyGateOverlay(isPresented: $showKeyGate)
-                    .environmentObject(licenseManager)
-                    .transition(.opacity)
-                    .zIndex(10)
+            if licenseManager.isAuthorized {
+                MainTabView(selectedTab: $selectedTab)
+            } else {
+                KeyAuthGateView().environmentObject(licenseManager)
             }
         }
         .onAppear {
-            validateEntryKey()
-        }
-        .onChange(of: licenseManager.isAuthorized) { authorized in
-            if !authorized && didCheckEntry {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    showKeyGate = true
-                }
-            }
-        }
-    }
-
-    private func validateEntryKey() {
-        guard !didCheckEntry else { return }
-        didCheckEntry = true
-        showKeyGate = true
-
-        guard let savedKey = licenseManager.loadSavedKey(), !savedKey.isEmpty else {
-            return
-        }
-
-        // A API é consultada somente ao entrar no app, usando a mesma
-        // rotina protegida e o mesmo payload já existente.
-        licenseManager.validateKey(savedKey) { success, _ in
-            withAnimation(.easeOut(duration: 0.2)) {
-                showKeyGate = !success
-            }
+            guard !didStartFlow else { return }
+            didStartFlow = true
+            licenseManager.bootstrap()
         }
     }
 }
 
-// MARK: - Entry Key Gate
-struct KeyGateOverlay: View {
+@available(iOS 16.0, *)
+struct KeyAuthGateView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @Binding var isPresented: Bool
     @State private var inputKey = ""
-    @State private var message = ""
 
     var body: some View {
         ZStack {
-            Color.black
-                .ignoresSafeArea()
+            AnimatedNetworkBackground().ignoresSafeArea()
+            VStack(spacing: 18) {
+                Image(systemName: iconName)
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(.green)
+                    .frame(width: 64, height: 64)
+                    .background(Color.green.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            VStack(spacing: 14) {
-                SecureField("Digite sua key", text: $inputKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(.password)
-                    .submitLabel(.go)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                Text(title)
+                    .font(.system(size: 28, weight: .bold, design: .default))
                     .foregroundColor(.white)
-                    .tint(.white)
-                    .padding(.horizontal, 18)
-                    .frame(height: 52)
-                    .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .onSubmit(validate)
+                    .multilineTextAlignment(.center)
 
-                if !message.isEmpty {
-                    Text(message)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.red.opacity(0.95))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 8)
-                }
+                Text(message)
+                    .font(.system(size: 14, weight: .medium, design: .default))
+                    .foregroundColor(.white.opacity(0.58))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Button(action: validate) {
-                    Group {
-                        if licenseManager.isLoading {
-                            ProgressView()
-                                .tint(.black)
-                        } else {
-                            Text("ENTRAR")
-                        }
+                if licenseManager.pendingWebURL != nil,
+                   licenseManager.flowState == .openingDeviceRegistration || licenseManager.flowState == .waitingForDevice {
+                    Button {
+                        licenseManager.openPendingRegistration()
+                    } label: {
+                        Label("Identificar este iPhone", systemImage: "safari")
+                            .frame(maxWidth: .infinity)
                     }
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .buttonStyle(KeyAuthPrimaryButtonStyle())
+                    .accessibilityIdentifier("open-device-registration")
                 }
-                .buttonStyle(.plain)
-                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.72 : 1)
+
+                if licenseManager.flowState == .askingForKey {
+                    keyEntry
+                } else if licenseManager.flowState == .authorized {
+                    successView
+                } else if case .failure = licenseManager.flowState {
+                    Button("TENTAR NOVAMENTE") { licenseManager.retryBootstrap() }
+                        .buttonStyle(KeyAuthPrimaryButtonStyle())
+                }
+
+                if licenseManager.isLoading {
+                    ProgressView().tint(.white).padding(.top, 4)
+                }
             }
-            .padding(.horizontal, 20)
-            .frame(maxWidth: 390)
-            .offset(y: -28)
+            .padding(.horizontal, 24)
+            .frame(maxWidth: 420)
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var keyEntry: some View {
+        VStack(spacing: 12) {
+            TextField("Digite sua Key", text: $inputKey)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .textContentType(.password)
+                .submitLabel(.go)
+                .font(.system(size: 16, weight: .medium, design: .default))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .frame(height: 54)
+                .background(Color.white.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .onSubmit { validate() }
+
+            Button("CONFIRMAR KEY") { validate() }
+                .buttonStyle(KeyAuthPrimaryButtonStyle())
+                .disabled(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || licenseManager.isLoading)
+
+            if let error = licenseManager.errorMessage {
+                Text(error)
+                    .font(.system(size: 12, weight: .medium, design: .default))
+                    .foregroundColor(.red.opacity(0.95))
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    private var successView: some View {
+        VStack(spacing: 10) {
+            Label("Ativação concluída", systemImage: "checkmark.shield.fill")
+                .font(.system(size: 16, weight: .bold, design: .default))
+                .foregroundColor(.green)
+            if let info = licenseManager.licenseInfo {
+                Text(info.productName).foregroundColor(.white).font(.headline)
+                Text("Expira em: \(info.expiresAt)")
+                    .font(.system(size: 13, design: .default))
+                    .foregroundColor(.white.opacity(0.55))
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private var title: String {
+        switch licenseManager.flowState {
+        case .checkingPackage: return "Checking package"
+        case .openingDeviceRegistration, .waitingForDevice: return "Identifique este iPhone"
+        case .askingForKey: return "Digite sua Key"
+        case .activatingKey: return "Validando acesso"
+        case .authorized: return "Acesso autorizado"
+        case .failure: return "Não foi possível continuar"
+        }
+    }
+
+    private var message: String {
+        switch licenseManager.flowState {
+        case .checkingPackage: return "Verificando o Package EXTERNAL - iOS..."
+        case .openingDeviceRegistration: return "Instale o perfil temporário para registrar o UDID deste dispositivo."
+        case .waitingForDevice: return "Baixe o perfil, abra Ajustes > Perfil Baixado, instale e depois retorne ao app."
+        case .askingForKey: return "O dispositivo foi registrado. Informe a Key para ativar o acesso."
+        case .activatingKey: return "Confirmando a Key e vinculando este dispositivo..."
+        case .authorized: return "Sua Key foi confirmada pelo servidor."
+        case .failure(let value): return value
+        }
+    }
+
+    private var iconName: String {
+        switch licenseManager.flowState {
+        case .authorized: return "checkmark.shield.fill"
+        case .checkingPackage, .activatingKey: return "lock.shield"
+        case .openingDeviceRegistration, .waitingForDevice: return "iphone"
+        case .askingForKey: return "key.fill"
+        case .failure: return "exclamationmark.shield"
+        }
     }
 
     private func validate() {
-        let key = inputKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { return }
-        message = ""
-        licenseManager.validateKey(key) { success, error in
-            if success {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    isPresented = false
-                }
-            } else {
-                message = error ?? "Key inválida ou expirada."
-            }
-        }
+        let value = inputKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return }
+        licenseManager.validateKey(value) { _, _ in }
     }
 }
 
-// MARK: - Login View (MenagerFF)
-struct LoginView: View {
-    @Binding var inputKey: String
-    var timeRemaining: Int
-    var onLogin: () -> Void
-    @EnvironmentObject var licenseManager: LicenseManager
+@available(iOS 16.0, *)
+private struct KeyAuthPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .heavy, design: .default))
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(Color.white.opacity(configuration.isPressed ? 0.72 : 1))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+@available(iOS 16.0, *)
+private struct AnimatedNetworkBackground: View {
+    private struct Node {
+        let x: CGFloat
+        let y: CGFloat
+        let phase: Double
+        let radius: CGFloat
+    }
+
+    private let nodes: [Node] = [
+        .init(x: 0.08, y: 0.16, phase: 0.2, radius: 2.0),
+        .init(x: 0.22, y: 0.35, phase: 1.4, radius: 1.7),
+        .init(x: 0.37, y: 0.13, phase: 2.2, radius: 2.2),
+        .init(x: 0.51, y: 0.28, phase: 0.8, radius: 1.8),
+        .init(x: 0.68, y: 0.18, phase: 2.8, radius: 2.0),
+        .init(x: 0.86, y: 0.34, phase: 1.1, radius: 1.6),
+        .init(x: 0.14, y: 0.58, phase: 2.5, radius: 1.8),
+        .init(x: 0.34, y: 0.51, phase: 0.4, radius: 2.1),
+        .init(x: 0.59, y: 0.63, phase: 1.8, radius: 1.7),
+        .init(x: 0.78, y: 0.52, phase: 2.9, radius: 2.0),
+        .init(x: 0.28, y: 0.82, phase: 1.0, radius: 1.6),
+        .init(x: 0.57, y: 0.86, phase: 2.0, radius: 2.0),
+        .init(x: 0.88, y: 0.78, phase: 0.6, radius: 1.8)
+    ]
 
     var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
-
-            VStack(spacing: 14) {
-                SecureField("Digite sua key", text: $inputKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .textContentType(.password)
-                    .submitLabel(.go)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundColor(.white)
-                    .tint(.white)
-                    .padding(.horizontal, 18)
-                    .frame(height: 52)
-                    .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .onSubmit(onLogin)
-
-                if let err = licenseManager.errorMessage, !err.isEmpty {
-                    Text(err)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.red.opacity(0.95))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 8)
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+            Canvas { context, size in
+                let time = timeline.date.timeIntervalSinceReferenceDate
+                let points = nodes.enumerated().map { index, node -> CGPoint in
+                    let driftX = sin(time * 0.16 + node.phase + Double(index)) * 0.012
+                    let driftY = cos(time * 0.13 + node.phase * 1.7) * 0.010
+                    return CGPoint(x: (node.x + driftX) * size.width, y: (node.y + driftY) * size.height)
                 }
 
-                Button(action: onLogin) {
-                    Group {
-                        if licenseManager.isLoading {
-                            ProgressView()
-                                .tint(.black)
-                        } else {
-                            Text("ENTRAR")
-                        }
+                for i in points.indices {
+                    for j in (i + 1)..<points.count {
+                        let dx = points[i].x - points[j].x
+                        let dy = points[i].y - points[j].y
+                        let distance = sqrt(dx * dx + dy * dy)
+                        let limit = min(size.width, size.height) * 0.30
+                        guard distance < limit else { continue }
+                        var path = Path()
+                        path.move(to: points[i])
+                        path.addLine(to: points[j])
+                        let alpha = max(0.025, 0.13 * (1.0 - distance / limit))
+                        context.stroke(path, with: .color(.white.opacity(alpha)), lineWidth: 0.65)
                     }
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
                 }
-                .buttonStyle(.plain)
-                .disabled(licenseManager.isLoading || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .opacity(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.72 : 1)
+
+                for (index, point) in points.enumerated() {
+                    let pulse = 0.75 + 0.25 * sin(time * 1.4 + nodes[index].phase)
+                    let radius = nodes[index].radius * pulse
+                    let glow = CGRect(x: point.x - radius * 3.5, y: point.y - radius * 3.5, width: radius * 7, height: radius * 7)
+                    context.fill(Path(ellipseIn: glow), with: .color(.white.opacity(0.035)))
+                    let dot = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
+                    context.fill(Path(ellipseIn: dot), with: .color(.white.opacity(0.72)))
+                }
             }
-            .padding(.horizontal, 20)
-            .frame(maxWidth: 390)
-            .offset(y: -28)
+            .background(Color.black)
+            .overlay(Color.black.opacity(0.18))
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -206,7 +248,7 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.black
+            AnimatedNetworkBackground()
                 .ignoresSafeArea()
 
             Group {
@@ -229,7 +271,7 @@ struct MainTabView: View {
             .padding(.horizontal, 18)
             .padding(.top, 8)
             .padding(.bottom, 16)
-            .background(Color.black)
+            .background(Color.black.opacity(0.86))
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(Color.white.opacity(0.07))
@@ -258,7 +300,7 @@ struct TabButton: View {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
                 Text(title)
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(.system(size: 9, weight: .semibold, design: .default))
             }
             .foregroundColor(isSelected ? .white : .white.opacity(0.34))
             .frame(maxWidth: .infinity)
@@ -340,7 +382,7 @@ struct HomeView: View {
             Color.clear.frame(width: 32, height: 32)
             Spacer()
             Text("FUNÇÕES")
-                .font(.system(size: 15, weight: .heavy, design: .rounded))
+                .font(.system(size: 15, weight: .heavy, design: .default))
                 .foregroundColor(.white)
             Spacer()
             Button { showLogs.toggle() } label: {
@@ -369,7 +411,7 @@ struct HomeView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                         Text(game == .freeFire ? "Free Fire Normal" : "Free Fire Max")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .font(.system(size: 11, weight: .bold, design: .default))
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -390,11 +432,11 @@ struct HomeView: View {
     private var diagnosticPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("DIAGNÓSTICO")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.system(size: 10, weight: .bold, design: .default))
                 .foregroundColor(.white.opacity(0.48))
             ScrollView {
                 Text(modManager.debugLogs.isEmpty ? "Nenhum registro ainda." : modManager.debugLogs)
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.system(size: 9, design: .default))
                     .foregroundColor(.green.opacity(0.8))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -412,7 +454,7 @@ struct HomeView: View {
     private func modSection(title: String, mods: [ModType]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.system(size: 11, weight: .medium, design: .default))
                 .foregroundColor(secondaryText)
 
             VStack(spacing: 0) {
@@ -461,11 +503,12 @@ struct HomeView: View {
     private var visibleMods: [ModType] { aimbotMods + hologramMods }
 
     private var pendingMods: [ModType] {
-        visibleMods.filter { selectedMods.contains($0) && !modManager.activeMods.contains($0) }
+        aimbotMods.filter { selectedMods.contains($0) && !modManager.activeMods.contains($0) }
     }
 
     private var shouldShowActions: Bool {
-        !selectedMods.isEmpty || !modManager.activeMods.isEmpty
+        !selectedMods.filter { aimbotMods.contains($0) }.isEmpty ||
+            !modManager.activeMods.filter { aimbotMods.contains($0) }.isEmpty
     }
 
     private var actionButtons: some View {
@@ -478,7 +521,7 @@ struct HomeView: View {
                         Text("INJETAR (40%)")
                     }
                 }
-                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .font(.system(size: 12, weight: .heavy, design: .default))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
@@ -491,7 +534,7 @@ struct HomeView: View {
 
             Button(action: openLobby) {
                 Text("LOBBY")
-                    .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    .font(.system(size: 12, weight: .heavy, design: .default))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
@@ -506,6 +549,14 @@ struct HomeView: View {
 
     private func handleToggle(mod: ModType, isOn: Bool) {
         if isOn {
+            guard aimbotMods.contains(mod) else {
+                modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
+                    alertMessage = msg
+                    showAlert = true
+                }
+                return
+            }
+
             if let activeInSection = modManager.activeMods.first(where: { $0.sectionName == mod.sectionName && $0 != mod }) {
                 alertMessage = "Desative \(modManager.displayName(for: activeInSection)) antes de selecionar outra função deste grupo."
                 showAlert = true
@@ -582,11 +633,11 @@ struct ModRowReference: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(displayName.uppercased())
-                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                    .font(.system(size: 15, weight: .regular, design: .default))
                     .foregroundColor(.white)
                 Text(mod.subtitle)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.38))
+                    .font(.system(size: 11, weight: .regular, design: .default))
+                    .foregroundColor(.white.opacity(0.46))
                     .lineLimit(2)
             }
 
@@ -617,8 +668,6 @@ struct ModRowReference: View {
 // MARK: - Config View
 struct ProfileView: View {
     @EnvironmentObject var licenseManager: LicenseManager
-    @State private var showKeyAlert = false
-    @State private var keyAlertMessage = ""
 
     private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
 
@@ -656,10 +705,10 @@ struct ProfileView: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("CONFIG")
-                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .font(.system(size: 28, weight: .heavy, design: .default))
                                 .foregroundColor(.white)
                             Text("Informações e proteção do dispositivo")
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .font(.system(size: 11, weight: .medium, design: .default))
                                 .foregroundColor(.white.opacity(0.45))
                         }
                         Spacer()
@@ -676,10 +725,10 @@ struct ProfileView: View {
 
                         VStack(alignment: .leading, spacing: 5) {
                             Text("STATUS DA LICENÇA")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .font(.system(size: 10, weight: .bold, design: .default))
                                 .foregroundColor(.white.opacity(0.45))
                             Text(licenseManager.licenseInfo?.status ?? "Sem key registrada")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .font(.system(size: 16, weight: .bold, design: .default))
                                 .foregroundColor(licenseManager.isAuthorized ? .green : .orange)
                         }
                         Spacer()
@@ -694,14 +743,13 @@ struct ProfileView: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text("DETALHES DO SISTEMA")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .font(.system(size: 10, weight: .bold, design: .default))
                             .foregroundColor(.white.opacity(0.45))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
 
-                        configRow(title: "Revendedor", value: "", color: .clear)
                         configRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
-                        configRow(title: "ID de Proteção", value: String(licenseManager.deviceID().prefix(18)) + "...", color: .cyan)
+                        configRow(title: "Package", value: "EXTERNAL - iOS", color: .cyan)
                         configRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
                         configRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
                         configRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
@@ -713,45 +761,21 @@ struct ProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
 
-                    Button(action: {
-                        licenseManager.clearSavedKey()
-                        keyAlertMessage = "Key removida. A janela de key aparecerá novamente na próxima entrada."
-                        showKeyAlert = true
-                    }) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("LIMPAR / TROCAR KEY")
-                        }
-                        .font(.system(size: 12, weight: .heavy, design: .rounded))
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.red.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(Color.red.opacity(0.28), lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-
                     Spacer(minLength: 92)
                 }
                 .padding(.horizontal, 18)
             }
-        }
-        .alert("Status da key", isPresented: $showKeyAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(keyAlertMessage)
         }
     }
 
     private func configRow(title: String, value: String, color: Color) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(title)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.system(size: 11, weight: .medium, design: .default))
                 .foregroundColor(.white.opacity(0.48))
             Spacer(minLength: 10)
             Text(value)
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .default))
                 .foregroundColor(color)
                 .multilineTextAlignment(.trailing)
                 .lineLimit(2)
@@ -810,10 +834,10 @@ struct TexturesView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         VStack(alignment: .leading, spacing: 4) {
                             Text("TEXTURAS")
-                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .font(.system(size: 28, weight: .heavy, design: .default))
                                 .foregroundColor(.white)
                             Text("Personalize o visual do Free Fire")
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .font(.system(size: 11, weight: .medium, design: .default))
                                 .foregroundColor(secondaryText)
                         }
                         Spacer()
@@ -839,7 +863,7 @@ struct TexturesView: View {
                     withAnimation(.easeOut(duration: 0.18)) { selectedGame = game }
                 } label: {
                     Text(game == .freeFire ? "FREE FIRE" : "FREE FIRE MAX")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(.system(size: 10, weight: .bold, design: .default))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 36)
@@ -855,41 +879,62 @@ struct TexturesView: View {
     private var textureSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("TEXTURAS DISPONÍVEIS")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.system(size: 11, weight: .bold, design: .default))
                 .foregroundColor(secondaryText)
-            textureCard(.texturaAlok1, imageName: "AlokTexturePreview1")
-            textureCard(.texturaAlok2, imageName: "AlokTexturePreview2")
-            textureCard(.texturaAlok3, imageName: "AlokTexturePreview3")
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                textureCard(.texturaAlok1, imageName: "AlokTexturePreview1")
+                textureCard(.texturaAlok2, imageName: "AlokTexturePreview2")
+                textureCard(.texturaAlok3, imageName: "AlokTexturePreview3")
+            }
         }
     }
 
     @ViewBuilder
     private func textureCard(_ mod: ModType, imageName: String) -> some View {
         VStack(spacing: 0) {
-            HStack(spacing: 14) {
+            ZStack(alignment: .topTrailing) {
                 Image(imageName)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 104, height: 78)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.white.opacity(0.16), lineWidth: 1))
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(modManager.displayName(for: mod))
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                    Text(modManager.activeMods.contains(mod) ? "ATIVA" : "Pronta para ativar")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(modManager.activeMods.contains(mod) ? .green : secondaryText)
-                    Text("Usar personagem alok despertar para funcionar a textura")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(secondaryText)
-                        .lineLimit(2)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 132)
+                    .clipped()
+                LinearGradient(
+                    colors: [.black.opacity(0.18), .clear, .black.opacity(0.16)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                if modManager.activeMods.contains(mod) {
+                    Label("ATIVA", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 9, weight: .bold, design: .default))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(.black.opacity(0.72), in: Capsule())
+                        .padding(9)
                 }
-                Spacer(minLength: 4)
+            }
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(modManager.displayName(for: mod))
+                    .font(.system(size: 14, weight: .bold, design: .default))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("Usar personagem Alok despertado")
+                    .font(.system(size: 10, weight: .medium, design: .default))
+                    .foregroundColor(secondaryText)
+                    .lineLimit(2)
+                    .frame(height: 26, alignment: .topLeading)
                 if modManager.isProcessing {
-                    ProgressView().tint(.white).frame(width: 51, height: 31)
+                    ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Toggle("", isOn: Binding(
+                    Toggle("Ativar", isOn: Binding(
                         get: { modManager.activeMods.contains(mod) },
                         set: { enabled in
                             if enabled {
@@ -905,17 +950,14 @@ struct TexturesView: View {
                             }
                         }
                     ))
-                    .labelsHidden()
+                    .font(.system(size: 10, weight: .semibold, design: .default))
+                    .foregroundColor(secondaryText)
                     .toggleStyle(.switch)
                     .tint(.green)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 15)
-            VStack(alignment: .leading, spacing: 4) {
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 15)
+            .padding(.vertical, 14)
         }
         .background(panel)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
