@@ -507,8 +507,12 @@ struct HomeView: View {
     }
 
     private var shouldShowActions: Bool {
+#if CACHE_VARIANT
+        return false
+#else
         !selectedMods.filter { aimbotMods.contains($0) }.isEmpty ||
             !modManager.activeMods.filter { aimbotMods.contains($0) }.isEmpty
+#endif
     }
 
     private var actionButtons: some View {
@@ -548,6 +552,22 @@ struct HomeView: View {
     }
 
     private func handleToggle(mod: ModType, isOn: Bool) {
+#if CACHE_VARIANT
+        if isOn {
+            modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
+                alertMessage = msg
+                showAlert = true
+            }
+        } else {
+            guard modManager.activeMods.contains(mod) else { return }
+            modManager.restoreMod(mod) { success, msg in
+                if success { selectedMods.remove(mod) }
+                alertMessage = msg
+                showAlert = true
+            }
+        }
+        return
+#endif
         if isOn {
             guard aimbotMods.contains(mod) else {
                 modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
