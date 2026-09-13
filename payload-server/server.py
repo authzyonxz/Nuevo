@@ -11,8 +11,8 @@ from typing import Any
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
-STORAGE = ROOT / "payloads"
-MANIFEST = ROOT / "manifest.json"
+STORAGE = Path(os.environ.get("PAYLOAD_STORAGE", str(ROOT / "payloads")))
+MANIFEST = Path(os.environ.get("PAYLOAD_MANIFEST", str(ROOT / "manifest.json")))
 TOKEN = os.environ.get("PAYLOAD_ADMIN_TOKEN", "")
 SUPPORTED_OS = [
     # The iOS app validates numeric semantic versions; do not use 17.7.x here.
