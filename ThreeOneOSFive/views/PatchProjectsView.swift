@@ -15,7 +15,6 @@ private enum WallpaperPackagePickerPolicy {
 
 struct PatchProjectsView: View {
     @Environment(\.appLanguage) private var language
-    @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
     @EnvironmentObject private var store: PatchProjectStore
     @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
@@ -655,6 +654,7 @@ extension View {
 
 private struct PatchProjectDetailView: View {
     @Environment(\.appLanguage) private var language
+    @EnvironmentObject private var appState: AppState
     @ObservedObject var store: PatchProjectStore
     let projectID: UUID
     @State private var showEditor = false
