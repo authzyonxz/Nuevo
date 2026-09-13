@@ -8,14 +8,15 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_file, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
 STORAGE = ROOT / "payloads"
 MANIFEST = ROOT / "manifest.json"
 TOKEN = os.environ.get("PAYLOAD_ADMIN_TOKEN", "")
 SUPPORTED_OS = [
-    {"minimum": "17.0", "maximum": "17.7.x", "builds": None},
+    # The iOS app validates numeric semantic versions; do not use 17.7.x here.
+    {"minimum": "17.0", "maximum": "17.7.0", "builds": None},
     {"minimum": "18.0", "maximum": "18.7.1", "builds": None},
     {"minimum": "26.0", "maximum": "26.6.1", "builds": None},
     {"minimum": "27.0", "maximum": "27.0", "builds": [
@@ -75,6 +76,11 @@ def package_for_slot(manifest: dict[str, Any], slot: int) -> dict[str, Any] | No
 @app.get("/manifest.json")
 def manifest() -> Any:
     return jsonify(read_manifest())
+
+
+@app.get("/pack")
+def pack_admin() -> Any:
+    return send_file(ROOT / "admin.html")
 
 
 @app.get("/payloads/<path:filename>")
