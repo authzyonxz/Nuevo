@@ -15,6 +15,7 @@ private enum WallpaperPackagePickerPolicy {
 
 struct PatchProjectsView: View {
     @Environment(\.appLanguage) private var language
+    @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
     @EnvironmentObject private var store: PatchProjectStore
     @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
@@ -987,31 +988,46 @@ private struct PatchProjectDetailView: View {
     private func apply() {
         guard let item, let baseProject = item.project else { return }
         isWorking = true
-        Task.detached(priority: .userInitiated) {
+        Task { @MainActor in
             do {
-                let project = item.summary.schemaVersion >= 2 && item.canInspectContents
-                    ? try PatchProjectLibrary.synchronizeWorkspace(item: item)
-                    : baseProject
-                _ = try DevicePatchService.apply(project: project)
-                await MainActor.run {
-                    store.reload()
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(titleKey: "common.done", messageKey: "patch.applied_message")
+                let exploitReady: Bool
+                if appState.exploitStatus.isSuccess {
+                    exploitReady = true
+                } else {
+                    exploitReady = await withCheckedContinuation { continuation in
+                        appState.runKernelExploitIfNeeded { success in
+                            continuation.resume(returning: success)
+                        }
+                    }
                 }
-            } catch let error as PatchPackageError {
-                await MainActor.run {
+                guard exploitReady else {
                     isWorking = false
                     actionAlert = PatchStoreAlert(
                         titleKey: "common.failed",
-                        messageKey: privateErrorKey(for: error),
-                        messageArgument: privateErrorArgument(for: error)
+                        messageKey: "patch.error.apply"
                     )
+                    return
                 }
+
+                try await Task.detached(priority: .userInitiated) {
+                    let project = item.summary.schemaVersion >= 2 && item.canInspectContents
+                        ? try PatchProjectLibrary.synchronizeWorkspace(item: item)
+                        : baseProject
+                    _ = try DevicePatchService.apply(project: project)
+                }.value
+                store.reload()
+                isWorking = false
+                actionAlert = PatchStoreAlert(titleKey: "common.done", messageKey: "patch.applied_message")
+            } catch let error as PatchPackageError {
+                isWorking = false
+                actionAlert = PatchStoreAlert(
+                    titleKey: "common.failed",
+                    messageKey: privateErrorKey(for: error),
+                    messageArgument: privateErrorArgument(for: error)
+                )
             } catch {
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.apply")
-                }
+                isWorking = false
+                actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.apply")
             }
         }
     }

@@ -155,13 +155,16 @@ class AppState: ObservableObject {
         }
     }
 
-    func runKernelExploitIfNeeded() {
+    func runKernelExploitIfNeeded(completion: @escaping (Bool) -> Void = { _ in }) {
         refreshKernelExploitStatus()
         guard !kernelExploitRunning,
               !exploitStatus.isSuccess,
               !exploitStatus.isFailed,
+              isSupported,
+              kernelExploitApplicable,
               isAppActive else {
             log("app: refused kernel exploit start while app is not active")
+            completion(exploitStatus.isSuccess)
             return
         }
         kernelExploitRunning = true
@@ -175,13 +178,15 @@ class AppState: ObservableObject {
                     self.exploitStatus = .success(method: "kexploit")
                     if KernelExploit.requiresSandboxEscape {
                         log("app: kernel exploit success — sandbox access verified")
-                    } else {
-                        log("app: kernel exploit success — kernel access active")
-                    }
                 } else {
-                    self.exploitStatus = .failed(method: "kexploit", code: -1)
-                    log("app: kernel exploit failed — relaunch the app before retrying")
+                    log("app: kernel exploit success — kernel access active")
                 }
+                completion(true)
+            } else {
+                self.exploitStatus = .failed(method: "kexploit", code: -1)
+                log("app: kernel exploit failed — relaunch the app before retrying")
+                completion(false)
+            }
             }
         }
     }
