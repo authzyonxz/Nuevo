@@ -38,7 +38,6 @@ jobs:
             -target 3105 \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath "${OUT}/DerivedData" \
             CONFIGURATION_BUILD_DIR="${PWD}/${OUT}" \
             SWIFT_ACTIVE_COMPILATION_CONDITIONS="${SWIFT_CONDITION}" \
             CODE_SIGNING_ALLOWED=NO \
