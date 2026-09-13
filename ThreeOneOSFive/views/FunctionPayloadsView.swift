@@ -91,7 +91,7 @@ struct FunctionPayloadsView: View {
                     _ = repositoryStore.addSource(rawURL: serverURL)
                 }
             }
-            .onChange(of: selectedGameRawValue) { _, _ in
+            .onChange(of: selectedGameRawValue) { _ in
                 enabled.removeAll()
             }
         }
