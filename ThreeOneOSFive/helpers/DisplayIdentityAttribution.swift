@@ -136,7 +136,7 @@ struct DisplayAttributionSheet: View {
                     Section(language.text("attribution.link_section")) {
                         LabeledContent(language.text("attribution.url")) {
                             Text(url.absoluteString)
-                                .font(.caption)
+                                .font(.caption.monospaced())
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.trailing)
                                 .textSelection(.enabled)
