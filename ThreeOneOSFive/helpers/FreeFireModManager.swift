@@ -85,18 +85,28 @@ class FreeFireModManager: ObservableObject {
         }
     }
 
+    private func remoteIDCandidates(for mod: ModType) -> [String] {
+        switch mod {
+        case .hsAlto: return ["hs_alto_avatar", "avatar_hs_alto", "aimbot_hs_alto"]
+        case .hsPescoco: return ["hs_pescoco_avatar_antena", "avatar_hs_pescoco", "aimbot_hs_pescoco"]
+        case .hsPeito: return ["hs_alto_avatar_pescoco", "hs_peito_avatar_antena", "aimbot_hs_alto_pescoco"]
+        case .hologramaArmas: return ["holograma_armas"]
+        case .texturaAlok1: return ["textura_instaplayer"]
+        case .texturaAlok2: return ["textura_mandela"]
+        case .texturaAlok3: return ["textura_ruokff"]
+        case .fps144: return ["fps_144"]
+        }
+    }
+
     private func refreshRemoteCatalog() {
         Task { [weak self] in
             guard let self else { return }
             do {
                 let manifest = try await OnlinePayloadUpdater.shared.manifest(forceRefresh: true)
-                let ids: [ModType: String] = [
-                    .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
-                    .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
-                    .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
-                ]
-                let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ids.compactMap { (mod: ModType, id: String) -> (ModType, String)? in
-                    guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
+                let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ModType.allCases.compactMap { (mod: ModType) -> (ModType, String)? in
+                    guard let item = self.remoteIDCandidates(for: mod).lazy.compactMap({ candidate in
+                        manifest.payloads.first(where: { $0.id == candidate })
+                    }).first else { return nil }
                     return (mod, item.displayName)
                 })
                 await MainActor.run { self.remoteDisplayNames = names }
@@ -132,15 +142,20 @@ class FreeFireModManager: ObservableObject {
             completion(nil)
             return
         }
-        let remoteIDs: [ModType: String] = [
-            .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
-            .hologramaArmas: "holograma_armas"
-        ]
-        guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
             do {
-                let result = try await OnlinePayloadUpdater.shared.download(id: id, bundleID: bundleID, forceRefresh: true)
-                completion(result)
+                let manifest = try await OnlinePayloadUpdater.shared.manifest(forceRefresh: true)
+                for id in self.remoteIDCandidates(for: mod) {
+                    guard manifest.payloads.contains(where: { $0.id == id }) else { continue }
+                    do {
+                        let result = try await OnlinePayloadUpdater.shared.download(id: id, bundleID: bundleID, forceRefresh: false)
+                        completion(result)
+                        return
+                    } catch {
+                        self.addLog("Payload encontrado, mas indisponível para \(bundleID): \(id) — \(error.localizedDescription)")
+                    }
+                }
+                completion(nil)
             } catch {
                 addLog("Payload remoto indisponível para \(mod.rawValue): \(error.localizedDescription)")
                 completion(nil)
