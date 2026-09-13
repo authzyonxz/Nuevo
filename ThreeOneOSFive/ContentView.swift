@@ -49,7 +49,6 @@ struct ContentView: View {
                 compactLayout
             }
         }
-        .tint(AppTheme.accent)
         .imageScale(.small)
         .onChange(of: patchDraftCoordinator.request?.id) { requestID in
             if requestID != nil { tabNavigation.select(AppSection.installed.rawValue) }
@@ -82,6 +81,7 @@ struct ContentView: View {
                     .tag(section.rawValue)
             }
         }
+        .tint(.white)
     }
 
     private var regularLayout: some View {
@@ -94,6 +94,7 @@ struct ContentView: View {
                         }
                     } label: {
                         Label(language.text(section.titleKey), systemImage: section.systemImage)
+                            .foregroundStyle(.white)
                             .fontWeight(section.rawValue == tabNavigation.selectedTab ? .semibold : .regular)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())

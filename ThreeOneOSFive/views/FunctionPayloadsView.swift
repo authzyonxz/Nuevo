@@ -1,15 +1,14 @@
 import SwiftUI
 
 struct FunctionPayloadsView: View {
-    @Environment(\.appLanguage) private var language
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var patchStore: PatchProjectStore
     @EnvironmentObject private var repositoryStore: PackageRepositoryStore
     @AppStorage("function.payload.server") private var serverURL = "https://keyauthv2.org/manifest.json"
     @State private var enabled: Set<Int> = []
-    @State private var projectIDs: [Int: UUID] = [:]
     @State private var isWorking = Set<Int>()
-    @State private var alert: String?
+    @State private var alertTitle = "3105"
+    @State private var alertMessage: String?
 
     private let slots = Array(1...5)
 
@@ -22,20 +21,18 @@ struct FunctionPayloadsView: View {
                     }
                 } header: {
                     Text("Funções")
-                } footer: {
-                    Text("Ativar baixa o payload da função e aplica. Desativar restaura somente os arquivos dessa função.")
                 }
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Funções")
             .navigationBarTitleDisplayMode(.inline)
-            .alert("3105", isPresented: Binding(
-                get: { alert != nil },
-                set: { if !$0 { alert = nil } }
+            .alert(alertTitle, isPresented: Binding(
+                get: { alertMessage != nil },
+                set: { if !$0 { alertMessage = nil } }
             )) {
-                Button("OK", role: .cancel) { alert = nil }
+                Button("OK", role: .cancel) { alertMessage = nil }
             } message: {
-                Text(alert ?? "")
+                Text(alertMessage ?? "")
             }
             .onAppear {
                 if serverURL.isEmpty {
@@ -51,30 +48,46 @@ struct FunctionPayloadsView: View {
     private func functionRow(_ slot: Int) -> some View {
         let record = packageRecord(for: slot)
         let busy = isWorking.contains(slot)
+        let metadata = functionMetadata(for: slot)
         return HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("FUNÇÃO - \(slot)")
+            VStack(alignment: .leading, spacing: 5) {
+                Text(metadata.name)
                     .font(.headline)
-                if let name = record?.package.name {
-                    Text(name)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                Text(metadata.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
+            Spacer(minLength: 12)
             if busy {
                 ProgressView()
             } else {
                 Toggle("", isOn: Binding(
-                    get: { enabled.contains(slot) },
+                    get: { isActive(slot) },
                     set: { setEnabled($0, slot: slot) }
                 ))
                 .labelsHidden()
-                .disabled(record == nil)
+                .toggleStyle(.switch)
+                .tint(.green)
+                .disabled(record == nil && !isActive(slot))
             }
         }
         .contentShape(Rectangle())
+    }
+
+    private func functionMetadata(for slot: Int) -> (name: String, description: String) {
+        switch slot {
+        case 1:
+            return ("HS Alto", "HS acima da cabeça do inimigo")
+        case 2:
+            return ("HS Pescoço", "HS no pescoço do inimigo")
+        case 3:
+            return ("HS Alto + Pescoço", "HS acima da cabeça e no pescoço do inimigo")
+        case 4:
+            return ("ESP", "ESP: linha, caixa, vida e nome")
+        default:
+            return ("Função 5", "Payload adicional configurado no servidor")
+        }
     }
 
     private func packageRecord(for slot: Int) -> RepositoryPackageRecord? {
@@ -85,6 +98,22 @@ struct FunctionPayloadsView: View {
                     || $0.package.tags.contains(where: { $0.lowercased() == key })
             )
         }
+    }
+
+    private func storedProjectID(for slot: Int) -> UUID? {
+        guard let raw = UserDefaults.standard.string(forKey: "function.project.\(slot)") else {
+            return nil
+        }
+        return UUID(uuidString: raw)
+    }
+
+    private func isActive(_ slot: Int) -> Bool {
+        if enabled.contains(slot) { return true }
+        guard let projectID = storedProjectID(for: slot),
+              DevicePatchService.latestReceipt(projectID: projectID) != nil else {
+            return false
+        }
+        return true
     }
 
     private func setEnabled(_ value: Bool, slot: Int) {
@@ -98,7 +127,7 @@ struct FunctionPayloadsView: View {
 
     private func activate(slot: Int) {
         guard let record = packageRecord(for: slot) else {
-            alert = "Não existe payload publicado para a FUNÇÃO - \(slot) nesta versão."
+            presentFailure("Não existe payload publicado para esta função nesta versão.")
             return
         }
         isWorking.insert(slot)
@@ -129,24 +158,24 @@ struct FunctionPayloadsView: View {
                 _ = try await Task.detached(priority: .userInitiated) {
                     try DevicePatchService.apply(project: project)
                 }.value
-                projectIDs[slot] = item.id
+                UserDefaults.standard.set(item.id.uuidString, forKey: "function.project.\(slot)")
                 enabled.insert(slot)
+                presentSuccess("Injetado com sucesso")
             } catch let error as LocalizedError {
                 enabled.remove(slot)
-                alert = error.errorDescription ?? "Não foi possível aplicar o payload."
+                presentFailure(error.errorDescription ?? "Não foi possível aplicar o payload.")
             } catch {
                 enabled.remove(slot)
-                alert = "Não foi possível aplicar o payload da função."
+                presentFailure("Não foi possível aplicar o payload da função.")
             }
         }
     }
 
     private func deactivate(slot: Int) {
-        guard let projectID = projectIDs[slot],
-              let item = patchStore.items.first(where: { $0.id == projectID }),
+        guard let projectID = storedProjectID(for: slot),
               let receipt = DevicePatchService.latestReceipt(projectID: projectID) else {
             enabled.remove(slot)
-            alert = "Nenhum patch ativo encontrado para a FUNÇÃO - \(slot)."
+            presentFailure("Nenhum patch ativo encontrado para esta função.")
             return
         }
         isWorking.insert(slot)
@@ -156,18 +185,29 @@ struct FunctionPayloadsView: View {
                 guard await appState.ensureExploitAccess() else {
                     throw PatchPackageError.restoreFailed
                 }
-                _ = item
                 try await Task.detached(priority: .userInitiated) {
                     try DevicePatchService.restore(receipt: receipt, allowChangedTargets: true)
                 }.value
                 enabled.remove(slot)
+                UserDefaults.standard.removeObject(forKey: "function.project.\(slot)")
+                presentSuccess("Restaurado com sucesso")
             } catch let error as LocalizedError {
                 enabled.insert(slot)
-                alert = error.errorDescription ?? "Não foi possível restaurar a função."
+                presentFailure(error.errorDescription ?? "Não foi possível restaurar a função.")
             } catch {
                 enabled.insert(slot)
-                alert = "Não foi possível restaurar o payload da função."
+                presentFailure("Não foi possível restaurar o payload da função.")
             }
         }
+    }
+
+    private func presentSuccess(_ message: String) {
+        alertTitle = "Sucesso"
+        alertMessage = message
+    }
+
+    private func presentFailure(_ message: String) {
+        alertTitle = "Falha"
+        alertMessage = message
     }
 }

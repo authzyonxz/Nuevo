@@ -22,15 +22,8 @@ struct RepositoryHomeView: View {
                 .padding(.bottom, 32)
             }
             .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("3105")
+            .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                AppUtilityToolbar(
-                    language: language,
-                    onOpenSettings: onOpenSettings,
-                    onOpenLogs: onOpenLogs
-                )
-            }
             .navigationDestination(for: RepositoryPackageRecord.self) { record in
                 RepositoryPackageDetailView(record: record)
             }
@@ -39,15 +32,9 @@ struct RepositoryHomeView: View {
 
     private var supportOverview: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("3105 Patch Center", systemImage: "sparkles.rectangle.stack.fill")
-                .font(.title2.weight(.bold))
-            Text("Sistema de patches por funções, com restauração individual e payloads online.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Divider()
             Label("iOS suportado", systemImage: "checkmark.shield.fill")
                 .font(.headline)
-            Text("17.0–17.7.x • 18.0–18.7.1 • 26.0–26.6.1")
+            Text("17.0–17.7.0 • 18.0–18.7.1 • 26.0–26.6.1")
                 .font(.subheadline.monospaced())
             Text("iOS 27.0 beta: 24A5355q, 24A5370h, 24A5380h e 24A5390f")
                 .font(.caption)
