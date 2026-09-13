@@ -360,15 +360,13 @@ enum PatchTransaction {
                 target,
                 relativePath: record.relativePath,
                 containerRoot: root,
-                allowMissingParents: !requirePatchedDigest,
+                allowMissingParents: true,
                 fileManager: fileManager
             )
 
             if requirePatchedDigest {
-                guard fileManager.fileExists(atPath: target.path) else {
-                    throw PatchPackageError.restoreFailed
-                }
-                if try digestFile(target) != record.replacementDigest {
+                if fileManager.fileExists(atPath: target.path),
+                   try digestFile(target) != record.replacementDigest {
                     // O jogo pode reescrever ou normalizar o asset enquanto o
                     // app está fechado. O alvo continua seguro porque o
                     // container, o caminho contido e o backup íntegro já foram
@@ -394,7 +392,7 @@ enum PatchTransaction {
         for (record, target) in resolvedTargets.reversed() {
             if record.originalExisted {
                 let backup = transactionDirectory.appendingPathComponent(record.backupFilename!)
-                try atomicCopy(backup, to: target, fileManager: fileManager)
+                try restoreFile(backup, to: target, fileManager: fileManager)
                 guard let expectedDigest = record.originalDigest,
                       try digestFile(target) == expectedDigest else {
                     throw PatchPackageError.restoreFailed
@@ -524,11 +522,15 @@ enum PatchTransaction {
         }
     }
 
-    private static func atomicCopy(
+    private static func restoreFile(
         _ source: URL,
         to target: URL,
         fileManager: FileManager
     ) throws {
+        guard fileManager.fileExists(atPath: source.path) else {
+            throw PatchPackageError.restoreFailed
+        }
+
         let staging = target.deletingLastPathComponent()
             .appendingPathComponent(".3105-restore-\(UUID().uuidString)")
         defer { try? fileManager.removeItem(at: staging) }
@@ -536,7 +538,32 @@ enum PatchTransaction {
         let handle = try FileHandle(forWritingTo: staging)
         try handle.synchronize()
         try handle.close()
-        guard rename(staging.path, target.path) == 0 else {
+
+        if fileManager.fileExists(atPath: target.path) {
+            let values = try target.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            guard values.isSymbolicLink != true, values.isDirectory != true else {
+                throw PatchPackageError.restoreFailed
+            }
+
+            do {
+                try fileManager.replaceItemAt(
+                    target,
+                    withItemAt: staging,
+                    backupItemName: nil,
+                    options: [.usingNewMetadataOnly]
+                )
+                return
+            } catch {
+                // Alguns containers protegidos não aceitam replaceItemAt.
+                // Nesse caso, remova somente um arquivo já validado como regular
+                // e mova o backup restaurado para o caminho original.
+                try fileManager.removeItem(at: target)
+            }
+        }
+
+        do {
+            try fileManager.moveItem(at: staging, to: target)
+        } catch {
             throw PatchPackageError.restoreFailed
         }
     }
