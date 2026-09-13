@@ -71,7 +71,7 @@ jobs:
           cp -R "$APP_PATH" "build/${VARIANT}/Payload/3105.app"
           (
             cd "build/${VARIANT}"
-            /usr/bin/zip -qry "../MenagerFF_${VARIANT}_Unsigned.ipa" Payload
+            /usr/bin/zip -qry "MenagerFF_${VARIANT}_Unsigned.ipa" Payload
           )
           test -s "build/${VARIANT}/MenagerFF_${VARIANT}_Unsigned.ipa"
 
