@@ -60,6 +60,7 @@ See the complete [Patch workspace guide](docs/PATCH_GUIDE.md).
 - **Portable `.3105` patches** — bundle-based rules survive container-ID changes between devices; projects may include files or folders, support optional password protection, and can be imported from Files or a secure website link.
 - **Limited Cleaner** — scans only each app's `Library/Caches` and `tmp`, sorts recoverable size in either direction, supports bulk selection, and requires confirmation before deletion.
 - **Wallpaper Lab** — imports `.tendies` packages, validates payloads, journals installed items, and resets only content installed by 3105.
+- **Game-specific function payloads** — the Functions screen separates Free Fire normal (`com.dts.freefireth`) from Free Fire MAX (`com.dts.freefiremax`). A payload is applied only after its `.3105` project contains the selected bundle identifier.
 - **No jailbreak installation** — 3105 does not install a persistent jailbreak, bootstrap, or daemon and does not inject code into third-party apps. Because it still uses device exploits and can modify app data, no universal guarantee can be made against every app's integrity or jailbreak-detection policy.
 - **Localized interface** — English, Vietnamese, and Simplified Chinese.
 
