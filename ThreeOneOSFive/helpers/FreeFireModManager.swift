@@ -30,10 +30,17 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var subtitle: String {
         switch self {
+#if CACHE_VARIANT
+        case .hsAlto: return "HS ACIMA DA CABEÇA DO INIMIGO"
+        case .hsPescoco: return "HS NO PESCOÇO DO INIMIGO"
+        case .hsPeito: return "HS NO PEITO DO INIMIGO"
+        case .hologramaArmas: return "BALA MÁGICA"
+#else
         case .hsAlto: return "Função Aimbot HS Alto."
         case .hsPescoco: return "Função Aimbot HS Pescoço."
         case .hsPeito: return "Função Aimbot HS Alto + Pescoço."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
+#endif
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
         case .fps144: return "Funciona no Free Fire normal em dispositivos iOS com tela 120Hz."
         }
@@ -78,8 +85,15 @@ class FreeFireModManager: ObservableObject {
 
     func displayName(for mod: ModType) -> String {
         switch mod {
+#if CACHE_VARIANT
+        case .hsAlto: return "HS ALTO"
+        case .hsPescoco: return "HS PESCOÇO"
+        case .hsPeito: return "HS PEITO"
+        case .hologramaArmas: return "BALA MÁGICA"
+#else
         case .hsAlto, .hsPescoco, .hsPeito:
             return mod.rawValue
+#endif
         default:
             return remoteDisplayNames[mod] ?? mod.rawValue
         }
@@ -90,11 +104,18 @@ class FreeFireModManager: ObservableObject {
             guard let self else { return }
             do {
                 let manifest = try await OnlinePayloadUpdater.shared.manifest(forceRefresh: true)
+#if CACHE_VARIANT
+                let ids: [ModType: String] = [
+                    .hsAlto: "cache_hs_alto", .hsPescoco: "cache_hs_pescoco", .hsPeito: "cache_hs_peito",
+                    .hologramaArmas: "cache_bala_magica"
+                ]
+#else
                 let ids: [ModType: String] = [
                     .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
                     .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
                     .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
                 ]
+#endif
                 let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ids.compactMap { (mod: ModType, id: String) -> (ModType, String)? in
                     guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
                     return (mod, item.displayName)
@@ -132,10 +153,17 @@ class FreeFireModManager: ObservableObject {
             completion(nil)
             return
         }
+#if CACHE_VARIANT
+        let remoteIDs: [ModType: String] = [
+            .hsAlto: "cache_hs_alto", .hsPescoco: "cache_hs_pescoco", .hsPeito: "cache_hs_peito",
+            .hologramaArmas: "cache_bala_magica"
+        ]
+#else
         let remoteIDs: [ModType: String] = [
             .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
             .hologramaArmas: "holograma_armas"
         ]
+#endif
         guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
             do {

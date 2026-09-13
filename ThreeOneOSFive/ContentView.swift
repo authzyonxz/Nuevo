@@ -313,8 +313,8 @@ struct HomeView: View {
                         diagnosticPanel
                     }
 
-                    modSection(title: "FUNÇÕES DE AIMBOT", mods: aimbotMods)
-                    modSection(title: "FUNÇÕES DE HOLOGRAMA", mods: hologramMods)
+                    modSection(title: functionSectionTitle, mods: aimbotMods)
+                    modSection(title: secondaryFunctionSectionTitle, mods: hologramMods)
 
                     if shouldShowActions {
                         actionButtons
@@ -436,6 +436,22 @@ struct HomeView: View {
 
     private var aimbotMods: [ModType] {
         [.hsAlto, .hsPescoco, .hsPeito]
+    }
+
+    private var functionSectionTitle: String {
+#if CACHE_VARIANT
+        return "FUNÇÕES CACHE"
+#else
+        return "FUNÇÕES DE AIMBOT"
+#endif
+    }
+
+    private var secondaryFunctionSectionTitle: String {
+#if CACHE_VARIANT
+        return "FUNÇÕES CACHE"
+#else
+        return "FUNÇÕES DE HOLOGRAMA"
+#endif
     }
 
     private var hologramMods: [ModType] {
