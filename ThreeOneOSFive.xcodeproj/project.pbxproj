@@ -76,6 +76,7 @@
 		3105A228 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3105A120; };
 		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
 		3105P002 /* Cod.3105 in Resources */ = {isa = PBXBuildFile; fileRef = 3105P001 /* Cod.3105 */; };
+		3105F210 /* FunctionPayloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F110 /* FunctionPayloadsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -166,6 +167,7 @@
 		3105A122 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105B123 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		3105P001 /* Cod.3105 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ThreeOneOSFive/Resources/Cod.3105"; sourceTree = "<group>"; };
+		3105F110 /* FunctionPayloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionPayloadsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -440,6 +442,7 @@
 				3105L203,
 				3105L204,
 				3105L205,
+				3105F210 /* FunctionPayloadsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

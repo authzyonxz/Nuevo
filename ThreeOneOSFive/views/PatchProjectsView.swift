@@ -1087,41 +1087,38 @@ private struct PatchProjectDetailView: View {
     private func prepareRestore() {
         guard let receipt else { return }
         isWorking = true
-        Task.detached(priority: .userInitiated) {
-            do {
-                let inspection = try DevicePatchService.inspectRestore(receipt: receipt)
-                if inspection.changedTargets.isEmpty {
-                    try DevicePatchService.restore(receipt: receipt)
+        ensureExploitAccess { ready in
+            guard ready else {
+                isWorking = false
+                actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.restore")
+                return
+            }
+            Task.detached(priority: .userInitiated) {
+                do {
+                    let inspection = try DevicePatchService.inspectRestore(receipt: receipt)
+                    if inspection.changedTargets.isEmpty {
+                        try DevicePatchService.restore(receipt: receipt)
+                        await MainActor.run {
+                            isWorking = false
+                            actionAlert = PatchStoreAlert(titleKey: "common.done", messageKey: "patch.restored_message")
+                        }
+                    } else {
+                        await MainActor.run {
+                            isWorking = false
+                            restoreChangedPaths = inspection.changedTargets.map(\.displayPath)
+                            showChangedRestoreConfirmation = true
+                        }
+                    }
+                } catch let error as PatchPackageError {
                     await MainActor.run {
                         isWorking = false
-                        actionAlert = PatchStoreAlert(
-                            titleKey: "common.done",
-                            messageKey: "patch.restored_message"
-                        )
+                        actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: privateErrorKey(for: error), messageArgument: privateErrorArgument(for: error))
                     }
-                } else {
+                } catch {
                     await MainActor.run {
                         isWorking = false
-                        restoreChangedPaths = inspection.changedTargets.map(\.displayPath)
-                        showChangedRestoreConfirmation = true
+                        actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.restore")
                     }
-                }
-            } catch let error as PatchPackageError {
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(
-                        titleKey: "common.failed",
-                        messageKey: privateErrorKey(for: error),
-                        messageArgument: privateErrorArgument(for: error)
-                    )
-                }
-            } catch {
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(
-                        titleKey: "common.failed",
-                        messageKey: "patch.error.restore"
-                    )
                 }
             }
         }
@@ -1130,29 +1127,29 @@ private struct PatchProjectDetailView: View {
     private func restore(allowChangedTargets: Bool) {
         guard let receipt else { return }
         isWorking = true
-        Task.detached(priority: .userInitiated) {
-            do {
-                try DevicePatchService.restore(
-                    receipt: receipt,
-                    allowChangedTargets: allowChangedTargets
-                )
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(titleKey: "common.done", messageKey: "patch.restored_message")
-                }
-            } catch let error as PatchPackageError {
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(
-                        titleKey: "common.failed",
-                        messageKey: privateErrorKey(for: error),
-                        messageArgument: privateErrorArgument(for: error)
-                    )
-                }
-            } catch {
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.restore")
+        ensureExploitAccess { ready in
+            guard ready else {
+                isWorking = false
+                actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.restore")
+                return
+            }
+            Task.detached(priority: .userInitiated) {
+                do {
+                    try DevicePatchService.restore(receipt: receipt, allowChangedTargets: allowChangedTargets)
+                    await MainActor.run {
+                        isWorking = false
+                        actionAlert = PatchStoreAlert(titleKey: "common.done", messageKey: "patch.restored_message")
+                    }
+                } catch let error as PatchPackageError {
+                    await MainActor.run {
+                        isWorking = false
+                        actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: privateErrorKey(for: error), messageArgument: privateErrorArgument(for: error))
+                    }
+                } catch {
+                    await MainActor.run {
+                        isWorking = false
+                        actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.restore")
+                    }
                 }
             }
         }
@@ -1161,37 +1158,37 @@ private struct PatchProjectDetailView: View {
     private func resetToAppliedState() {
         guard let receipt, let project = item?.project else { return }
         isWorking = true
-        Task.detached(priority: .userInitiated) {
-            do {
-                try DevicePatchService.resetToAppliedState(
-                    receipt: receipt,
-                    project: project
-                )
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(
-                        titleKey: "common.done",
-                        messageKey: "patch.reset_message"
-                    )
-                }
-            } catch let error as PatchPackageError {
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(
-                        titleKey: "common.failed",
-                        messageKey: privateErrorKey(for: error),
-                        messageArgument: privateErrorArgument(for: error)
-                    )
-                }
-            } catch {
-                await MainActor.run {
-                    isWorking = false
-                    actionAlert = PatchStoreAlert(
-                        titleKey: "common.failed",
-                        messageKey: "patch.error.reset"
-                    )
+        ensureExploitAccess { ready in
+            guard ready else {
+                isWorking = false
+                actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.reset")
+                return
+            }
+            Task.detached(priority: .userInitiated) {
+                do {
+                    try DevicePatchService.resetToAppliedState(receipt: receipt, project: project)
+                    await MainActor.run {
+                        isWorking = false
+                        actionAlert = PatchStoreAlert(titleKey: "common.done", messageKey: "patch.reset_message")
+                    }
+                } catch let error as PatchPackageError {
+                    await MainActor.run {
+                        isWorking = false
+                        actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: privateErrorKey(for: error), messageArgument: privateErrorArgument(for: error))
+                    }
+                } catch {
+                    await MainActor.run {
+                        isWorking = false
+                        actionAlert = PatchStoreAlert(titleKey: "common.failed", messageKey: "patch.error.reset")
+                    }
                 }
             }
+        }
+    }
+
+    private func ensureExploitAccess(completion: @escaping (Bool) -> Void) {
+        Task { @MainActor in
+            completion(await appState.ensureExploitAccess())
         }
     }
 

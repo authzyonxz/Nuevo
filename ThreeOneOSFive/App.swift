@@ -190,4 +190,13 @@ class AppState: ObservableObject {
             }
         }
     }
+
+    func ensureExploitAccess() async -> Bool {
+        if exploitStatus.isSuccess { return true }
+        return await withCheckedContinuation { continuation in
+            runKernelExploitIfNeeded { success in
+                continuation.resume(returning: success)
+            }
+        }
+    }
 }
