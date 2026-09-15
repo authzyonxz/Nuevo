@@ -1,7 +1,7 @@
 import Foundation
 
-/// Feature isolada do variant Cache. As demais funções continuam usando seus
-/// próprios projetos e caminhos; somente TESTE PATCH passa pelo pacote .3105.
+/// Feature isolada. As demais funções continuam usando seus próprios projetos
+/// e caminhos; somente TESTE PATCH passa pelo pacote .3105.
 enum TestPatchFeature {
     static let projectID = UUID(uuidString: "40F75F5F-E17F-4F24-8721-0870E7304A94")!
     private static let packageName = "FixCrashFFTH"

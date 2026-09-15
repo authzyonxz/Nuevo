@@ -378,9 +378,7 @@ struct HomeView: View {
                         diagnosticPanel
                     }
 
-#if CACHE_VARIANT
                     modSection(title: "TESTE DE PATCH", mods: [.testePatch])
-#endif
                     modSection(title: functionSectionTitle, mods: aimbotMods)
                     modSection(title: secondaryFunctionSectionTitle, mods: hologramMods)
 

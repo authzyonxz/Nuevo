@@ -2,9 +2,7 @@ import Foundation
 import SwiftUI
 
 enum ModType: String, CaseIterable, Identifiable, Hashable {
-#if CACHE_VARIANT
     case testePatch = "TESTE PATCH"
-#endif
     case hsAlto = "HS ALTO"
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS ALTO + PESCOÇO"
@@ -20,9 +18,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     /// encerrar e abrir novamente o IPA.
     var persistentProjectID: UUID {
         switch self {
-#if CACHE_VARIANT
         case .testePatch: return TestPatchFeature.projectID
-#endif
         case .hsAlto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A01")!
         case .hsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A02")!
         case .hsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A03")!
@@ -36,8 +32,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var subtitle: String {
         switch self {
-#if CACHE_VARIANT
         case .testePatch: return "Aplica e restaura o pacote FixCrashFFTH usando o sistema de patch."
+#if CACHE_VARIANT
         case .hsAlto: return "HS ACIMA DA CABEÇA DO INIMIGO"
         case .hsPescoco: return "HS NO PESCOÇO DO INIMIGO"
         case .hsPeito: return "HS NO PEITO DO INIMIGO"
@@ -55,10 +51,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var sectionName: String {
         switch self {
-#if CACHE_VARIANT
         case .testePatch:
             return "TESTE DE PATCH"
-#endif
         case .hsAlto, .hsPescoco, .hsPeito:
             return "FUNÇÕES DE AIMBOT"
         case .hologramaArmas:
@@ -202,12 +196,10 @@ class FreeFireModManager: ObservableObject {
             complete(completion, success: false, message: "Jogo selecionado não suportado.")
             return
         }
-#if CACHE_VARIANT
         guard mod != .testePatch || bundleID == "com.dts.freefireth" else {
             complete(completion, success: false, message: "TESTE PATCH funciona somente no Free Fire normal.")
             return
         }
-#endif
         guard mod != .fps144 || bundleID == "com.dts.freefireth" else {
             complete(completion, success: false, message: "A função 144fps funciona somente no Free Fire normal, não no Free Fire MAX.")
             return
@@ -246,7 +238,6 @@ class FreeFireModManager: ObservableObject {
             return
         }
 
-#if CACHE_VARIANT
         if mod == .testePatch {
             addLog("TESTE PATCH: pacote FixCrashFFTH desbloqueado e pronto para aplicar")
             prepareLegacyKernelAccessIfNeeded()
@@ -269,7 +260,6 @@ class FreeFireModManager: ObservableObject {
             }
             return
         }
-#endif
 
         addLog("Injeção V21: \(mod.rawValue)")
 
