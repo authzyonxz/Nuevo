@@ -11,7 +11,7 @@ enum ExploitSupportPolicy {
     static let verifiedIOS16Range = "16.0–16.6.1 (KFD; device/build restricted)"
     static let verifiedIOS17Range = "17.0–17.7.x (offsets; build restricted)"
     static let verifiedIOS18Range = "18.0–18.7.1 (offsets; build restricted)"
-    static let verifiedIOS26Range = "26.0–26.6.1 (build restricted)"
+    static let verifiedIOS26Range = "26.0–26.6.1"
 
     // iOS 27 is already build-gated in the original project.
     static let verifiedIOS27Builds: [(beta: Int, publicBeta: Int?, build: String)] = [
@@ -19,16 +19,6 @@ enum ExploitSupportPolicy {
         (2, nil, "24A5370h"),
         (3, 1, "24A5380h"),
         (4, 2, "24A5390f")
-    ]
-
-    // Keep this list deliberately small. Add a build only after testing the
-    // complete, non-destructive resolution/diagnostic flow on that build.
-    // 23G71 is the public iOS 26.6 build and 23G83 is the public iOS 26.6.1
-    // build. A beta/RC build must be added separately if it is validated.
-    static let verifiedIOS26Builds: Set<String> = [
-        "23G71", // iOS 26.6
-        "23G82", // iOS 26.6.1 RC / pre-release
-        "23G83"  // iOS 26.6.1 public release
     ]
 
     static func iOS27BetaNumber(for build: String) -> Int? {
@@ -70,19 +60,12 @@ enum ExploitSupportPolicy {
             return false
         }
 
-        // 26.0–26.5 remains version-gated because the public reference did
-        // not provide a reliable complete build table for every point release.
-        if minor < 6 {
-            return true
-        }
-
-        // 26.6.0 and 26.6.1 are build-gated. Unknown builds are refused
-        // instead of being allowed to reach the native backend silently.
-        if minor == 6, patch <= 1 {
-            return verifiedIOS26Builds.contains(build)
-        }
-
-        return false
+        // iOS 26/27 use the ContainerManager bad_query path. The native
+        // backend is version-gated here, while build-specific validation is
+        // intentionally left to the runtime diagnostic/access probe. This
+        // matches the reference 3105 behavior and avoids rejecting valid
+        // release, beta, or regional builds that share the same version.
+        return minor < 6 || (minor == 6 && patch <= 1)
     }
 
     static func accessPath(
