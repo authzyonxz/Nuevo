@@ -37,6 +37,10 @@ enum DevicePatchService {
         return PatchTransaction.latestReceipt(projectID: projectID, backupRoot: backupRoot)
     }
 
+    static func requiredBundleIdentifiers(for receipt: PatchTransactionReceipt) throws -> [String] {
+        try PatchTransaction.requiredBundleIdentifiers(for: receipt)
+    }
+
     private static func orderedBundleIdentifiers(in project: PatchProject) -> [String] {
         project.allBundleIdentifiers
     }
