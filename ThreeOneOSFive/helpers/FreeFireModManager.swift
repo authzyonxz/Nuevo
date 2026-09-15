@@ -7,6 +7,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS ALTO + PESCOÇO"
     case hologramaArmas = "HOLOGRAMA ARMAS"
+    case cacheHsAlto = "CACHE HS ALTO"
+    case cacheHsPescoco = "CACHE HS PESCOÇO"
+    case cacheHsPeito = "CACHE HS PEITO"
+    case cacheBalaMagica = "CACHE BALA MÁGICA"
     case texturaAlok1 = "Skin Instaplayer"
     case texturaAlok2 = "Skin Mandela"
     case texturaAlok3 = "Skin RuokFF"
@@ -23,6 +27,10 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .hsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A02")!
         case .hsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A03")!
         case .hologramaArmas: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A04")!
+        case .cacheHsAlto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A21")!
+        case .cacheHsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A22")!
+        case .cacheHsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A23")!
+        case .cacheBalaMagica: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A24")!
         case .texturaAlok1: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A11")!
         case .texturaAlok2: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A12")!
         case .texturaAlok3: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A13")!
@@ -33,19 +41,16 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     var subtitle: String {
         switch self {
         case .testePatch: return "aimbot legit e esp linha, caixa, nome e vida"
-#if CACHE_VARIANT
-        case .hsAlto: return "HS ACIMA DA CABEÇA DO INIMIGO"
-        case .hsPescoco: return "HS NO PESCOÇO DO INIMIGO"
-        case .hsPeito: return "HS NO PEITO DO INIMIGO"
-        case .hologramaArmas: return "BALA MÁGICA"
-#else
         case .hsAlto: return "HS acima da cabeça do inimigo."
         case .hsPescoco: return "HS no pescoço do inimigo."
         case .hsPeito: return "HS acima da cabeça e no pescoço."
         case .hologramaArmas: return "Usar Gráfico no Padrão Para Funcionar."
-#endif
+        case .cacheHsAlto: return "HS acima da cabeça do inimigo usando arquivo Cache."
+        case .cacheHsPescoco: return "HS no pescoço do inimigo usando arquivo Cache."
+        case .cacheHsPeito: return "HS no peito do inimigo usando arquivo Cache."
+        case .cacheBalaMagica: return "Acerta tiros a distância mesmo quando a mira não gruda."
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
-        case .fps144: return "Funciona no Free Fire normal em dispositivos iOS com tela 120Hz."
+        case .fps144: return "Força 120/144 FPS no jogo selecionado em dispositivos compatíveis."
         }
     }
 
@@ -57,6 +62,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
             return "FUNÇÕES DE AIMBOT"
         case .hologramaArmas:
             return "FUNÇÕES DE HOLOGRAMA"
+        case .cacheHsAlto, .cacheHsPescoco, .cacheHsPeito, .cacheBalaMagica:
+            return "FUNÇÕES CACHE"
         case .texturaAlok1, .texturaAlok2, .texturaAlok3:
             return "TEXTURAS"
         case .fps144:
@@ -79,9 +86,9 @@ class FreeFireModManager: ObservableObject {
 
     private let supportedBundleIDs: Set<String> = ["com.dts.freefireth", "com.dts.freefiremax"]
     private let localTextureTargetName = "optionalab_avatar_66.DfUs7MzeaoXWJ4jWN8zRBmYoY7Q~3D"
-    private let localFPSPreferenceName = "com.dts.freefireth.plist"
 
     private var activeReceipts: [ModType: PatchTransactionReceipt] = [:]
+    private var activeBundleIDs: [ModType: Set<String>] = [:]
 
     init() {
         restorePersistedState()
@@ -90,15 +97,12 @@ class FreeFireModManager: ObservableObject {
 
     func displayName(for mod: ModType) -> String {
         switch mod {
-#if CACHE_VARIANT
-        case .hsAlto: return "HS ALTO"
-        case .hsPescoco: return "HS PESCOÇO"
-        case .hsPeito: return "HS PEITO"
-        case .hologramaArmas: return "BALA MÁGICA"
-#else
         case .hsAlto, .hsPescoco, .hsPeito:
             return mod.rawValue
-#endif
+        case .cacheHsAlto: return "HS ALTO"
+        case .cacheHsPescoco: return "HS PESCOÇO"
+        case .cacheHsPeito: return "HS PEITO"
+        case .cacheBalaMagica: return "BALA MÁGICA"
         default:
             return remoteDisplayNames[mod] ?? mod.rawValue
         }
@@ -109,18 +113,13 @@ class FreeFireModManager: ObservableObject {
             guard let self else { return }
             do {
                 let manifest = try await OnlinePayloadUpdater.shared.manifest(forceRefresh: true)
-#if CACHE_VARIANT
-                let ids: [ModType: String] = [
-                    .hsAlto: "cache_hs_alto", .hsPescoco: "cache_hs_pescoco", .hsPeito: "cache_hs_peito",
-                    .hologramaArmas: "cache_bala_magica"
-                ]
-#else
                 let ids: [ModType: String] = [
                     .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
                     .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
-                    .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144"
+                    .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144",
+                    .cacheHsAlto: "cache_hs_alto", .cacheHsPescoco: "cache_hs_pescoco",
+                    .cacheHsPeito: "cache_hs_peito", .cacheBalaMagica: "cache_bala_magica"
                 ]
-#endif
                 let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ids.compactMap { (mod: ModType, id: String) -> (ModType, String)? in
                     guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
                     return (mod, item.displayName)
@@ -136,13 +135,17 @@ class FreeFireModManager: ObservableObject {
     /// Nenhuma restauração é executada aqui; isso só acontece em restoreOriginal.
     private func restorePersistedState() {
         var restored: [ModType: PatchTransactionReceipt] = [:]
+        var restoredBundles: [ModType: Set<String>] = [:]
         for mod in ModType.allCases {
             if let receipt = DevicePatchService.latestReceipt(projectID: mod.persistentProjectID) {
                 restored[mod] = receipt
+                let bundles = (try? DevicePatchService.requiredBundleIdentifiers(for: receipt)) ?? []
+                restoredBundles[mod] = Set(bundles)
             }
         }
 
         activeReceipts = restored
+        activeBundleIDs = restoredBundles
         activeMods = Set(restored.keys)
         statusMessage = activeMods.isEmpty
             ? "Pronto para injetar"
@@ -153,22 +156,26 @@ class FreeFireModManager: ObservableObject {
         }
     }
 
+    func activeMods(for bundleID: String) -> Set<ModType> {
+        Set(activeMods.filter { activeBundleIDs[$0]?.contains(bundleID) == true })
+    }
+
+    func isActive(_ mod: ModType, bundleID: String) -> Bool {
+        activeMods.contains(mod) && activeBundleIDs[mod]?.contains(bundleID) == true
+    }
+
     private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping ((OnlinePayloadUpdater.RemotePayload, Data)?) -> Void) {
-        guard [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas].contains(mod) else {
+        guard [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas,
+               .cacheHsAlto, .cacheHsPescoco, .cacheHsPeito, .cacheBalaMagica].contains(mod) else {
             completion(nil)
             return
         }
-#if CACHE_VARIANT
-        let remoteIDs: [ModType: String] = [
-            .hsAlto: "cache_hs_alto", .hsPescoco: "cache_hs_pescoco", .hsPeito: "cache_hs_peito",
-            .hologramaArmas: "cache_bala_magica"
-        ]
-#else
         let remoteIDs: [ModType: String] = [
             .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
-            .hologramaArmas: "holograma_armas"
+            .hologramaArmas: "holograma_armas", .cacheHsAlto: "cache_hs_alto",
+            .cacheHsPescoco: "cache_hs_pescoco", .cacheHsPeito: "cache_hs_peito",
+            .cacheBalaMagica: "cache_bala_magica"
         ]
-#endif
         guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
             do {
@@ -194,14 +201,6 @@ class FreeFireModManager: ObservableObject {
     func applyMod(_ mod: ModType, bundleID: String, completion: @escaping (Bool, String) -> Void) {
         guard supportedBundleIDs.contains(bundleID) else {
             complete(completion, success: false, message: "Jogo selecionado não suportado.")
-            return
-        }
-        guard mod != .testePatch || bundleID == "com.dts.freefireth" else {
-            complete(completion, success: false, message: "TESTE PATCH funciona somente no Free Fire normal.")
-            return
-        }
-        guard mod != .fps144 || bundleID == "com.dts.freefireth" else {
-            complete(completion, success: false, message: "A função 144fps funciona somente no Free Fire normal, não no Free Fire MAX.")
             return
         }
         LicenseManager.shared.recheckSecureSession { [weak self] valid, message in
@@ -232,7 +231,12 @@ class FreeFireModManager: ObservableObject {
             complete(completion, success: false, message: "Esta versão/build do iOS não é suportada.")
             return
         }
-        guard !activeMods.contains(where: { $0.sectionName == mod.sectionName }) else {
+        if activeMods.contains(mod), !isActive(mod, bundleID: bundleID) {
+            endOperation()
+            complete(completion, success: false, message: "Esta função está ativa no outro jogo. Restaure-a antes de continuar.")
+            return
+        }
+        guard !activeMods(for: bundleID).contains(where: { $0.sectionName == mod.sectionName }) else {
             endOperation()
             complete(completion, success: false, message: "Já existe uma função ativa neste grupo. Restaure-a antes de escolher outra.")
             return
@@ -243,10 +247,11 @@ class FreeFireModManager: ObservableObject {
             prepareLegacyKernelAccessIfNeeded()
             Task.detached(priority: .userInitiated) {
                 do {
-                    let receipt = try await TestPatchFeature.apply()
+                    let receipt = try await TestPatchFeature.apply(bundleID: bundleID)
                     self.addLog("TESTE PATCH remoto aplicado: journal criado e arquivos verificados")
                     DispatchQueue.main.async {
                         self.activeReceipts[mod] = receipt
+                        self.activeBundleIDs[mod] = [bundleID]
                         self.activeMods.insert(mod)
                         self.statusMessage = self.activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
                         self.endOperation()
@@ -277,7 +282,7 @@ class FreeFireModManager: ObservableObject {
                 return
             }
             remoteDefinition = nil
-            currentTarget = mod == .fps144 ? localFPSPreferenceName : localTextureTargetName
+            currentTarget = mod == .fps144 ? "\(bundleID).plist" : localTextureTargetName
             addLog("Payload local AES-GCM aberto somente em memória: \(mod.rawValue)")
         } else {
             guard let remotePayload, !remotePayload.1.isEmpty else {
@@ -424,6 +429,7 @@ class FreeFireModManager: ObservableObject {
                 self.addLog("SUCESSO: Injetado em \(rules.count) locais!")
                 DispatchQueue.main.async {
                     self.activeReceipts[mod] = receipt
+                    self.activeBundleIDs[mod] = [bundleID]
                     self.activeMods.insert(mod)
                     self.statusMessage = self.activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
                     self.endOperation()
@@ -541,7 +547,7 @@ class FreeFireModManager: ObservableObject {
         return results
     }
 
-    func restoreMod(_ mod: ModType, completion: @escaping (Bool, String) -> Void) {
+    func restoreMod(_ mod: ModType, bundleID: String, completion: @escaping (Bool, String) -> Void) {
         LicenseManager.shared.recheckSecureSession { [weak self] valid, message in
             guard let self else { return }
             guard valid else {
@@ -557,9 +563,10 @@ class FreeFireModManager: ObservableObject {
                 self.complete(completion, success: false, message: "Esta versão/build do iOS não é suportada.")
                 return
             }
-            guard let receipt = self.activeReceipts[mod] ?? DevicePatchService.latestReceipt(projectID: mod.persistentProjectID) else {
+            guard self.isActive(mod, bundleID: bundleID),
+                  let receipt = self.activeReceipts[mod] ?? DevicePatchService.latestReceipt(projectID: mod.persistentProjectID) else {
                 self.endOperation()
-                self.complete(completion, success: false, message: "Nenhum backup encontrado para essa textura.")
+                self.complete(completion, success: false, message: "Nenhum backup desta função foi encontrado para o jogo selecionado.")
                 return
             }
 
@@ -571,6 +578,7 @@ class FreeFireModManager: ObservableObject {
                     try DevicePatchService.restore(receipt: receipt)
                     DispatchQueue.main.async {
                         self.activeReceipts.removeValue(forKey: mod)
+                        self.activeBundleIDs.removeValue(forKey: mod)
                         self.activeMods.remove(mod)
                         self.statusMessage = self.activeMods.isEmpty
                             ? "Pronto para injetar"
@@ -599,15 +607,22 @@ class FreeFireModManager: ObservableObject {
 
     /// Usado pelo Lobby: restaura cada transação válida antes de permitir a abertura do jogo.
     /// Se uma transação falhar, as que já foram restauradas são removidas do estado ativo e as restantes permanecem marcadas.
-    func restoreActiveModsBeforeLobby(completion: @escaping (Bool, String) -> Void) {
-        guard !activeReceipts.isEmpty || !activeMods.isEmpty else {
+    func restoreActiveModsBeforeLobby(bundleID: String, completion: @escaping (Bool, String) -> Void) {
+        guard !activeMods(for: bundleID).isEmpty else {
             completion(true, "Nenhuma função Aimbot ativa; original já está restaurado.")
             return
         }
-        restoreOriginal(completion: completion)
+        LicenseManager.shared.recheckSecureSession { [weak self] valid, message in
+            guard let self else { return }
+            guard valid else {
+                self.complete(completion, success: false, message: message ?? "Sessão expirada. Valide a key novamente.")
+                return
+            }
+            self.restoreOriginalAfterSessionCheck(bundleID: bundleID, completion: completion)
+        }
     }
 
-    private func restoreOriginalAfterSessionCheck(completion: @escaping (Bool, String) -> Void) {
+    private func restoreOriginalAfterSessionCheck(bundleID: String? = nil, completion: @escaping (Bool, String) -> Void) {
         guard beginOperation() else {
             complete(completion, success: false, message: "Outra operação já está em andamento.")
             return
@@ -619,12 +634,15 @@ class FreeFireModManager: ObservableObject {
         }
 
         addLog("Restaurando original...")
-        guard !activeReceipts.isEmpty else {
+        let receiptEntries = activeReceipts.filter { mod, _ in
+            guard let bundleID else { return true }
+            return activeBundleIDs[mod]?.contains(bundleID) == true
+        }
+        guard !receiptEntries.isEmpty else {
             endOperation()
             complete(completion, success: true, message: "Nenhuma função Aimbot ativa; original já está restaurado.")
             return
         }
-        let receiptEntries = Array(activeReceipts)
 
         DispatchQueue.global(qos: .userInitiated).async {
             var restoredMods: [ModType] = []
@@ -642,6 +660,7 @@ class FreeFireModManager: ObservableObject {
                 DispatchQueue.main.async {
                     for mod in restoredMods {
                         self.activeReceipts.removeValue(forKey: mod)
+                        self.activeBundleIDs.removeValue(forKey: mod)
                         self.activeMods.remove(mod)
                     }
                     self.statusMessage = self.activeMods.isEmpty
@@ -655,6 +674,7 @@ class FreeFireModManager: ObservableObject {
                 DispatchQueue.main.async {
                     for mod in restoredMods {
                         self.activeReceipts.removeValue(forKey: mod)
+                        self.activeBundleIDs.removeValue(forKey: mod)
                         self.activeMods.remove(mod)
                     }
                     self.statusMessage = self.activeMods.isEmpty

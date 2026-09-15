@@ -4,7 +4,9 @@ import UIKit
 @available(iOS 16.0, *)
 struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
+    @AppStorage("menagerff.prefersDarkMode") private var prefersDarkMode = false
     @State private var selectedTab = 0
+    @State private var selectedGame: GameChoice?
     @State private var didStartFlow = false
     @StateObject private var patchStore = PatchProjectStore()
     @State private var pendingImportURL: URL?
@@ -12,11 +14,23 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if licenseManager.isAuthorized {
-                MainTabView(selectedTab: $selectedTab)
+                if let selectedGame {
+                    MainTabView(
+                        selectedTab: $selectedTab,
+                        game: selectedGame,
+                        isDarkMode: $prefersDarkMode
+                    )
+                } else {
+                    GameSelectionView(
+                        selectedGame: $selectedGame,
+                        isDarkMode: $prefersDarkMode
+                    )
+                }
             } else {
                 KeyAuthGateView().environmentObject(licenseManager)
             }
         }
+        .preferredColorScheme(prefersDarkMode ? .dark : .light)
         .onAppear {
             guard !didStartFlow else { return }
             didStartFlow = true
@@ -26,6 +40,11 @@ struct ContentView: View {
             receiveImportURL(incomingURL)
         }
         .onChange(of: licenseManager.isAuthorized) { isAuthorized in
+            if !isAuthorized {
+                selectedGame = nil
+                selectedTab = 0
+                return
+            }
             guard isAuthorized, let pendingImportURL else { return }
             self.pendingImportURL = nil
             importURL(pendingImportURL)
@@ -265,84 +284,24 @@ private struct AnimatedNetworkBackground: View {
     }
 }
 
-// MARK: - Main Tab View
-struct MainTabView: View {
-    @Binding var selectedTab: Int
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            AnimatedNetworkBackground()
-                .ignoresSafeArea()
-
-            Group {
-                if selectedTab == 0 {
-                    HomeView()
-                } else if selectedTab == 1 {
-                    TexturesView()
-                } else {
-                    ProfileView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.bottom, 76)
-
-            HStack(spacing: 0) {
-                TabButton(index: 0, icon: "square.grid.2x2", title: "Funções", selectedTab: $selectedTab)
-                TabButton(index: 1, icon: "paintbrush.pointed", title: "Texturas", selectedTab: $selectedTab)
-                TabButton(index: 2, icon: "person.crop.circle", title: "Config", selectedTab: $selectedTab)
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
-            .background(Color.black.opacity(0.86))
-            .overlay(alignment: .top) {
-                Rectangle()
-                    .fill(Color.white.opacity(0.07))
-                    .frame(height: 1)
-            }
-        }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-    }
-}
-
-struct TabButton: View {
-    let index: Int
-    let icon: String
-    let title: String
-    @Binding var selectedTab: Int
-
-    var isSelected: Bool { selectedTab == index }
-
-    var body: some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.2)) {
-                selectedTab = index
-            }
-        } label: {
-            VStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
-                Text(title)
-                    .font(.system(size: 9, weight: .semibold, design: .default))
-            }
-            .foregroundColor(isSelected ? .white : .white.opacity(0.34))
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Home View
+// MARK: - Unified app experience
 private enum GameChoice: String, CaseIterable, Identifiable {
-    case freeFire = "Free Fire"
-    case freeFireMax = "Free Fire Max"
+    case freeFire = "Free Fire Normal"
+    case freeFireMax = "Free Fire MAX"
 
     var id: String { rawValue }
+
     var logoName: String {
         switch self {
         case .freeFire: return "FreeFireLogo"
         case .freeFireMax: return "FreeFireMaxLogo"
+        }
+    }
+
+    var editionName: String {
+        switch self {
+        case .freeFire: return "Edição padrão"
+        case .freeFireMax: return "Edição MAX"
         }
     }
 
@@ -354,657 +313,1006 @@ private enum GameChoice: String, CaseIterable, Identifiable {
     }
 }
 
-struct HomeView: View {
-    @EnvironmentObject var licenseManager: LicenseManager
-    @StateObject private var modManager = FreeFireModManager.shared
-    @State private var selectedGame: GameChoice = .freeFire
-    @State private var selectedMods: Set<ModType> = []
-    @State private var alertMessage: String = ""
-    @State private var showAlert: Bool = false
-    @State private var showLogs: Bool = false
+private enum AimFileType: String, CaseIterable, Identifiable {
+    case avatar = "Avatar"
+    case cache = "Cache"
 
-    private let secondaryText = Color.white.opacity(0.42)
+    var id: String { rawValue }
+
+    var subtitle: String {
+        switch self {
+        case .avatar: return "Arquivos Avatar com ativação pelo botão Injetar"
+        case .cache: return "Arquivos Cache com ativação direta"
+        }
+    }
+}
+
+private struct AppPalette {
+    let isDark: Bool
+
+    var background: Color {
+        isDark
+            ? Color(red: 0.035, green: 0.043, blue: 0.065)
+            : Color(red: 0.955, green: 0.965, blue: 0.995)
+    }
+
+    var surface: Color {
+        isDark
+            ? Color(red: 0.075, green: 0.088, blue: 0.12)
+            : .white
+    }
+
+    var elevatedSurface: Color {
+        isDark
+            ? Color(red: 0.10, green: 0.115, blue: 0.15)
+            : Color(red: 0.985, green: 0.99, blue: 1.0)
+    }
+
+    var primaryText: Color { isDark ? .white : Color(red: 0.055, green: 0.065, blue: 0.09) }
+    var secondaryText: Color { isDark ? .white.opacity(0.56) : Color(red: 0.32, green: 0.36, blue: 0.44) }
+    var divider: Color { isDark ? .white.opacity(0.08) : Color.black.opacity(0.07) }
+    var border: Color { isDark ? .white.opacity(0.10) : Color.black.opacity(0.055) }
+    var accent: Color { Color(red: 0.20, green: 0.67, blue: 0.96) }
+    var accentSoft: Color { accent.opacity(isDark ? 0.18 : 0.12) }
+    var shadow: Color { isDark ? .clear : Color(red: 0.13, green: 0.18, blue: 0.30).opacity(0.09) }
+}
+
+private struct GameSelectionView: View {
+    @Binding var selectedGame: GameChoice?
+    @Binding var isDarkMode: Bool
+    @State private var candidate: GameChoice = .freeFire
+
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            palette.background.ignoresSafeArea()
+            Circle()
+                .fill(palette.accent.opacity(isDarkMode ? 0.13 : 0.10))
+                .frame(width: 330, height: 330)
+                .blur(radius: 44)
+                .offset(x: 150, y: -330)
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    gamePicker
-
-                    if showLogs {
-                        diagnosticPanel
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack {
+                        Text("PERFIL")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .tracking(1.6)
+                            .foregroundColor(palette.secondaryText)
+                        Spacer()
+                        ThemeToggleButton(isDarkMode: $isDarkMode)
                     }
 
-                    modSection(title: "TESTE DE PATCH", mods: [.testePatch])
-                    modSection(title: functionSectionTitle, mods: aimbotMods)
-                    modSection(title: secondaryFunctionSectionTitle, mods: hologramMods)
-
-                    if shouldShowActions {
-                        actionButtons
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Selecione o jogo")
+                            .font(.system(size: 36, weight: .heavy, design: .rounded))
+                            .foregroundColor(palette.primaryText)
+                        Text("Escolha um perfil antes de carregar as funções. Todas as alterações usarão somente o jogo selecionado.")
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundColor(palette.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
-                    Spacer(minLength: 20)
+                    VStack(spacing: 14) {
+                        ForEach(GameChoice.allCases) { game in
+                            gameCard(game)
+                        }
+                    }
+
+                    Button {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                            selectedGame = candidate
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text("CONTINUAR")
+                            Image(systemName: "arrow.right")
+                        }
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 58)
+                        .background(
+                            LinearGradient(
+                                colors: [palette.accent, Color(red: 0.37, green: 0.78, blue: 0.98)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .shadow(color: palette.accent.opacity(0.25), radius: 20, y: 10)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text("Você poderá reiniciar o app para escolher outro perfil.")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(palette.secondaryText)
+                        .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
+                .padding(.horizontal, 22)
+                .padding(.top, 22)
+                .padding(.bottom, 36)
+                .frame(maxWidth: 620)
+                .frame(maxWidth: .infinity)
             }
-        }
-        .onAppear {
-            selectedMods.formUnion(modManager.activeMods)
-        }
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("Status"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
 
-    private var header: some View {
-        HStack {
-            Color.clear.frame(width: 32, height: 32)
-            Spacer()
-            Text("FUNÇÕES")
-                .font(.system(size: 15, weight: .heavy, design: .default))
+    private func gameCard(_ game: GameChoice) -> some View {
+        let isSelected = candidate == game
+        return Button {
+            withAnimation(.easeOut(duration: 0.2)) { candidate = game }
+        } label: {
+            HStack(spacing: 16) {
+                Image(game.logoName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 72, height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(game.rawValue)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(palette.primaryText)
+                    Text(game.editionName)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(palette.secondaryText)
+                    Text(game.bundleID)
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundColor(isSelected ? palette.accent : palette.secondaryText.opacity(0.75))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 25, weight: .semibold))
+                    .foregroundColor(isSelected ? palette.accent : palette.secondaryText.opacity(0.35))
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(isSelected ? palette.accentSoft : palette.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(isSelected ? palette.accent : palette.border, lineWidth: isSelected ? 1.5 : 1)
+            )
+            .shadow(color: palette.shadow, radius: 18, y: 8)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Main Tab View
+private struct MainTabView: View {
+    @Binding var selectedTab: Int
+    let game: GameChoice
+    @Binding var isDarkMode: Bool
+
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            palette.background.ignoresSafeArea()
+
+            Group {
+                switch selectedTab {
+                case 0:
+                    AimsView(game: game, isDarkMode: $isDarkMode)
+                case 1:
+                    ESPView(game: game, isDarkMode: $isDarkMode)
+                case 2:
+                    TexturesView(game: game, isDarkMode: $isDarkMode)
+                default:
+                    AdjustmentsView(game: game, isDarkMode: $isDarkMode)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.bottom, 82)
+
+            HStack(spacing: 0) {
+                TabButton(index: 0, icon: "scope", title: "Aims", selectedTab: $selectedTab, palette: palette)
+                TabButton(index: 1, icon: "eye.fill", title: "ESP", selectedTab: $selectedTab, palette: palette)
+                TabButton(index: 2, icon: "square.3.layers.3d", title: "Texturas", selectedTab: $selectedTab, palette: palette)
+                TabButton(index: 3, icon: "slider.horizontal.3", title: "Ajustes", selectedTab: $selectedTab, palette: palette)
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 8)
+            .padding(.bottom, 14)
+            .background(palette.surface.opacity(0.97))
+            .overlay(alignment: .top) {
+                Rectangle().fill(palette.divider).frame(height: 1)
+            }
+            .shadow(color: palette.shadow, radius: 20, y: -6)
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+}
+
+private struct TabButton: View {
+    let index: Int
+    let icon: String
+    let title: String
+    @Binding var selectedTab: Int
+    let palette: AppPalette
+
+    private var isSelected: Bool { selectedTab == index }
+
+    var body: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.2)) { selectedTab = index }
+        } label: {
+            VStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: isSelected ? .bold : .medium))
+                Text(title)
+                    .font(.system(size: 10, weight: isSelected ? .bold : .semibold, design: .rounded))
+            }
+            .foregroundColor(isSelected ? palette.accent : palette.secondaryText.opacity(0.72))
+            .frame(maxWidth: .infinity)
+            .frame(height: 58)
+            .background(isSelected ? palette.accentSoft : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Shared components
+private struct ScreenHeader: View {
+    let title: String
+    let subtitle: String
+    let game: GameChoice
+    @Binding var isDarkMode: Bool
+
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
+
+    var body: some View {
+        VStack(spacing: 15) {
+            HStack(spacing: 12) {
+                Image(game.logoName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 40, height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 25, weight: .heavy, design: .rounded))
+                        .foregroundColor(palette.primaryText)
+                    Text(subtitle)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(palette.secondaryText)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+                ThemeToggleButton(isDarkMode: $isDarkMode)
+            }
+
+            HStack(spacing: 7) {
+                Circle().fill(Color.green).frame(width: 7, height: 7)
+                Text(game.rawValue)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                Text("•")
+                Text(game.bundleID)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .lineLimit(1)
+                Spacer()
+            }
+            .foregroundColor(palette.secondaryText)
+            .padding(.horizontal, 12)
+            .frame(height: 34)
+            .background(palette.surface)
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(palette.border, lineWidth: 1))
+        }
+    }
+}
+
+private struct ThemeToggleButton: View {
+    @Binding var isDarkMode: Bool
+
+    var body: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.28)) { isDarkMode.toggle() }
+        } label: {
+            Image(systemName: isDarkMode ? "sun.max.fill" : "moon.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(isDarkMode ? .yellow : Color(red: 0.19, green: 0.24, blue: 0.34))
+                .frame(width: 44, height: 44)
+                .background(Color.white.opacity(isDarkMode ? 0.10 : 0.90))
+                .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isDarkMode ? "Ativar tema claro" : "Ativar tema escuro")
+    }
+}
+
+private struct SectionLabel: View {
+    let title: String
+    let palette: AppPalette
+
+    var body: some View {
+        Text(title.uppercased())
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .tracking(0.7)
+            .foregroundColor(palette.secondaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct FunctionListCard: View {
+    let mods: [ModType]
+    let selectedMods: Set<ModType>
+    let activeMods: Set<ModType>
+    let isProcessing: Bool
+    let palette: AppPalette
+    let displayName: (ModType) -> String
+    let onToggle: (ModType, Bool) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(mods.enumerated()), id: \.element.id) { index, mod in
+                FunctionRow(
+                    mod: mod,
+                    displayName: displayName(mod),
+                    isActive: selectedMods.contains(mod) || activeMods.contains(mod),
+                    isProcessing: isProcessing,
+                    palette: palette,
+                    onToggle: { onToggle(mod, $0) }
+                )
+                if index < mods.count - 1 {
+                    Rectangle()
+                        .fill(palette.divider)
+                        .frame(height: 1)
+                        .padding(.leading, 64)
+                }
+            }
+        }
+        .background(palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(palette.border, lineWidth: 1))
+        .shadow(color: palette.shadow, radius: 16, y: 7)
+    }
+}
+
+private struct FunctionRow: View {
+    let mod: ModType
+    let displayName: String
+    let isActive: Bool
+    let isProcessing: Bool
+    let palette: AppPalette
+    let onToggle: (Bool) -> Void
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Image(systemName: iconName)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(isActive ? palette.accent : palette.secondaryText)
+                .frame(width: 38, height: 38)
+                .background(isActive ? palette.accentSoft : palette.elevatedSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(displayName.uppercased())
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(palette.primaryText)
+                Text(mod.subtitle)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(palette.secondaryText)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 8)
+
+            if isProcessing {
+                ProgressView().tint(palette.accent).frame(width: 48)
+            } else {
+                Toggle("", isOn: Binding(get: { isActive }, set: onToggle))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .tint(palette.accent)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+    }
+
+    private var iconName: String {
+        switch mod {
+        case .testePatch: return "eye.fill"
+        case .hologramaArmas, .cacheBalaMagica: return "scope"
+        case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "paintpalette.fill"
+        case .fps144: return "gauge.with.dots.needle.67percent"
+        default: return "crosshair"
+        }
+    }
+}
+
+private struct PrimaryActionButton: View {
+    let title: String
+    let icon: String
+    let disabled: Bool
+    let palette: AppPalette
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: icon)
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
                 .foregroundColor(.white)
-            Spacer()
-            Button { showLogs.toggle() } label: {
-                Image(systemName: "waveform.path.ecg")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.48))
-                    .frame(width: 32, height: 32)
-            }
-            .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(disabled ? palette.secondaryText.opacity(0.28) : palette.accent)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+    }
+}
+
+// MARK: - Aims
+private struct AimsView: View {
+    let game: GameChoice
+    @Binding var isDarkMode: Bool
+    @StateObject private var modManager = FreeFireModManager.shared
+    @State private var fileType: AimFileType = .avatar
+    @State private var selectedMods: Set<ModType> = []
+    @State private var alertMessage = ""
+    @State private var showAlert = false
+    @State private var showLogs = false
+
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
+    private let avatarMods: [ModType] = [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas]
+    private let cacheMods: [ModType] = [.cacheHsAlto, .cacheHsPescoco, .cacheHsPeito, .cacheBalaMagica]
+
+    private var visibleMods: [ModType] { fileType == .avatar ? avatarMods : cacheMods }
+    private var activeGameMods: Set<ModType> { modManager.activeMods(for: game.bundleID) }
+    private var pendingAvatarMods: [ModType] {
+        avatarMods.filter { selectedMods.contains($0) && !activeGameMods.contains($0) }
     }
 
-    private var gamePicker: some View {
-        HStack(spacing: 28) {
-            ForEach(GameChoice.allCases) { game in
-                Button {
-                    withAnimation(.easeOut(duration: 0.18)) {
-                        selectedGame = game
-                    }
-                } label: {
-                    VStack(spacing: 8) {
-                        Image(game.logoName)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 54, height: 54)
-                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-
-                        Text(game == .freeFire ? "Free Fire Normal" : "Free Fire Max")
-                            .font(.system(size: 11, weight: .bold, design: .default))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 92)
-                    .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .stroke(selectedGame == game ? Color.white.opacity(0.9) : Color.clear, lineWidth: 2)
+    var body: some View {
+        ZStack {
+            palette.background.ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 19) {
+                    ScreenHeader(
+                        title: "Aims",
+                        subtitle: "Controle de mira por tipo de arquivo",
+                        game: game,
+                        isDarkMode: $isDarkMode
                     )
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionLabel(title: "Selecione o tipo de arquivo", palette: palette)
+                        Picker("Tipo de arquivo", selection: $fileType) {
+                            ForEach(AimFileType.allCases) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        Text(fileType.subtitle)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(palette.secondaryText)
+                    }
+                    .padding(16)
+                    .background(palette.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(palette.border, lineWidth: 1))
+
+                    HStack {
+                        SectionLabel(title: "Funções \(fileType.rawValue)", palette: palette)
+                        Button { showLogs.toggle() } label: {
+                            Image(systemName: "waveform.path.ecg")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(palette.secondaryText)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if showLogs { diagnosticPanel }
+
+                    FunctionListCard(
+                        mods: visibleMods,
+                        selectedMods: selectedMods,
+                        activeMods: activeGameMods,
+                        isProcessing: modManager.isProcessing,
+                        palette: palette,
+                        displayName: { modManager.displayName(for: $0) },
+                        onToggle: handleToggle
+                    )
+
+                    if fileType == .avatar {
+                        HStack(spacing: 12) {
+                            PrimaryActionButton(
+                                title: "INJETAR (40%)",
+                                icon: "bolt.fill",
+                                disabled: modManager.isProcessing || pendingAvatarMods.isEmpty,
+                                palette: palette,
+                                action: injectSelectedMods
+                            )
+                            PrimaryActionButton(
+                                title: "LOBBY",
+                                icon: "play.fill",
+                                disabled: modManager.isProcessing,
+                                palette: palette,
+                                action: openLobby
+                            )
+                        }
+                    } else {
+                        Text("As funções Cache são aplicadas imediatamente ao ativar o switch.")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(palette.secondaryText)
+                        PrimaryActionButton(
+                            title: "ABRIR LOBBY",
+                            icon: "play.fill",
+                            disabled: modManager.isProcessing,
+                            palette: palette,
+                            action: openLobby
+                        )
+                    }
+
+                    Spacer(minLength: 18)
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 28)
+                .frame(maxWidth: 680)
+                .frame(maxWidth: .infinity)
             }
+        }
+        .onAppear { selectedMods.formUnion(activeGameMods.filter { avatarMods.contains($0) }) }
+        .alert("Status", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
         }
     }
 
     private var diagnosticPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("DIAGNÓSTICO")
-                .font(.system(size: 10, weight: .bold, design: .default))
-                .foregroundColor(.white.opacity(0.48))
-            ScrollView {
-                Text(modManager.debugLogs.isEmpty ? "Nenhum registro ainda." : modManager.debugLogs)
-                    .font(.system(size: 9, design: .default))
-                    .foregroundColor(.green.opacity(0.8))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(height: 82)
+        ScrollView {
+            Text(modManager.debugLogs.isEmpty ? "Nenhum registro ainda." : modManager.debugLogs)
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundColor(isDarkMode ? .green : Color(red: 0.02, green: 0.46, blue: 0.19))
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
-        .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
+        .frame(height: 86)
+        .padding(13)
+        .background(palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(palette.border, lineWidth: 1))
     }
 
-    private func modSection(title: String, mods: [ModType]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.system(size: 11, weight: .medium, design: .default))
-                .foregroundColor(secondaryText)
-
-            VStack(spacing: 0) {
-                ForEach(Array(mods.enumerated()), id: \.element.id) { index, mod in
-                    ModRowReference(
-                        mod: mod,
-                        displayName: modManager.displayName(for: mod),
-                        isActive: selectedMods.contains(mod) || modManager.activeMods.contains(mod),
-                        isProcessing: modManager.isProcessing,
-                        onToggle: { isOn in handleToggle(mod: mod, isOn: isOn) }
-                    )
-                    if index < mods.count - 1 {
-                        Rectangle()
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 1)
-                    }
-                }
-            }
+    private func handleToggle(_ mod: ModType, _ isOn: Bool) {
+        if fileType == .cache {
+            applyDirectly(mod, isOn: isOn)
+            return
         }
-    }
 
-    private var aimbotMods: [ModType] {
-        [.hsAlto, .hsPescoco, .hsPeito]
-    }
-
-    private var functionSectionTitle: String {
-#if CACHE_VARIANT
-        return "FUNÇÕES CACHE"
-#else
-        return "FUNÇÕES DE AIMBOT"
-#endif
-    }
-
-    private var secondaryFunctionSectionTitle: String {
-#if CACHE_VARIANT
-        return "FUNÇÕES CACHE"
-#else
-        return "FUNÇÕES DE HOLOGRAMA"
-#endif
-    }
-
-    private var hologramMods: [ModType] {
-        [.hologramaArmas]
-    }
-
-    private var visibleMods: [ModType] { aimbotMods + hologramMods }
-
-    private var pendingMods: [ModType] {
-        aimbotMods.filter { selectedMods.contains($0) && !modManager.activeMods.contains($0) }
-    }
-
-    private var shouldShowActions: Bool {
-#if CACHE_VARIANT
-        return false
-#else
-        !selectedMods.filter { aimbotMods.contains($0) }.isEmpty ||
-            !modManager.activeMods.filter { aimbotMods.contains($0) }.isEmpty
-#endif
-    }
-
-    private var actionButtons: some View {
-        HStack(spacing: 14) {
-            Button(action: injectSelectedMods) {
-                Group {
-                    if modManager.isProcessing {
-                        ProgressView().tint(.black)
-                    } else {
-                        Text("INJETAR (40%)")
-                    }
-                }
-                .font(.system(size: 12, weight: .heavy, design: .default))
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .disabled(modManager.isProcessing || pendingMods.isEmpty)
-            .opacity(pendingMods.isEmpty ? 0.56 : 1)
-
-            Button(action: openLobby) {
-                Text("LOBBY")
-                    .font(.system(size: 12, weight: .heavy, design: .default))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .disabled(modManager.isProcessing)
-        }
-        .padding(.top, 4)
-    }
-
-    private func handleToggle(mod: ModType, isOn: Bool) {
-#if CACHE_VARIANT
         if isOn {
-            modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
-                alertMessage = msg
-                showAlert = true
-            }
-        } else {
-            guard modManager.activeMods.contains(mod) else { return }
-            modManager.restoreMod(mod) { success, msg in
-                if success { selectedMods.remove(mod) }
-                alertMessage = msg
-                showAlert = true
-            }
-        }
-        return
-#endif
-        if isOn {
-            guard aimbotMods.contains(mod) else {
-                modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, msg in
-                    alertMessage = msg
-                    showAlert = true
-                }
+            if let active = activeGameMods.first(where: {
+                avatarMods.contains($0) && $0.sectionName == mod.sectionName && $0 != mod
+            }) {
+                present("Desative \(modManager.displayName(for: active)) antes de selecionar outra função deste grupo.")
                 return
             }
-
-            if let activeInSection = modManager.activeMods.first(where: { $0.sectionName == mod.sectionName && $0 != mod }) {
-                alertMessage = "Desative \(modManager.displayName(for: activeInSection)) antes de selecionar outra função deste grupo."
-                showAlert = true
-                return
-            }
-
             selectedMods = Set(selectedMods.filter {
-                $0.sectionName != mod.sectionName || modManager.activeMods.contains($0)
+                $0.sectionName != mod.sectionName || activeGameMods.contains($0)
             })
             selectedMods.insert(mod)
-            return
-        }
-
-        guard modManager.activeMods.contains(mod) else {
-            selectedMods.remove(mod)
-            return
-        }
-
-        modManager.restoreMod(mod) { success, msg in
-            if success {
-                selectedMods.remove(mod)
+        } else if activeGameMods.contains(mod) {
+            modManager.restoreMod(mod, bundleID: game.bundleID) { success, message in
+                if success { selectedMods.remove(mod) }
+                present(message)
             }
-            alertMessage = msg
-            showAlert = true
+        } else {
+            selectedMods.remove(mod)
+        }
+    }
+
+    private func applyDirectly(_ mod: ModType, isOn: Bool) {
+        if isOn {
+            modManager.applyMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        } else {
+            guard activeGameMods.contains(mod) else {
+                selectedMods.remove(mod)
+                return
+            }
+            modManager.restoreMod(mod, bundleID: game.bundleID) { success, message in
+                if success { selectedMods.remove(mod) }
+                present(message)
+            }
         }
     }
 
     private func injectSelectedMods() {
-        let mods = pendingMods
+        let mods = pendingAvatarMods
         guard !mods.isEmpty else { return }
         applySequentially(mods, at: 0, messages: [])
     }
 
     private func applySequentially(_ mods: [ModType], at index: Int, messages: [String]) {
         guard index < mods.count else {
-            alertMessage = messages.joined(separator: "\n")
-            showAlert = true
+            present(messages.joined(separator: "\n"))
             return
         }
-
         let mod = mods[index]
-        modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, message in
-            let line = "\(modManager.displayName(for: mod)): \(message)"
-            applySequentially(mods, at: index + 1, messages: messages + [line])
+        modManager.applyMod(mod, bundleID: game.bundleID) { _, message in
+            applySequentially(
+                mods,
+                at: index + 1,
+                messages: messages + ["\(modManager.displayName(for: mod)): \(message)"]
+            )
         }
     }
 
     private func openLobby() {
-        modManager.restoreActiveModsBeforeLobby { success, message in
-            guard success else {
-                alertMessage = message
-                showAlert = true
-                return
-            }
+        restoreAndOpen(game: game, modManager: modManager, completion: present)
+    }
 
-            selectedMods.removeAll()
-            let opened = openApplicationForBundleID(selectedGame.bundleID)
-            guard !opened else { return }
-            alertMessage = "Não foi possível abrir \(selectedGame.rawValue). Verifique se o aplicativo está instalado."
-            showAlert = true
-        }
+    private func present(_ message: String) {
+        alertMessage = message
+        showAlert = true
     }
 }
 
-// MARK: - Mod Row
-struct ModRowReference: View {
-    let mod: ModType
-    let displayName: String
-    let isActive: Bool
-    let isProcessing: Bool
-    let onToggle: (Bool) -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(displayName.uppercased())
-                    .font(.system(size: 15, weight: .regular, design: .default))
-                    .foregroundColor(.white)
-                Text(mod.subtitle)
-                    .font(.system(size: 11, weight: .regular, design: .default))
-                    .foregroundColor(.white.opacity(0.46))
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: 10)
-
-            if isProcessing {
-                ProgressView()
-                    .tint(.white)
-                    .frame(width: 50, height: 31)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isActive },
-                    set: { value in
-                        guard !isProcessing else { return }
-                        onToggle(value)
-                    }
-                ))
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .tint(.green)
-                .disabled(isProcessing)
-            }
-        }
-        .padding(.vertical, 11)
-    }
-}
-
-// MARK: - Config View
-struct ProfileView: View {
-    @EnvironmentObject var licenseManager: LicenseManager
-
-    private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
-
-    private var compatibilityStatus: (text: String, color: Color) {
-        switch KernelExploit.currentAccessPath {
-        case .kfd16: return ("Compatível — KFD16 experimental", .orange)
-        case .kernelOffsets: return ("Compatível — offsets", .green)
-        case .badQuery: return ("Compatível — bad_query", .green)
-        case .unsupported: return ("Não compatível", .red)
-        }
-    }
-
-    private var accessPathText: String {
-        switch KernelExploit.currentAccessPath {
-        case .kfd16: return "KFD iOS 16"
-        case .kernelOffsets: return "Kernel/offsets iOS 17–18"
-        case .badQuery: return "ContainerManager iOS 26–27"
-        case .unsupported: return "Indisponível"
-        }
-    }
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 42, height: 42)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("CONFIG")
-                                .font(.system(size: 28, weight: .heavy, design: .default))
-                                .foregroundColor(.white)
-                            Text("Informações e proteção do dispositivo")
-                                .font(.system(size: 11, weight: .medium, design: .default))
-                                .foregroundColor(.white.opacity(0.45))
-                        }
-                        Spacer()
-                    }
-                    .padding(.top, 24)
-
-                    HStack(spacing: 14) {
-                        Image(systemName: licenseManager.isAuthorized ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(licenseManager.isAuthorized ? .green : .orange)
-                            .frame(width: 52, height: 52)
-                            .background((licenseManager.isAuthorized ? Color.green : Color.orange).opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("STATUS DA LICENÇA")
-                                .font(.system(size: 10, weight: .bold, design: .default))
-                                .foregroundColor(.white.opacity(0.45))
-                            Text(licenseManager.licenseInfo?.status ?? "Sem key registrada")
-                                .font(.system(size: 16, weight: .bold, design: .default))
-                                .foregroundColor(licenseManager.isAuthorized ? .green : .orange)
-                        }
-                        Spacer()
-                        Circle()
-                            .fill(licenseManager.isAuthorized ? Color.green : Color.orange)
-                            .frame(width: 8, height: 8)
-                    }
-                    .padding(16)
-                    .background(panel)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("DETALHES DO SISTEMA")
-                            .font(.system(size: 10, weight: .bold, design: .default))
-                            .foregroundColor(.white.opacity(0.45))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-
-                        configRow(title: "Expiração", value: licenseManager.licenseInfo?.expiresAt ?? "Sem key registrada", color: licenseManager.licenseInfo == nil ? .orange : .white)
-                        configRow(title: "Package", value: "EXTERNAL - iOS", color: .cyan)
-                        configRow(title: "Debugging Ativo", value: "Protegido / Anti-Debug OK", color: .green)
-                        configRow(title: "Compatibilidade", value: compatibilityStatus.text, color: compatibilityStatus.color)
-                        configRow(title: "Caminho de acesso", value: accessPathText, color: .cyan)
-                        configRow(title: "Build do sistema", value: AppInfo.osBuild, color: .blue)
-                        configRow(title: "Modelo do Aparelho", value: UIDevice.current.model, color: .white)
-                        configRow(title: "Versão do iOS", value: UIDevice.current.systemVersion, color: .blue.opacity(0.8))
-                    }
-                    .background(panel)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
-
-                    Spacer(minLength: 92)
-                }
-                .padding(.horizontal, 18)
-            }
-        }
-    }
-
-    private func configRow(title: String, value: String, color: Color) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(title)
-                .font(.system(size: 11, weight: .medium, design: .default))
-                .foregroundColor(.white.opacity(0.48))
-            Spacer(minLength: 10)
-            Text(value)
-                .font(.system(size: 11, weight: .semibold, design: .default))
-                .foregroundColor(color)
-                .multilineTextAlignment(.trailing)
-                .lineLimit(2)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 1)
-                .padding(.leading, 16)
-        }
-    }
-}
-
-struct InfoRow: View {
-    let title: String
-    let value: String
-    let color: Color
-
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.6))
-            Spacer()
-            Text(value)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(color)
-        }
-    }
-}
-
-
-// MARK: - Textures View
-struct TexturesView: View {
+// MARK: - ESP
+private struct ESPView: View {
+    let game: GameChoice
+    @Binding var isDarkMode: Bool
     @StateObject private var modManager = FreeFireModManager.shared
-    @State private var selectedGame: GameChoice = .freeFire
-    @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showAlert = false
 
-    private let panel = Color(red: 0.055, green: 0.055, blue: 0.065)
-    private let secondaryText = Color.white.opacity(0.48)
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            palette.background.ignoresSafeArea()
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "paintpalette.fill")
-                            .font(.system(size: 21, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("TEXTURAS")
-                                .font(.system(size: 28, weight: .heavy, design: .default))
-                                .foregroundColor(.white)
-                            Text("Personalize o visual do Free Fire")
-                                .font(.system(size: 11, weight: .medium, design: .default))
-                                .foregroundColor(secondaryText)
-                        }
-                        Spacer()
-                    }
-                    .padding(.top, 24)
+                    ScreenHeader(
+                        title: "ESP",
+                        subtitle: "Visão e assistência avançada",
+                        game: game,
+                        isDarkMode: $isDarkMode
+                    )
 
-                    gamePicker
-                    textureSection
-                    Spacer(minLength: 92)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Image(systemName: "eye.circle.fill")
+                            .font(.system(size: 38, weight: .bold))
+                            .foregroundColor(palette.accent)
+                        Text("AIMBOT + ESP")
+                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .foregroundColor(palette.primaryText)
+                        Text("Aimbot legit com ESP de linha, caixa, nome e vida. Esta função possui uma aba exclusiva para acesso rápido.")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(palette.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        LinearGradient(
+                            colors: [palette.accentSoft, palette.surface],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(palette.border, lineWidth: 1))
+
+                    SectionLabel(title: "Função ESP", palette: palette)
+                    FunctionListCard(
+                        mods: [.testePatch],
+                        selectedMods: [],
+                        activeMods: modManager.activeMods(for: game.bundleID),
+                        isProcessing: modManager.isProcessing,
+                        palette: palette,
+                        displayName: { modManager.displayName(for: $0) },
+                        onToggle: { mod, enabled in toggle(mod, enabled: enabled) }
+                    )
+
+                    PrimaryActionButton(
+                        title: "ABRIR LOBBY",
+                        icon: "play.fill",
+                        disabled: modManager.isProcessing,
+                        palette: palette,
+                        action: { restoreAndOpen(game: game, modManager: modManager, completion: present) }
+                    )
+                    Spacer(minLength: 20)
                 }
                 .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 28)
+                .frame(maxWidth: 680)
+                .frame(maxWidth: .infinity)
             }
         }
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("TEXTURAS"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        .alert("ESP", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
         }
     }
 
-    private var gamePicker: some View {
-        HStack(spacing: 10) {
-            ForEach(GameChoice.allCases) { game in
-                Button {
-                    withAnimation(.easeOut(duration: 0.18)) { selectedGame = game }
-                } label: {
-                    Text(game == .freeFire ? "FREE FIRE" : "FREE FIRE MAX")
-                        .font(.system(size: 10, weight: .bold, design: .default))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 36)
-                        .background(selectedGame == game ? Color.white.opacity(0.15) : Color.white.opacity(0.06))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(selectedGame == game ? Color.white.opacity(0.8) : Color.white.opacity(0.12), lineWidth: 1))
+    private func toggle(_ mod: ModType, enabled: Bool) {
+        if enabled {
+            modManager.applyMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        } else {
+            modManager.restoreMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        }
+    }
+
+    private func present(_ message: String) {
+        alertMessage = message
+        showAlert = true
+    }
+}
+
+// MARK: - Textures
+private struct TextureOption: Identifiable {
+    let mod: ModType
+    let imageName: String
+    var id: ModType { mod }
+}
+
+private struct TexturesView: View {
+    let game: GameChoice
+    @Binding var isDarkMode: Bool
+    @StateObject private var modManager = FreeFireModManager.shared
+    @State private var alertMessage = ""
+    @State private var showAlert = false
+
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
+    private let textures: [TextureOption] = [
+        TextureOption(mod: .texturaAlok1, imageName: "AlokTexturePreview1"),
+        TextureOption(mod: .texturaAlok2, imageName: "AlokTexturePreview2"),
+        TextureOption(mod: .texturaAlok3, imageName: "AlokTexturePreview3")
+    ]
+
+    var body: some View {
+        ZStack {
+            palette.background.ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    ScreenHeader(
+                        title: "Texturas",
+                        subtitle: "Personalize o visual do jogo",
+                        game: game,
+                        isDarkMode: $isDarkMode
+                    )
+                    SectionLabel(title: "Coleção Alok", palette: palette)
+
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 150), spacing: 14)],
+                        spacing: 14
+                    ) {
+                        ForEach(textures) { item in
+                            textureCard(mod: item.mod, imageName: item.imageName)
+                        }
+                    }
+                    Spacer(minLength: 20)
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 28)
+                .frame(maxWidth: 680)
+                .frame(maxWidth: .infinity)
             }
+        }
+        .alert("Texturas", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
         }
     }
 
-    private var textureSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("TEXTURAS DISPONÍVEIS")
-                .font(.system(size: 11, weight: .bold, design: .default))
-                .foregroundColor(secondaryText)
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ], spacing: 12) {
-                textureCard(.texturaAlok1, imageName: "AlokTexturePreview1")
-                textureCard(.texturaAlok2, imageName: "AlokTexturePreview2")
-                textureCard(.texturaAlok3, imageName: "AlokTexturePreview3")
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func textureCard(_ mod: ModType, imageName: String) -> some View {
-        VStack(spacing: 0) {
+    private func textureCard(mod: ModType, imageName: String) -> some View {
+        let isActive = modManager.isActive(mod, bundleID: game.bundleID)
+        return VStack(spacing: 0) {
             ZStack(alignment: .topTrailing) {
                 Image(imageName)
                     .resizable()
                     .scaledToFill()
                     .frame(maxWidth: .infinity)
-                    .frame(height: 132)
+                    .frame(height: 170)
                     .clipped()
                 LinearGradient(
-                    colors: [.black.opacity(0.18), .clear, .black.opacity(0.16)],
-                    startPoint: .top,
+                    colors: [.clear, .black.opacity(0.34)],
+                    startPoint: .center,
                     endPoint: .bottom
                 )
-                if modManager.activeMods.contains(mod) {
+                if isActive {
                     Label("ATIVA", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 9, weight: .bold, design: .default))
-                        .foregroundColor(.green)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(.black.opacity(0.72), in: Capsule())
-                        .padding(9)
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 6)
+                        .background(Color.green, in: Capsule())
+                        .padding(10)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 9) {
                 Text(modManager.displayName(for: mod))
-                    .font(.system(size: 14, weight: .bold, design: .default))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text("Usar personagem Alok despertado")
-                    .font(.system(size: 10, weight: .medium, design: .default))
-                    .foregroundColor(secondaryText)
-                    .lineLimit(2)
-                    .frame(height: 26, alignment: .topLeading)
-                if modManager.isProcessing {
-                    ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    Toggle("Ativar", isOn: Binding(
-                        get: { modManager.activeMods.contains(mod) },
-                        set: { enabled in
-                            if enabled {
-                                modManager.applyMod(mod, bundleID: selectedGame.bundleID) { _, message in
-                                    alertMessage = message
-                                    showAlert = true
-                                }
-                            } else {
-                                modManager.restoreMod(mod) { _, message in
-                                    alertMessage = message
-                                    showAlert = true
-                                }
-                            }
-                        }
-                    ))
-                    .font(.system(size: 10, weight: .semibold, design: .default))
-                    .foregroundColor(secondaryText)
-                    .toggleStyle(.switch)
-                    .tint(.green)
-                }
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundColor(palette.primaryText)
+                    .lineLimit(1)
+                Text("Alok despertado")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(palette.secondaryText)
+                Toggle("Ativar", isOn: Binding(
+                    get: { isActive },
+                    set: { enabled in toggle(mod, enabled: enabled) }
+                ))
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(palette.secondaryText)
+                .toggleStyle(.switch)
+                .tint(palette.accent)
+                .disabled(modManager.isProcessing)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(14)
         }
-        .background(panel)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        .background(palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(palette.border, lineWidth: 1))
+        .shadow(color: palette.shadow, radius: 16, y: 7)
+    }
+
+    private func toggle(_ mod: ModType, enabled: Bool) {
+        if enabled {
+            modManager.applyMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        } else {
+            modManager.restoreMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        }
+    }
+
+    private func present(_ message: String) {
+        alertMessage = message
+        showAlert = true
+    }
+}
+
+// MARK: - Adjustments
+private struct AdjustmentsView: View {
+    @EnvironmentObject var licenseManager: LicenseManager
+    let game: GameChoice
+    @Binding var isDarkMode: Bool
+    @StateObject private var modManager = FreeFireModManager.shared
+    @State private var alertMessage = ""
+    @State private var showAlert = false
+
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
+
+    var body: some View {
+        ZStack {
+            palette.background.ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    ScreenHeader(
+                        title: "Ajustes",
+                        subtitle: "Desempenho e preferências do app",
+                        game: game,
+                        isDarkMode: $isDarkMode
+                    )
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("AJUSTES", systemImage: "slider.horizontal.3")
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .foregroundColor(palette.primaryText)
+                        Text("Controles extras para o perfil selecionado.")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(palette.secondaryText)
+                        Text("Perfil: \(game.rawValue)  •  \(game.editionName)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(palette.accent)
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(palette.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(palette.border, lineWidth: 1))
+
+                    SectionLabel(title: "Desempenho", palette: palette)
+                    FunctionListCard(
+                        mods: [.fps144],
+                        selectedMods: [],
+                        activeMods: modManager.activeMods(for: game.bundleID),
+                        isProcessing: modManager.isProcessing,
+                        palette: palette,
+                        displayName: { _ in "FORÇAR 120/144 FPS" },
+                        onToggle: { mod, enabled in toggle(mod, enabled: enabled) }
+                    )
+
+                    SectionLabel(title: "Aparência", palette: palette)
+                    HStack(spacing: 14) {
+                        ThemeToggleButton(isDarkMode: $isDarkMode)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(isDarkMode ? "Tema escuro" : "Tema claro")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(palette.primaryText)
+                            Text("Toque no ícone para alternar o visual de toda a IPA.")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(palette.secondaryText)
+                        }
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(palette.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(palette.border, lineWidth: 1))
+
+                    SectionLabel(title: "Licença", palette: palette)
+                    HStack(spacing: 13) {
+                        Image(systemName: "checkmark.shield.fill")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.green)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(licenseManager.licenseInfo?.status ?? "Key validada")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(palette.primaryText)
+                            Text("Expira em: \(licenseManager.licenseInfo?.expiresAt ?? "Não informado")")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(palette.secondaryText)
+                        }
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(palette.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(palette.border, lineWidth: 1))
+
+                    Spacer(minLength: 20)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 28)
+                .frame(maxWidth: 680)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .alert("Ajustes", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
+        }
+    }
+
+    private func toggle(_ mod: ModType, enabled: Bool) {
+        if enabled {
+            modManager.applyMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        } else {
+            modManager.restoreMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        }
+    }
+
+    private func present(_ message: String) {
+        alertMessage = message
+        showAlert = true
+    }
+}
+
+private func restoreAndOpen(
+    game: GameChoice,
+    modManager: FreeFireModManager,
+    completion: @escaping (String) -> Void
+) {
+    modManager.restoreActiveModsBeforeLobby(bundleID: game.bundleID) { success, message in
+        guard success else {
+            completion(message)
+            return
+        }
+        let opened = openApplicationForBundleID(game.bundleID)
+        if !opened {
+            completion("Não foi possível abrir \(game.rawValue). Verifique se o jogo está instalado.")
+        }
     }
 }
