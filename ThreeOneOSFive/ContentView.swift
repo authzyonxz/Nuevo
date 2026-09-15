@@ -415,6 +415,9 @@ private struct KeyAuthProgressView: View {
                         .foregroundColor(step.state == .pending ? .white.opacity(0.28) : .white.opacity(0.68))
                 }
                 .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(step.title)
+                .accessibilityValue(accessibilityValue(for: step.state))
 
                 if index < steps.count - 1 {
                     Rectangle()
@@ -434,15 +437,15 @@ private struct KeyAuthProgressView: View {
     private var steps: [Step] {
         switch state {
         case .checkingPackage:
-            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .active), .init(id: 1, title: "IPHONE", icon: "iphone", state: .pending), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
+            return [.init(id: 0, title: "PACOTE", icon: "shippingbox.fill", state: .active), .init(id: 1, title: "IPHONE", icon: "iphone", state: .pending), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
         case .openingDeviceRegistration, .waitingForDevice:
-            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .active), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
+            return [.init(id: 0, title: "PACOTE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .active), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
         case .askingForKey, .activatingKey:
-            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .completed), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .active)]
+            return [.init(id: 0, title: "PACOTE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .completed), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .active)]
         case .authorized:
-            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .completed), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .completed)]
+            return [.init(id: 0, title: "PACOTE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .completed), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .completed)]
         case .failure:
-            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .pending), .init(id: 1, title: "IPHONE", icon: "iphone", state: .pending), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
+            return [.init(id: 0, title: "PACOTE", icon: "shippingbox.fill", state: .pending), .init(id: 1, title: "IPHONE", icon: "iphone", state: .pending), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
         }
     }
 
@@ -451,6 +454,14 @@ private struct KeyAuthProgressView: View {
         case .completed: return .green
         case .active: return .cyan
         case .pending: return .white
+        }
+    }
+
+    private func accessibilityValue(for state: StepState) -> String {
+        switch state {
+        case .completed: return "Concluído"
+        case .active: return "Em andamento"
+        case .pending: return "Pendente"
         }
     }
 }
