@@ -503,6 +503,8 @@ private struct MainTabView: View {
                 case 1:
                     ESPView(game: game, isDarkMode: $isDarkMode)
                 case 2:
+                    ChamsView(game: game, isDarkMode: $isDarkMode)
+                case 3:
                     TexturesView(game: game, isDarkMode: $isDarkMode)
                 default:
                     AdjustmentsView(game: game, isDarkMode: $isDarkMode)
@@ -514,10 +516,11 @@ private struct MainTabView: View {
             HStack(spacing: 0) {
                 TabButton(index: 0, icon: "scope", title: "Aims", selectedTab: $selectedTab, palette: palette)
                 TabButton(index: 1, icon: "eye.fill", title: "ESP", selectedTab: $selectedTab, palette: palette)
-                TabButton(index: 2, icon: "square.3.layers.3d", title: "Texturas", selectedTab: $selectedTab, palette: palette)
-                TabButton(index: 3, icon: "slider.horizontal.3", title: "Ajustes", selectedTab: $selectedTab, palette: palette)
+                TabButton(index: 2, icon: "paintpalette.fill", title: "Chams", selectedTab: $selectedTab, palette: palette)
+                TabButton(index: 3, icon: "square.3.layers.3d", title: "Texturas", selectedTab: $selectedTab, palette: palette)
+                TabButton(index: 4, icon: "slider.horizontal.3", title: "Ajustes", selectedTab: $selectedTab, palette: palette)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 5)
             .padding(.top, 8)
             .padding(.bottom, 14)
             .background(palette.surface.opacity(0.97))
@@ -545,9 +548,9 @@ private struct TabButton: View {
         } label: {
             VStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: isSelected ? .bold : .medium))
+                    .font(.system(size: 19, weight: isSelected ? .bold : .medium))
                 Text(title)
-                    .font(.system(size: 10, weight: isSelected ? .bold : .semibold, design: .rounded))
+                    .font(.system(size: 9, weight: isSelected ? .bold : .semibold, design: .rounded))
             }
             .foregroundColor(isSelected ? palette.accent : palette.secondaryText.opacity(0.72))
             .frame(maxWidth: .infinity)
@@ -694,9 +697,9 @@ private struct FunctionRow: View {
         HStack(spacing: 13) {
             Image(systemName: iconName)
                 .font(.system(size: 17, weight: .bold))
-                .foregroundColor(isActive ? palette.accent : palette.secondaryText)
+                .foregroundColor(iconColor)
                 .frame(width: 38, height: 38)
-                .background(isActive ? palette.accentSoft : palette.elevatedSurface)
+                .background(iconColor.opacity(isActive ? 0.18 : 0.10))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
@@ -724,13 +727,27 @@ private struct FunctionRow: View {
         .padding(.vertical, 13)
     }
 
+    private var iconColor: Color {
+        switch mod {
+        case .chamsAmarelo: return .yellow
+        case .chamsVermelho: return .red
+        case .chamsRoxo: return .purple
+        case .chamsLaranja: return .orange
+        case .chamsPreto: return palette.isDark ? .gray : .black
+        case .chamsBranco: return palette.isDark ? .white : .gray
+        default: return isActive ? palette.accent : palette.secondaryText.opacity(0.9)
+        }
+    }
+
     private var iconName: String {
         switch mod {
         case .testePatch: return "eye.fill"
+        case .chamsAmarelo, .chamsVermelho, .chamsRoxo, .chamsLaranja, .chamsPreto, .chamsBranco:
+            return "circle.fill"
         case .hologramaArmas, .cacheBalaMagica: return "scope"
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "paintpalette.fill"
         case .fps144: return "gauge.with.dots.needle.67percent"
-        default: return "crosshair"
+        default: return "scope"
         }
     }
 }
@@ -769,7 +786,7 @@ private struct AimsView: View {
     @State private var showLogs = false
 
     private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
-    private let avatarMods: [ModType] = [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas]
+    private let avatarMods: [ModType] = [.hsAlto, .hsPescoco, .hsPeito]
     private let cacheMods: [ModType] = [.cacheHsAlto, .cacheHsPescoco, .cacheHsPeito, .cacheBalaMagica]
 
     private var visibleMods: [ModType] { fileType == .avatar ? avatarMods : cacheMods }
@@ -990,11 +1007,12 @@ private struct ESPView: View {
                             .font(.system(size: 38, weight: .bold))
                             .foregroundColor(palette.accent)
                         Text("AIMBOT + ESP")
-                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .font(.system(size: 27, weight: .bold, design: .default))
                             .foregroundColor(palette.primaryText)
                         Text("Aimbot legit com ESP de linha, caixa, nome e vida. Esta função possui uma aba exclusiva para acesso rápido.")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .font(.system(size: 14, weight: .regular, design: .default))
                             .foregroundColor(palette.secondaryText)
+                            .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(20)
@@ -1020,12 +1038,21 @@ private struct ESPView: View {
                         onToggle: { mod, enabled in toggle(mod, enabled: enabled) }
                     )
 
+                    Label("OBS: ATIVE ANTES DE ENTRAR NO JOGO", systemImage: "exclamationmark.circle.fill")
+                        .font(.system(size: 12, weight: .bold, design: .default))
+                        .foregroundColor(palette.accent)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(palette.accentSoft)
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+
                     PrimaryActionButton(
-                        title: "ABRIR LOBBY",
+                        title: "ABRIR JOGO",
                         icon: "play.fill",
                         disabled: modManager.isProcessing,
                         palette: palette,
-                        action: { restoreAndOpen(game: game, modManager: modManager, completion: present) }
+                        action: openSelectedGame
                     )
                     Spacer(minLength: 20)
                 }
@@ -1037,6 +1064,104 @@ private struct ESPView: View {
             }
         }
         .alert("ESP", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
+        }
+    }
+
+    private func toggle(_ mod: ModType, enabled: Bool) {
+        if enabled {
+            modManager.applyMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        } else {
+            modManager.restoreMod(mod, bundleID: game.bundleID) { _, message in present(message) }
+        }
+    }
+
+    private func openSelectedGame() {
+        let opened = openApplicationForBundleID(game.bundleID)
+        if !opened {
+            present("Não foi possível abrir \(game.rawValue). Verifique se o jogo está instalado.")
+        }
+    }
+
+    private func present(_ message: String) {
+        alertMessage = message
+        showAlert = true
+    }
+}
+
+// MARK: - Chams
+private struct ChamsView: View {
+    let game: GameChoice
+    @Binding var isDarkMode: Bool
+    @StateObject private var modManager = FreeFireModManager.shared
+    @State private var alertMessage = ""
+    @State private var showAlert = false
+
+    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
+    private let chamsMods: [ModType] = [
+        .chamsAmarelo,
+        .chamsVermelho,
+        .chamsRoxo,
+        .chamsLaranja,
+        .chamsPreto,
+        .chamsBranco
+    ]
+
+    var body: some View {
+        ZStack {
+            palette.background.ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    ScreenHeader(
+                        title: "Chams",
+                        subtitle: "Cores para o holograma de armas",
+                        game: game,
+                        isDarkMode: $isDarkMode
+                    )
+
+                    VStack(alignment: .leading, spacing: 9) {
+                        Label("HOLOGRAMA ARMAS", systemImage: "paintpalette.fill")
+                            .font(.system(size: 23, weight: .bold, design: .default))
+                            .foregroundColor(palette.primaryText)
+                        Text("Selecione uma cor para aplicar no jogo escolhido. Mantenha apenas uma opção ativa por vez.")
+                            .font(.system(size: 13, weight: .regular, design: .default))
+                            .foregroundColor(palette.secondaryText)
+                            .lineSpacing(3)
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        LinearGradient(
+                            colors: [palette.accentSoft, palette.surface],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(palette.border, lineWidth: 1))
+
+                    SectionLabel(title: "Cores disponíveis", palette: palette)
+                    FunctionListCard(
+                        mods: chamsMods,
+                        selectedMods: [],
+                        activeMods: modManager.activeMods(for: game.bundleID),
+                        isProcessing: modManager.isProcessing,
+                        palette: palette,
+                        displayName: { modManager.displayName(for: $0) },
+                        onToggle: { mod, enabled in toggle(mod, enabled: enabled) }
+                    )
+                    Spacer(minLength: 20)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 28)
+                .frame(maxWidth: 680)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .alert("Chams", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(alertMessage)

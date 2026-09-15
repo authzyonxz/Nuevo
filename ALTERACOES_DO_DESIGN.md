@@ -1,6 +1,6 @@
 # Alterações do design — MenagerFF unificado
 
-A aplicação agora é distribuída como **uma única IPA**, reunindo as funções que antes eram separadas entre as variantes Aimbot/Holograma e Cache.
+A aplicação é distribuída como **uma única IPA**, reunindo as funções que antes eram separadas entre as variantes Aimbot/Holograma e Cache.
 
 ## Fluxo inicial
 
@@ -11,14 +11,15 @@ Depois que a Key é validada, o usuário vê a tela **Selecione o jogo**. Nela, 
 | Free Fire Normal | `com.dts.freefireth` |
 | Free Fire MAX | `com.dts.freefiremax` |
 
-A seleção é mantida durante toda a sessão. Aplicação, restauração e abertura do Lobby usam exclusivamente o bundle escolhido. O estado de uma função ativa no Free Fire Normal não é apresentado como ativo no Free Fire MAX, e vice-versa.
+A seleção é mantida durante toda a sessão. Aplicação, restauração e abertura do jogo usam exclusivamente o bundle escolhido. O estado de uma função ativa no Free Fire Normal não é apresentado como ativo no Free Fire MAX, e vice-versa.
 
 ## Navegação principal
 
 | Aba | Conteúdo |
 | --- | --- |
 | **Aims** | Controle “Selecione o Tipo de Arquivo” com as opções Avatar e Cache. |
-| **ESP** | Função exclusiva AIMBOT + ESP, com a descrição “aimbot legit e esp linha, caixa, nome e vida”. |
+| **ESP** | Função exclusiva AIMBOT + ESP e botão **ABRIR JOGO**, que preserva a função ativa. |
+| **Chams** | Holograma Armas com seis opções de cor. |
 | **Texturas** | Cards visuais para Skin Instaplayer, Skin Mandela e Skin RuokFF. |
 | **Ajustes** | Função Forçar 120/144 FPS, informações do perfil e controle de aparência. |
 
@@ -27,9 +28,8 @@ A seleção é mantida durante toda a sessão. Aplicação, restauração e aber
 - HS ALTO
 - HS PESCOÇO
 - HS ALTO + PESCOÇO
-- HOLOGRAMA ARMAS
 
-As funções Avatar são selecionadas por switch e aplicadas pelo botão **INJETAR (40%)**. O botão **LOBBY** restaura as funções ativas do jogo escolhido antes de abri-lo.
+As funções Avatar são selecionadas por switch e aplicadas pelo botão **INJETAR (40%)**. Holograma Armas não aparece mais em Aims.
 
 ### Funções Cache
 
@@ -40,9 +40,26 @@ As funções Avatar são selecionadas por switch e aplicadas pelo botão **INJET
 
 As funções Cache mantêm o comportamento da IPA Cache anterior: são aplicadas diretamente ao ligar o switch e restauradas ao desligá-lo.
 
+### Função ESP
+
+A aba ESP contém somente **AIMBOT + ESP**, com a descrição “aimbot legit e esp linha, caixa, nome e vida” e a observação **Ative antes de entrar no jogo**. O botão **ABRIR JOGO** abre o bundle escolhido sem restaurar ou desativar o ESP.
+
+### Funções Chams
+
+Sob o título **HOLOGRAMA ARMAS**, a aba Chams apresenta:
+
+- AMARELO
+- VERMELHO
+- ROXO
+- LARANJA
+- PRETO
+- BRANCO
+
+Cada opção tem um ID próprio no atualizador online e somente uma cor Chams pode permanecer ativa por vez.
+
 ## Aparência
 
-O novo design segue as referências fornecidas, com fundo suave, cards arredondados, hierarquia tipográfica forte, destaque azul e navegação inferior compacta. O botão com ícone de **sol/lua** alterna toda a interface entre os temas claro e escuro, e a preferência fica salva no aparelho.
+O design segue as referências fornecidas, com fundo suave, cards arredondados, hierarquia tipográfica forte, ícones visíveis em todas as funções, destaque azul e navegação inferior compacta. O botão com ícone de **sol/lua** alterna toda a interface entre os temas claro e escuro, e a preferência fica salva no aparelho.
 
 ## Build
 

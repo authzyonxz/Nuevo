@@ -11,6 +11,12 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     case cacheHsPescoco = "CACHE HS PESCOÇO"
     case cacheHsPeito = "CACHE HS PEITO"
     case cacheBalaMagica = "CACHE BALA MÁGICA"
+    case chamsAmarelo = "AMARELO"
+    case chamsVermelho = "VERMELHO"
+    case chamsRoxo = "ROXO"
+    case chamsLaranja = "LARANJA"
+    case chamsPreto = "PRETO"
+    case chamsBranco = "BRANCO"
     case texturaAlok1 = "Skin Instaplayer"
     case texturaAlok2 = "Skin Mandela"
     case texturaAlok3 = "Skin RuokFF"
@@ -31,6 +37,12 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .cacheHsPescoco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A22")!
         case .cacheHsPeito: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A23")!
         case .cacheBalaMagica: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A24")!
+        case .chamsAmarelo: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A31")!
+        case .chamsVermelho: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A32")!
+        case .chamsRoxo: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A33")!
+        case .chamsLaranja: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A34")!
+        case .chamsPreto: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A35")!
+        case .chamsBranco: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A36")!
         case .texturaAlok1: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A11")!
         case .texturaAlok2: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A12")!
         case .texturaAlok3: return UUID(uuidString: "E0C7D7B5-7B75-4F5B-8CCB-2B5E5D5F8A13")!
@@ -49,6 +61,12 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
         case .cacheHsPescoco: return "HS no pescoço do inimigo usando arquivo Cache."
         case .cacheHsPeito: return "HS no peito do inimigo usando arquivo Cache."
         case .cacheBalaMagica: return "Acerta tiros a distância mesmo quando a mira não gruda."
+        case .chamsAmarelo: return "Aplica o holograma de armas na cor amarela."
+        case .chamsVermelho: return "Aplica o holograma de armas na cor vermelha."
+        case .chamsRoxo: return "Aplica o holograma de armas na cor roxa."
+        case .chamsLaranja: return "Aplica o holograma de armas na cor laranja."
+        case .chamsPreto: return "Aplica o holograma de armas na cor preta."
+        case .chamsBranco: return "Aplica o holograma de armas na cor branca."
         case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "Usar personagem alok despertar para funcionar a textura."
         case .fps144: return "Força 120/144 FPS no jogo selecionado em dispositivos compatíveis."
         }
@@ -64,6 +82,8 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
             return "FUNÇÕES DE HOLOGRAMA"
         case .cacheHsAlto, .cacheHsPescoco, .cacheHsPeito, .cacheBalaMagica:
             return "FUNÇÕES CACHE"
+        case .chamsAmarelo, .chamsVermelho, .chamsRoxo, .chamsLaranja, .chamsPreto, .chamsBranco:
+            return "CHAMS"
         case .texturaAlok1, .texturaAlok2, .texturaAlok3:
             return "TEXTURAS"
         case .fps144:
@@ -103,6 +123,8 @@ class FreeFireModManager: ObservableObject {
         case .cacheHsPescoco: return "HS PESCOÇO"
         case .cacheHsPeito: return "HS PEITO"
         case .cacheBalaMagica: return "BALA MÁGICA"
+        case .chamsAmarelo, .chamsVermelho, .chamsRoxo, .chamsLaranja, .chamsPreto, .chamsBranco:
+            return mod.rawValue
         default:
             return remoteDisplayNames[mod] ?? mod.rawValue
         }
@@ -118,7 +140,10 @@ class FreeFireModManager: ObservableObject {
                     .hologramaArmas: "holograma_armas", .texturaAlok1: "textura_instaplayer",
                     .texturaAlok2: "textura_mandela", .texturaAlok3: "textura_ruokff", .fps144: "fps_144",
                     .cacheHsAlto: "cache_hs_alto", .cacheHsPescoco: "cache_hs_pescoco",
-                    .cacheHsPeito: "cache_hs_peito", .cacheBalaMagica: "cache_bala_magica"
+                    .cacheHsPeito: "cache_hs_peito", .cacheBalaMagica: "cache_bala_magica",
+                    .chamsAmarelo: "chams_amarelo", .chamsVermelho: "chams_vermelho",
+                    .chamsRoxo: "chams_roxo", .chamsLaranja: "chams_laranja",
+                    .chamsPreto: "chams_preto", .chamsBranco: "chams_branco"
                 ]
                 let names: [ModType: String] = Dictionary(uniqueKeysWithValues: ids.compactMap { (mod: ModType, id: String) -> (ModType, String)? in
                     guard let item = manifest.payloads.first(where: { $0.id == id }) else { return nil }
@@ -166,7 +191,9 @@ class FreeFireModManager: ObservableObject {
 
     private func fetchRemotePayloadIfAvailable(mod: ModType, bundleID: String, completion: @escaping ((OnlinePayloadUpdater.RemotePayload, Data)?) -> Void) {
         guard [.hsAlto, .hsPescoco, .hsPeito, .hologramaArmas,
-               .cacheHsAlto, .cacheHsPescoco, .cacheHsPeito, .cacheBalaMagica].contains(mod) else {
+               .cacheHsAlto, .cacheHsPescoco, .cacheHsPeito, .cacheBalaMagica,
+               .chamsAmarelo, .chamsVermelho, .chamsRoxo, .chamsLaranja,
+               .chamsPreto, .chamsBranco].contains(mod) else {
             completion(nil)
             return
         }
@@ -174,7 +201,10 @@ class FreeFireModManager: ObservableObject {
             .hsAlto: "aimbot_hs_alto", .hsPescoco: "aimbot_hs_pescoco", .hsPeito: "aimbot_hs_alto_pescoco",
             .hologramaArmas: "holograma_armas", .cacheHsAlto: "cache_hs_alto",
             .cacheHsPescoco: "cache_hs_pescoco", .cacheHsPeito: "cache_hs_peito",
-            .cacheBalaMagica: "cache_bala_magica"
+            .cacheBalaMagica: "cache_bala_magica", .chamsAmarelo: "chams_amarelo",
+            .chamsVermelho: "chams_vermelho", .chamsRoxo: "chams_roxo",
+            .chamsLaranja: "chams_laranja", .chamsPreto: "chams_preto",
+            .chamsBranco: "chams_branco"
         ]
         guard let id = remoteIDs[mod] else { completion(nil); return }
         Task {
