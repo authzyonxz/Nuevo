@@ -6,6 +6,8 @@ struct ContentView: View {
     @EnvironmentObject var licenseManager: LicenseManager
     @State private var selectedTab = 0
     @State private var didStartFlow = false
+    @StateObject private var patchStore = PatchProjectStore()
+    @State private var pendingImportURL: URL?
 
     var body: some View {
         ZStack {
@@ -20,6 +22,27 @@ struct ContentView: View {
             didStartFlow = true
             licenseManager.bootstrap()
         }
+        .onOpenURL { incomingURL in
+            receiveImportURL(incomingURL)
+        }
+        .onChange(of: licenseManager.isAuthorized) { isAuthorized in
+            guard isAuthorized, let pendingImportURL else { return }
+            self.pendingImportURL = nil
+            importURL(pendingImportURL)
+        }
+    }
+
+    private func receiveImportURL(_ url: URL) {
+        guard PatchImportRoute.resolve(url) != .invalid else { return }
+        guard licenseManager.isAuthorized else {
+            pendingImportURL = url
+            return
+        }
+        importURL(url)
+    }
+
+    private func importURL(_ url: URL) {
+        patchStore.importPackage(from: PatchImportRoute.resolve(url))
     }
 }
 

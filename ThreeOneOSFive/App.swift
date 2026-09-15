@@ -39,7 +39,8 @@ struct ThreeOneOSFiveApp: App {
     }
 }
 
-class KernelExploitState: ObservableObject {
+@MainActor
+final class KernelExploitState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
     @Published var exploitRunning = false
 
