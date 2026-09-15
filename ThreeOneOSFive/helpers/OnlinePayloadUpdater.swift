@@ -28,11 +28,13 @@ final class OnlinePayloadUpdater {
         let size: Int
         let downloadURL: String
         let enabled: Bool
+        let packagePassword: String?
 
         enum CodingKeys: String, CodingKey {
             case id, displayName = "display_name", fileType = "file_type", version, fileName = "file_name"
             case targetPaths = "target_paths", compatibleGames = "compatible_games"
             case sha256, size, downloadURL = "download_url", enabled
+            case packagePassword = "package_password"
         }
     }
 

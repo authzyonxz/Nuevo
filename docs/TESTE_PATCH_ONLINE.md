@@ -16,12 +16,13 @@ curl -X POST https://keyauthv2.org/api/v1/admin/payloads \
   -F file_name='FixCrashFFTH.3105' \
   -F target_paths='Documents' \
   -F compatible_games='com.dts.freefireth' \
+  -F package_password='OG' \
   -F payload=@./FixCrashFFTH.3105
 ```
 
 O arquivo deve ser um pacote `.3105` válido. O servidor informa o tamanho e o SHA-256 no manifesto; o aplicativo verifica ambos antes de decodificar ou aplicar qualquer conteúdo.
 
-O pacote atual usa a senha `OG`. Pacotes futuros destinados a esta função devem manter essa senha ou ser publicados sem senha. Caso a senha seja alterada, o valor também precisa ser atualizado em `TestPatchFeature.swift` e uma nova IPA precisa ser construída.
+A senha é informada no campo opcional `package_password` do manifesto. Use `package_password='OG'` para pacote protegido ou deixe o campo vazio/ausente para pacote sem senha. O IPA lê esse valor do manifesto e usa `nil` quando ausente, portanto não é necessário recompilar para trocar a senha de uma nova publicação. As duas variantes do workflow usam a mesma implementação.
 
 ## Ativar e desativar
 

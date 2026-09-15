@@ -6,7 +6,6 @@ enum TestPatchFeature {
     static let stableProjectID = UUID(uuidString: "40F75F5F-E17F-4F24-8721-0870E7304A94")!
     static let remoteID = "teste_patch"
     static let expectedBundleID = "com.dts.freefireth"
-    private static let packagePassword = "OG"
 
     enum FeatureError: LocalizedError {
         case unavailable
@@ -31,7 +30,7 @@ enum TestPatchFeature {
         guard metadata.enabled, !data.isEmpty else {
             throw FeatureError.unavailable
         }
-        let decoded = try PatchPackageCodec.decode(data, password: packagePassword)
+        let decoded = try PatchPackageCodec.decode(data, password: metadata.packagePassword)
         var project = decoded.project
         guard project.allBundleIdentifiers == [expectedBundleID],
               !project.rules.isEmpty else {
