@@ -6,7 +6,7 @@ enum TestPatchFeature {
     static let stableProjectID = UUID(uuidString: "40F75F5F-E17F-4F24-8721-0870E7304A94")!
     static let projectID = stableProjectID
     static let remoteID = "teste_patch"
-    static let expectedBundleID = "com.dts.freefireth"
+    static let supportedBundleIDs: Set<String> = ["com.dts.freefireth", "com.dts.freefiremax"]
 
     enum FeatureError: LocalizedError {
         case unavailable
@@ -22,10 +22,13 @@ enum TestPatchFeature {
         }
     }
 
-    static func loadRemoteProject() async throws -> PatchProject {
+    static func loadRemoteProject(bundleID: String) async throws -> PatchProject {
+        guard supportedBundleIDs.contains(bundleID) else {
+            throw FeatureError.incompatiblePackage
+        }
         let (metadata, data) = try await OnlinePayloadUpdater.shared.download(
             id: remoteID,
-            bundleID: expectedBundleID,
+            bundleID: bundleID,
             forceRefresh: true
         )
         guard metadata.enabled, !data.isEmpty else {
@@ -33,9 +36,24 @@ enum TestPatchFeature {
         }
         let decoded = try PatchPackageCodec.decode(data, password: metadata.packagePassword)
         var project = decoded.project
-        guard project.allBundleIdentifiers == [expectedBundleID],
-              !project.rules.isEmpty else {
+        let sourceBundleIDs = Set(project.allBundleIdentifiers)
+        guard !project.rules.isEmpty,
+              sourceBundleIDs.count == 1,
+              sourceBundleIDs.isSubset(of: supportedBundleIDs) else {
             throw FeatureError.incompatiblePackage
+        }
+        // O jogo é escolhido uma única vez após a validação da Key. Todas as
+        // regras do pacote passam a apontar exclusivamente para esse bundle.
+        project.bundleIdentifiers = [bundleID]
+        project.directories = project.directories.map { directory in
+            var selected = directory
+            selected.bundleID = bundleID
+            return selected
+        }
+        project.rules = project.rules.map { rule in
+            var selected = rule
+            selected.bundleID = bundleID
+            return selected
         }
         // O ID do pacote pode mudar quando o servidor recebe uma nova versão.
         // O ID estável mantém o vínculo com o journal e com o switch da função.
@@ -43,8 +61,8 @@ enum TestPatchFeature {
         return project
     }
 
-    static func apply() async throws -> PatchTransactionReceipt {
-        try DevicePatchService.apply(project: await loadRemoteProject())
+    static func apply(bundleID: String) async throws -> PatchTransactionReceipt {
+        try DevicePatchService.apply(project: await loadRemoteProject(bundleID: bundleID))
     }
 
     static func latestReceipt() -> PatchTransactionReceipt? {
