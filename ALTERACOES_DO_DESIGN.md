@@ -6,6 +6,8 @@ A aplicação é distribuída como **uma única IPA**, reunindo as funções que
 
 Depois que a Key é validada, o usuário vê a tela **Selecione o jogo**. Nela, deve escolher um único perfil antes de abrir as funções:
 
+A autenticação possui um cartão visual premium, campo seguro com opção de mostrar ou ocultar a Key e um indicador de três etapas: **Package**, **iPhone** e **Acesso**. O antigo texto “Checking package” foi substituído por **Verificando o pacote**, com feedback visual durante a conexão e a validação.
+
 | Perfil | Bundle usado por todas as operações |
 | --- | --- |
 | Free Fire Normal | `com.dts.freefireth` |
@@ -14,6 +16,8 @@ Depois que a Key é validada, o usuário vê a tela **Selecione o jogo**. Nela, 
 A seleção é mantida durante toda a sessão. Aplicação, restauração e abertura do jogo usam exclusivamente o bundle escolhido. O estado de uma função ativa no Free Fire Normal não é apresentado como ativo no Free Fire MAX, e vice-versa.
 
 ## Navegação principal
+
+O cabeçalho de cada aba exibe somente o nome da seção. As descrições abaixo de Aims, ESP, Chams, Texturas e Ajustes foram removidas, enquanto a logo do jogo selecionado, o perfil ativo, o bundle e o botão de tema permanecem no topo.
 
 | Aba | Conteúdo |
 | --- | --- |

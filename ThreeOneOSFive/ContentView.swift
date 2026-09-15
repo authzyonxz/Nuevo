@@ -69,84 +69,206 @@ struct ContentView: View {
 struct KeyAuthGateView: View {
     @EnvironmentObject var licenseManager: LicenseManager
     @State private var inputKey = ""
+    @State private var showsKey = false
 
     var body: some View {
-        ZStack {
-            AnimatedNetworkBackground().ignoresSafeArea()
-            VStack(spacing: 18) {
-                Image(systemName: iconName)
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundColor(.green)
-                    .frame(width: 64, height: 64)
-                    .background(Color.green.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        GeometryReader { proxy in
+            ZStack {
+                AnimatedNetworkBackground().ignoresSafeArea()
+                LinearGradient(
+                    colors: [Color.blue.opacity(0.16), .clear, Color.purple.opacity(0.08)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
-                Text(title)
-                    .font(.system(size: 28, weight: .bold, design: .default))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-
-                Text(message)
-                    .font(.system(size: 14, weight: .medium, design: .default))
-                    .foregroundColor(.white.opacity(0.58))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if licenseManager.pendingWebURL != nil,
-                   licenseManager.flowState == .openingDeviceRegistration || licenseManager.flowState == .waitingForDevice {
-                    Button {
-                        licenseManager.openPendingRegistration()
-                    } label: {
-                        Label("Identificar este iPhone", systemImage: "safari")
-                            .frame(maxWidth: .infinity)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 24) {
+                        brandHeader
+                        authenticationCard
+                        secureFooter
                     }
-                    .buttonStyle(KeyAuthPrimaryButtonStyle())
-                    .accessibilityIdentifier("open-device-registration")
-                }
-
-                if licenseManager.flowState == .askingForKey {
-                    keyEntry
-                } else if licenseManager.flowState == .authorized {
-                    successView
-                } else if case .failure = licenseManager.flowState {
-                    Button("TENTAR NOVAMENTE") { licenseManager.retryBootstrap() }
-                        .buttonStyle(KeyAuthPrimaryButtonStyle())
-                }
-
-                if licenseManager.isLoading {
-                    ProgressView().tint(.white).padding(.top, 4)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: 460)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: proxy.size.height)
                 }
             }
-            .padding(.horizontal, 24)
-            .frame(maxWidth: 420)
         }
         .preferredColorScheme(.dark)
     }
 
+    private var brandHeader: some View {
+        HStack(spacing: 11) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(LinearGradient(colors: [Color.cyan, Color.blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                Image(systemName: "scope")
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            .frame(width: 42, height: 42)
+            .shadow(color: Color.blue.opacity(0.34), radius: 18, y: 8)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("MENAGERFF")
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .tracking(0.8)
+                    .foregroundColor(.white)
+                Text("ACESSO SEGURO")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .tracking(1.2)
+                    .foregroundColor(.white.opacity(0.46))
+            }
+            Spacer()
+            HStack(spacing: 6) {
+                Circle().fill(Color.green).frame(width: 7, height: 7)
+                Text("ONLINE")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .tracking(0.7)
+            }
+            .foregroundColor(.white.opacity(0.65))
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(Color.white.opacity(0.06))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
+        }
+    }
+
+    private var authenticationCard: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(accentColor.opacity(0.12))
+                    .frame(width: 92, height: 92)
+                    .overlay(Circle().stroke(accentColor.opacity(0.20), lineWidth: 1))
+                Circle()
+                    .fill(accentColor.opacity(0.09))
+                    .frame(width: 68, height: 68)
+                Image(systemName: iconName)
+                    .font(.system(size: 29, weight: .semibold))
+                    .foregroundColor(accentColor)
+                if licenseManager.isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(0.82)
+                        .offset(x: 34, y: 34)
+                }
+            }
+
+            VStack(spacing: 8) {
+                Text(statusLabel)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .tracking(1.4)
+                    .foregroundColor(accentColor)
+                Text(title)
+                    .font(.system(size: 29, weight: .bold, design: .default))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                Text(message)
+                    .font(.system(size: 14, weight: .regular, design: .default))
+                    .foregroundColor(.white.opacity(0.58))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            KeyAuthProgressView(state: licenseManager.flowState)
+
+            if shouldShowRegistrationButton {
+                Button {
+                    licenseManager.openPendingRegistration()
+                } label: {
+                    Label("IDENTIFICAR ESTE IPHONE", systemImage: "safari.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(KeyAuthPrimaryButtonStyle())
+                .accessibilityIdentifier("open-device-registration")
+            }
+
+            if licenseManager.flowState == .askingForKey {
+                keyEntry
+            } else if licenseManager.flowState == .authorized {
+                successView
+            } else if case .failure = licenseManager.flowState {
+                Button {
+                    licenseManager.retryBootstrap()
+                } label: {
+                    Label("TENTAR NOVAMENTE", systemImage: "arrow.clockwise")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(KeyAuthPrimaryButtonStyle())
+            }
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 26)
+        .background(
+            LinearGradient(
+                colors: [Color.white.opacity(0.105), Color.white.opacity(0.052)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).stroke(Color.white.opacity(0.11), lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.38), radius: 32, y: 18)
+    }
+
     private var keyEntry: some View {
-        VStack(spacing: 12) {
-            TextField("Digite sua Key", text: $inputKey)
+        VStack(spacing: 13) {
+            HStack(spacing: 11) {
+                Image(systemName: "key.horizontal.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.cyan)
+                Group {
+                    if showsKey {
+                        TextField("Cole ou digite sua Key", text: $inputKey)
+                    } else {
+                        SecureField("Cole ou digite sua Key", text: $inputKey)
+                    }
+                }
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
                 .textContentType(.password)
                 .submitLabel(.go)
-                .font(.system(size: 16, weight: .medium, design: .default))
+                .font(.system(size: 15, weight: .medium, design: .monospaced))
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .frame(height: 54)
-                .background(Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .onSubmit { validate() }
 
-            Button("CONFIRMAR KEY") { validate() }
-                .buttonStyle(KeyAuthPrimaryButtonStyle())
-                .disabled(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || licenseManager.isLoading)
+                Button { showsKey.toggle() } label: {
+                    Image(systemName: showsKey ? "eye.slash.fill" : "eye.fill")
+                        .foregroundColor(.white.opacity(0.48))
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(showsKey ? "Ocultar Key" : "Mostrar Key")
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 56)
+            .background(Color.black.opacity(0.30))
+            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(Color.white.opacity(0.11), lineWidth: 1))
+
+            Button {
+                validate()
+            } label: {
+                Label("CONFIRMAR KEY", systemImage: "arrow.right.circle.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(KeyAuthPrimaryButtonStyle())
+            .disabled(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || licenseManager.isLoading)
 
             if let error = licenseManager.errorMessage {
-                Text(error)
+                Label(error, systemImage: "exclamationmark.circle.fill")
                     .font(.system(size: 12, weight: .medium, design: .default))
-                    .foregroundColor(.red.opacity(0.95))
-                    .multilineTextAlignment(.center)
+                    .foregroundColor(Color.red.opacity(0.94))
+                    .multilineTextAlignment(.leading)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.red.opacity(0.09))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
     }
@@ -157,7 +279,9 @@ struct KeyAuthGateView: View {
                 .font(.system(size: 16, weight: .bold, design: .default))
                 .foregroundColor(.green)
             if let info = licenseManager.licenseInfo {
-                Text(info.productName).foregroundColor(.white).font(.headline)
+                Text(info.productName)
+                    .foregroundColor(.white)
+                    .font(.headline)
                 Text("Expira em: \(info.expiresAt)")
                     .font(.system(size: 13, design: .default))
                     .foregroundColor(.white.opacity(0.55))
@@ -166,12 +290,27 @@ struct KeyAuthGateView: View {
         .padding(.top, 8)
     }
 
+    private var secureFooter: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "lock.fill")
+            Text("CONEXÃO PROTEGIDA · CHAVE SALVA NO IPHONE")
+        }
+        .font(.system(size: 9, weight: .bold, design: .rounded))
+        .tracking(0.6)
+        .foregroundColor(.white.opacity(0.36))
+    }
+
+    private var shouldShowRegistrationButton: Bool {
+        guard licenseManager.pendingWebURL != nil else { return false }
+        return licenseManager.flowState == .openingDeviceRegistration || licenseManager.flowState == .waitingForDevice
+    }
+
     private var title: String {
         switch licenseManager.flowState {
-        case .checkingPackage: return "Checking package"
+        case .checkingPackage: return "Verificando o pacote"
         case .openingDeviceRegistration, .waitingForDevice: return "Identifique este iPhone"
-        case .askingForKey: return "Digite sua Key"
-        case .activatingKey: return "Validando acesso"
+        case .askingForKey: return "Ative seu acesso"
+        case .activatingKey: return "Validando sua Key"
         case .authorized: return "Acesso autorizado"
         case .failure: return "Não foi possível continuar"
         }
@@ -179,11 +318,11 @@ struct KeyAuthGateView: View {
 
     private var message: String {
         switch licenseManager.flowState {
-        case .checkingPackage: return "Verificando o Package EXTERNAL - iOS..."
+        case .checkingPackage: return "Conectando ao servidor e confirmando a disponibilidade do Package EXTERNAL - iOS."
         case .openingDeviceRegistration: return "Instale o perfil temporário para registrar o UDID deste dispositivo."
         case .waitingForDevice: return "Baixe o perfil, abra Ajustes > Perfil Baixado, instale e depois retorne ao app."
-        case .askingForKey: return "O dispositivo foi registrado. Informe a Key para ativar o acesso."
-        case .activatingKey: return "Confirmando a Key e vinculando este dispositivo..."
+        case .askingForKey: return "Seu dispositivo está pronto. Informe a Key para liberar todas as funções."
+        case .activatingKey: return "Confirmando a licença e vinculando o acesso seguro a este dispositivo."
         case .authorized: return "Sua Key foi confirmada pelo servidor."
         case .failure(let value): return value
         }
@@ -192,10 +331,29 @@ struct KeyAuthGateView: View {
     private var iconName: String {
         switch licenseManager.flowState {
         case .authorized: return "checkmark.shield.fill"
-        case .checkingPackage, .activatingKey: return "lock.shield"
+        case .checkingPackage, .activatingKey: return "lock.shield.fill"
         case .openingDeviceRegistration, .waitingForDevice: return "iphone"
         case .askingForKey: return "key.fill"
-        case .failure: return "exclamationmark.shield"
+        case .failure: return "exclamationmark.shield.fill"
+        }
+    }
+
+    private var statusLabel: String {
+        switch licenseManager.flowState {
+        case .checkingPackage: return "INICIALIZAÇÃO SEGURA"
+        case .openingDeviceRegistration, .waitingForDevice: return "REGISTRO DO DISPOSITIVO"
+        case .askingForKey: return "LICENÇA MENAGERFF"
+        case .activatingKey: return "AUTENTICAÇÃO EM ANDAMENTO"
+        case .authorized: return "VALIDAÇÃO CONCLUÍDA"
+        case .failure: return "FALHA NA VERIFICAÇÃO"
+        }
+    }
+
+    private var accentColor: Color {
+        switch licenseManager.flowState {
+        case .authorized: return .green
+        case .failure: return .red
+        default: return .cyan
         }
     }
 
@@ -210,12 +368,90 @@ struct KeyAuthGateView: View {
 private struct KeyAuthPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .heavy, design: .default))
-            .foregroundColor(.black)
+            .font(.system(size: 13, weight: .bold, design: .default))
+            .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(Color.white.opacity(configuration.isPressed ? 0.72 : 1))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .frame(height: 54)
+            .background(
+                LinearGradient(
+                    colors: configuration.isPressed
+                        ? [Color.blue.opacity(0.72), Color.cyan.opacity(0.72)]
+                        : [Color.blue, Color.cyan],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+            .shadow(color: Color.blue.opacity(configuration.isPressed ? 0.12 : 0.30), radius: 16, y: 8)
+    }
+}
+
+@available(iOS 16.0, *)
+private struct KeyAuthProgressView: View {
+    private enum StepState: Equatable { case completed, active, pending }
+    private struct Step: Identifiable {
+        let id: Int
+        let title: String
+        let icon: String
+        let state: StepState
+    }
+
+    let state: LicenseManager.FlowState
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
+                VStack(spacing: 7) {
+                    ZStack {
+                        Circle()
+                            .fill(color(for: step.state).opacity(step.state == .pending ? 0.08 : 0.16))
+                            .frame(width: 34, height: 34)
+                        Image(systemName: step.state == .completed ? "checkmark" : step.icon)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(color(for: step.state))
+                    }
+                    Text(step.title)
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundColor(step.state == .pending ? .white.opacity(0.28) : .white.opacity(0.68))
+                }
+                .frame(maxWidth: .infinity)
+
+                if index < steps.count - 1 {
+                    Rectangle()
+                        .fill(step.state == .completed ? Color.green.opacity(0.50) : Color.white.opacity(0.09))
+                        .frame(height: 1)
+                        .offset(y: -10)
+                }
+            }
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 14)
+        .background(Color.black.opacity(0.20))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.07), lineWidth: 1))
+    }
+
+    private var steps: [Step] {
+        switch state {
+        case .checkingPackage:
+            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .active), .init(id: 1, title: "IPHONE", icon: "iphone", state: .pending), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
+        case .openingDeviceRegistration, .waitingForDevice:
+            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .active), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
+        case .askingForKey, .activatingKey:
+            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .completed), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .active)]
+        case .authorized:
+            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .completed), .init(id: 1, title: "IPHONE", icon: "iphone", state: .completed), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .completed)]
+        case .failure:
+            return [.init(id: 0, title: "PACKAGE", icon: "shippingbox.fill", state: .pending), .init(id: 1, title: "IPHONE", icon: "iphone", state: .pending), .init(id: 2, title: "ACESSO", icon: "key.fill", state: .pending)]
+        }
+    }
+
+    private func color(for state: StepState) -> Color {
+        switch state {
+        case .completed: return .green
+        case .active: return .cyan
+        case .pending: return .white
+        }
     }
 }
 
@@ -565,7 +801,6 @@ private struct TabButton: View {
 // MARK: - Shared components
 private struct ScreenHeader: View {
     let title: String
-    let subtitle: String
     let game: GameChoice
     @Binding var isDarkMode: Bool
 
@@ -580,15 +815,9 @@ private struct ScreenHeader: View {
                     .frame(width: 40, height: 40)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 25, weight: .heavy, design: .rounded))
-                        .foregroundColor(palette.primaryText)
-                    Text(subtitle)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundColor(palette.secondaryText)
-                        .lineLimit(1)
-                }
+                Text(title)
+                    .font(.system(size: 27, weight: .heavy, design: .rounded))
+                    .foregroundColor(palette.primaryText)
 
                 Spacer()
                 ThemeToggleButton(isDarkMode: $isDarkMode)
@@ -802,7 +1031,6 @@ private struct AimsView: View {
                 VStack(alignment: .leading, spacing: 19) {
                     ScreenHeader(
                         title: "Aims",
-                        subtitle: "Controle de mira por tipo de arquivo",
                         game: game,
                         isDarkMode: $isDarkMode
                     )
@@ -997,7 +1225,6 @@ private struct ESPView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     ScreenHeader(
                         title: "ESP",
-                        subtitle: "Visão e assistência avançada",
                         game: game,
                         isDarkMode: $isDarkMode
                     )
@@ -1116,7 +1343,6 @@ private struct ChamsView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     ScreenHeader(
                         title: "Chams",
-                        subtitle: "Cores para o holograma de armas",
                         game: game,
                         isDarkMode: $isDarkMode
                     )
@@ -1210,7 +1436,6 @@ private struct TexturesView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     ScreenHeader(
                         title: "Texturas",
-                        subtitle: "Personalize o visual do jogo",
                         game: game,
                         isDarkMode: $isDarkMode
                     )
@@ -1324,7 +1549,6 @@ private struct AdjustmentsView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     ScreenHeader(
                         title: "Ajustes",
-                        subtitle: "Desempenho e preferências do app",
                         game: game,
                         isDarkMode: $isDarkMode
                     )
