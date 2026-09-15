@@ -4,6 +4,7 @@ import Foundation
 /// um ID estável para que o journal continue reconhecível entre atualizações.
 enum TestPatchFeature {
     static let stableProjectID = UUID(uuidString: "40F75F5F-E17F-4F24-8721-0870E7304A94")!
+    static let projectID = stableProjectID
     static let remoteID = "teste_patch"
     static let expectedBundleID = "com.dts.freefireth"
 
