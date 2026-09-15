@@ -77,7 +77,6 @@
     3105WEB02 /* SpiderWebBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105WEB01 /* SpiderWebBackground.swift */; };
     3105MMBF /* FreeFireModManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105MM01 /* FreeFireModManager.swift */; };
     3105TP02 /* TestPatchFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105TP01 /* TestPatchFeature.swift */; };
-    3105TP04 /* FixCrashFFTH.3105 in Resources */ = {isa = PBXBuildFile; fileRef = 3105TP03 /* FixCrashFFTH.3105 */; };
 
 /* End PBXBuildFile section */
 
@@ -170,7 +169,6 @@
     3105WEB01 /* SpiderWebBackground.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpiderWebBackground.swift; sourceTree = "<group>"; };
     3105MM01 /* FreeFireModManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FreeFireModManager.swift; sourceTree = "<group>"; };
     3105TP01 /* TestPatchFeature.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestPatchFeature.swift; sourceTree = "<group>"; };
-    3105TP03 /* FixCrashFFTH.3105 */ = {isa = PBXFileReference; lastKnownFileType = file; path = FixCrashFFTH.3105; sourceTree = "<group>"; };
 
 /* End PBXFileReference section */
 
@@ -207,7 +205,6 @@
 					3105K100 /* KFDBackend.m */,
 					3105A120 /* Localizable.strings */,
 					3105A031 /* Assets.xcassets */,
-					3105TP03 /* FixCrashFFTH.3105 */,
 				);
 			path = ThreeOneOSFive;
 			sourceTree = "<group>";
@@ -386,7 +383,6 @@
 			files = (
 				3105A211,
 				3105A228,
-				3105TP04,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

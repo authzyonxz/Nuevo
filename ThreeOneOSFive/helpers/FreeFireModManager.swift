@@ -239,12 +239,12 @@ class FreeFireModManager: ObservableObject {
         }
 
         if mod == .testePatch {
-            addLog("TESTE PATCH: pacote FixCrashFFTH desbloqueado e pronto para aplicar")
+            addLog("TESTE PATCH: consultando pacote remoto teste_patch")
             prepareLegacyKernelAccessIfNeeded()
-            DispatchQueue.global(qos: .userInitiated).async {
+            Task.detached(priority: .userInitiated) {
                 do {
-                    let receipt = try TestPatchFeature.apply()
-                    self.addLog("TESTE PATCH aplicado: journal criado e arquivos verificados")
+                    let receipt = try await TestPatchFeature.apply()
+                    self.addLog("TESTE PATCH remoto aplicado: journal criado e arquivos verificados")
                     DispatchQueue.main.async {
                         self.activeReceipts[mod] = receipt
                         self.activeMods.insert(mod)
@@ -253,7 +253,7 @@ class FreeFireModManager: ObservableObject {
                         completion(true, "TESTE PATCH ativado com sucesso.")
                     }
                 } catch {
-                    self.addLog("TESTE PATCH falhou: \(error.localizedDescription)")
+                    self.addLog("TESTE PATCH remoto falhou: \(error.localizedDescription)")
                     self.endOperation()
                     self.complete(completion, success: false, message: "Falha ao ativar TESTE PATCH: \(error.localizedDescription)")
                 }

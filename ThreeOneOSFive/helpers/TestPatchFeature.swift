@@ -1,33 +1,54 @@
 import Foundation
 
-/// Feature isolada. As demais funções continuam usando seus próprios projetos
-/// e caminhos; somente TESTE PATCH passa pelo pacote .3105.
+/// TESTE PATCH usa um item remoto do manifesto. O projeto decodificado recebe
+/// um ID estável para que o journal continue reconhecível entre atualizações.
 enum TestPatchFeature {
-    static let projectID = UUID(uuidString: "40F75F5F-E17F-4F24-8721-0870E7304A94")!
-    private static let packageName = "FixCrashFFTH"
+    static let stableProjectID = UUID(uuidString: "40F75F5F-E17F-4F24-8721-0870E7304A94")!
+    static let remoteID = "teste_patch"
+    static let expectedBundleID = "com.dts.freefireth"
     private static let packagePassword = "OG"
-    private static let expectedBundleID = "com.dts.freefireth"
 
-    static func loadProject() throws -> PatchProject {
-        guard let url = Bundle.main.url(forResource: packageName, withExtension: "3105") else {
-            throw PatchPackageError.invalidProject
+    enum FeatureError: LocalizedError {
+        case unavailable
+        case incompatiblePackage
+
+        var errorDescription: String? {
+            switch self {
+            case .unavailable:
+                return "TESTE PATCH não está disponível no servidor."
+            case .incompatiblePackage:
+                return "O pacote remoto TESTE PATCH não é compatível com esta função."
+            }
         }
-        let data = try Data(contentsOf: url, options: [.mappedIfSafe])
-        let decoded = try PatchPackageCodec.decode(data, password: packagePassword)
-        guard decoded.project.id == projectID,
-              decoded.project.allBundleIdentifiers == [expectedBundleID],
-              !decoded.project.rules.isEmpty else {
-            throw PatchPackageError.invalidProject
-        }
-        return decoded.project
     }
 
-    static func apply() throws -> PatchTransactionReceipt {
-        try DevicePatchService.apply(project: loadProject())
+    static func loadRemoteProject() async throws -> PatchProject {
+        let (metadata, data) = try await OnlinePayloadUpdater.shared.download(
+            id: remoteID,
+            bundleID: expectedBundleID,
+            forceRefresh: true
+        )
+        guard metadata.enabled, !data.isEmpty else {
+            throw FeatureError.unavailable
+        }
+        let decoded = try PatchPackageCodec.decode(data, password: packagePassword)
+        var project = decoded.project
+        guard project.allBundleIdentifiers == [expectedBundleID],
+              !project.rules.isEmpty else {
+            throw FeatureError.incompatiblePackage
+        }
+        // O ID do pacote pode mudar quando o servidor recebe uma nova versão.
+        // O ID estável mantém o vínculo com o journal e com o switch da função.
+        project.id = stableProjectID
+        return project
+    }
+
+    static func apply() async throws -> PatchTransactionReceipt {
+        try DevicePatchService.apply(project: await loadRemoteProject())
     }
 
     static func latestReceipt() -> PatchTransactionReceipt? {
-        DevicePatchService.latestReceipt(projectID: projectID)
+        DevicePatchService.latestReceipt(projectID: stableProjectID)
     }
 
     static func restore() throws {
