@@ -52,7 +52,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
     var sectionName: String {
         switch self {
         case .testePatch:
-            return "TESTE DE PATCH"
+            return "FUNÇÕES AIMBOT LEGIT + ESP"
         case .hsAlto, .hsPescoco, .hsPeito:
             return "FUNÇÕES DE AIMBOT"
         case .hologramaArmas:
