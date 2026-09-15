@@ -52,7 +52,10 @@ enum TestPatchFeature {
     }
 
     static func restore() throws {
-        guard let receipt = latestReceipt() else {
+        // A restauração usa o backup original e o journal criado pelo Apply;
+        // nunca baixa nem reaplica o pacote remoto 3105.
+        guard let receipt = latestReceipt(),
+              receipt.projectID == stableProjectID else {
             throw PatchPackageError.restoreFailed
         }
         try DevicePatchService.restore(receipt: receipt)
