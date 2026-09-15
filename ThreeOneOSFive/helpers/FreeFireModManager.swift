@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 enum ModType: String, CaseIterable, Identifiable, Hashable {
-    case testePatch = "TESTE PATCH"
+    case testePatch = "AIMBOT + ESP"
     case hsAlto = "HS ALTO"
     case hsPescoco = "HS PESCOÇO"
     case hsPeito = "HS ALTO + PESCOÇO"
@@ -32,7 +32,7 @@ enum ModType: String, CaseIterable, Identifiable, Hashable {
 
     var subtitle: String {
         switch self {
-        case .testePatch: return "Aplica e restaura o pacote FixCrashFFTH usando o sistema de patch."
+        case .testePatch: return "aimbot legit e esp linha, caixa, nome e vida"
 #if CACHE_VARIANT
         case .hsAlto: return "HS ACIMA DA CABEÇA DO INIMIGO"
         case .hsPescoco: return "HS NO PESCOÇO DO INIMIGO"
