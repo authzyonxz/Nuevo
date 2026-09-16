@@ -1,4 +1,4 @@
-name: Build Unsigned IPA Variants
+name: Build Unsigned IPA Unified
 
 on:
   push:
@@ -11,14 +11,9 @@ permissions:
 jobs:
   build-unsigned-ipa:
     runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Aimbot-Holograma
-            condition: ""
-          - name: Cache
-            condition: CACHE_VARIANT
+    env:
+      VARIANT: Unified
+      SWIFT_CONDITION: CACHE_VARIANT
 
     steps:
       - name: Checkout repository
@@ -34,10 +29,7 @@ jobs:
           xcodebuild -version
           xcode-select -p
 
-      - name: Build unsigned ${{ matrix.name }} IPA
-        env:
-          VARIANT: ${{ matrix.name }}
-          SWIFT_CONDITION: ${{ matrix.condition }}
+      - name: Build unsigned unified IPA
         run: |
           set -euo pipefail
           rm -rf "build/${VARIANT}"
@@ -60,9 +52,7 @@ jobs:
             COPY_PHASE_STRIP=YES \
             build
 
-      - name: Package unsigned ${{ matrix.name }} IPA
-        env:
-          VARIANT: ${{ matrix.name }}
+      - name: Package unsigned unified IPA
         run: |
           set -euo pipefail
           APP_PATH="build/${VARIANT}/Release-iphoneos/3105.app"
@@ -75,10 +65,10 @@ jobs:
           )
           test -s "build/${VARIANT}/MenagerFF_${VARIANT}_Unsigned.ipa"
 
-      - name: Upload ${{ matrix.name }} IPA artifact
+      - name: Upload unified unsigned IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MenagerFF-${{ matrix.name }}-Unsigned-IPA
-          path: build/${{ matrix.name }}/MenagerFF_${{ matrix.name }}_Unsigned.ipa
+          name: MenagerFF-Unified-Unsigned-IPA
+          path: build/Unified/MenagerFF_Unified_Unsigned.ipa
           if-no-files-found: error
           retention-days: 14
