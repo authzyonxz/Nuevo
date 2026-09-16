@@ -649,19 +649,12 @@ struct HomeView: View {
     }
 
     private func openLobby() {
-        modManager.restoreActiveModsBeforeLobby { success, message in
-            guard success else {
-                alertMessage = message
-                showAlert = true
-                return
-            }
-
-            selectedMods.removeAll()
-            let opened = openApplicationForBundleID(selectedGame.bundleID)
-            guard !opened else { return }
-            alertMessage = "Não foi possível abrir \(selectedGame.rawValue). Verifique se o aplicativo está instalado."
-            showAlert = true
-        }
+        // Abrir o Lobby não deve restaurar o original: as funções cache permanecem ativas.
+        selectedMods.removeAll()
+        let opened = openApplicationForBundleID(selectedGame.bundleID)
+        guard !opened else { return }
+        alertMessage = "Não foi possível abrir \(selectedGame.rawValue). Verifique se o aplicativo está instalado."
+        showAlert = true
     }
 }
 
