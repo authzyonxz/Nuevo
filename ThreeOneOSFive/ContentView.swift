@@ -1446,40 +1446,22 @@ private struct ChamsView: View {
 }
 
 // MARK: - Textures
-private struct TextureOption: Identifiable {
-    let mod: ModType
-    let imageName: String
-    var id: ModType { mod }
-}
-
 private struct TexturesView: View {
     let game: GameChoice
     @Binding var isDarkMode: Bool
 
-    private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
-
     var body: some View {
-        ZStack {
-            palette.background.ignoresSafeArea()
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    ScreenHeader(
-                        title: "Texturas",
-                        game: game,
-                        isDarkMode: $isDarkMode
-                    )
-                    Text("Em breve")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(palette.primaryText)
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
-                .padding(.bottom, 28)
-                .frame(maxWidth: 680)
-                .frame(maxWidth: .infinity)
-            }
+        VStack(spacing: 20) {
+            ScreenHeader(
+                title: "Texturas",
+                game: game,
+                isDarkMode: $isDarkMode
+            )
+            Text("Em breve")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .frame(maxWidth: .infinity, minHeight: 220)
         }
+        .padding(18)
     }
 }
 
