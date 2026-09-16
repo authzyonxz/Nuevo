@@ -1210,6 +1210,29 @@ private struct AimsView: View {
     }
 
     private func openLobby() {
+        guard fileType == .avatar else {
+            openGameFromLobby()
+            return
+        }
+        let activeAvatarMods = avatarMods.filter { activeGameMods.contains($0) }
+        restoreAvatarModsAndOpen(activeAvatarMods, at: 0)
+    }
+
+    private func restoreAvatarModsAndOpen(_ mods: [ModType], at index: Int) {
+        guard index < mods.count else {
+            openGameFromLobby()
+            return
+        }
+        modManager.restoreMod(mods[index], bundleID: game.bundleID) { success, message in
+            guard success else {
+                present(message)
+                return
+            }
+            restoreAvatarModsAndOpen(mods, at: index + 1)
+        }
+    }
+
+    private func openGameFromLobby() {
         let opened = openApplicationForBundleID(game.bundleID)
         if !opened {
             present("Não foi possível abrir \(game.rawValue). Verifique se o jogo está instalado.")
