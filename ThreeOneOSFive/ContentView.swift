@@ -1455,16 +1455,8 @@ private struct TextureOption: Identifiable {
 private struct TexturesView: View {
     let game: GameChoice
     @Binding var isDarkMode: Bool
-    @StateObject private var modManager = FreeFireModManager.shared
-    @State private var alertMessage = ""
-    @State private var showAlert = false
 
     private var palette: AppPalette { AppPalette(isDark: isDarkMode) }
-    private let textures: [TextureOption] = [
-        TextureOption(mod: .texturaAlok1, imageName: "AlokTexturePreview1"),
-        TextureOption(mod: .texturaAlok2, imageName: "AlokTexturePreview2"),
-        TextureOption(mod: .texturaAlok3, imageName: "AlokTexturePreview3")
-    ]
 
     var body: some View {
         ZStack {
@@ -1476,17 +1468,11 @@ private struct TexturesView: View {
                         game: game,
                         isDarkMode: $isDarkMode
                     )
-                    SectionLabel(title: "Coleção Alok", palette: palette)
-
-                    LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 150), spacing: 14)],
-                        spacing: 14
-                    ) {
-                        ForEach(textures) { item in
-                            textureCard(mod: item.mod, imageName: item.imageName)
-                        }
+                    Text("Em breve")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(palette.primaryText)
+                        .frame(maxWidth: .infinity, minHeight: 220)
                     }
-                    Spacer(minLength: 20)
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 18)
@@ -1495,76 +1481,6 @@ private struct TexturesView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .alert("Texturas", isPresented: $showAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(alertMessage)
-        }
-    }
-
-    private func textureCard(mod: ModType, imageName: String) -> some View {
-        let isActive = modManager.isActive(mod, bundleID: game.bundleID)
-        return VStack(spacing: 0) {
-            ZStack(alignment: .topTrailing) {
-                Image(imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 170)
-                    .clipped()
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.34)],
-                    startPoint: .center,
-                    endPoint: .bottom
-                )
-                if isActive {
-                    Label("ATIVA", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 6)
-                        .background(Color.green, in: Capsule())
-                        .padding(10)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 9) {
-                Text(modManager.displayName(for: mod))
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundColor(palette.primaryText)
-                    .lineLimit(1)
-                Text("Alok despertado")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(palette.secondaryText)
-                Toggle("Ativar", isOn: Binding(
-                    get: { isActive },
-                    set: { enabled in toggle(mod, enabled: enabled) }
-                ))
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundColor(palette.secondaryText)
-                .toggleStyle(.switch)
-                .tint(palette.accent)
-                .disabled(modManager.isProcessing)
-            }
-            .padding(14)
-        }
-        .background(palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(palette.border, lineWidth: 1))
-        .shadow(color: palette.shadow, radius: 16, y: 7)
-    }
-
-    private func toggle(_ mod: ModType, enabled: Bool) {
-        if enabled {
-            modManager.applyMod(mod, bundleID: game.bundleID) { _, message in present(message) }
-        } else {
-            modManager.restoreMod(mod, bundleID: game.bundleID) { _, message in present(message) }
-        }
-    }
-
-    private func present(_ message: String) {
-        alertMessage = message
-        showAlert = true
     }
 }
 
