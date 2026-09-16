@@ -1472,7 +1472,6 @@ private struct TexturesView: View {
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(palette.primaryText)
                         .frame(maxWidth: .infinity, minHeight: 220)
-                    }
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 18)
