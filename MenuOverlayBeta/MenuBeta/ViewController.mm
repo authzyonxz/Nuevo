@@ -206,7 +206,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.blackColor;
-    UILabel *hint = [[UILabel alloc] initWithFrame:CGRectZero];
+    UILabel *hint = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
     hint.text = @"Toque 3 vezes com 3 dedos\npara abrir o menu beta";
     hint.textColor = [UIColor colorWithWhite:0.8 alpha:1.0];
     hint.textAlignment = NSTextAlignmentCenter;
