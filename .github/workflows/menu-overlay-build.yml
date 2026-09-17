@@ -17,25 +17,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: Show Xcode version
         run: xcodebuild -version
-      - name: Build Dynamic Framework for Simulator
+      - name: Build Dynamic Framework for iPhone
         run: |
           xcodebuild \
             -project MenuOverlayKit.xcodeproj \
             -scheme MenuOverlayKit \
-            -sdk iphonesimulator \
+            -sdk iphoneos \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             build
       - name: Package framework
         run: |
           mkdir -p artifacts
-          cp -R build/DerivedData/Build/Products/Debug-iphonesimulator/MenuOverlayKit.framework artifacts/
-          ditto -c -k --sequesterRsrc --keepParent artifacts/MenuOverlayKit.framework artifacts/MenuOverlayKit-simulator.zip
+          cp -R build/DerivedData/Build/Products/Debug-iphoneos/MenuOverlayKit.framework artifacts/
+          ditto -c -k --sequesterRsrc --keepParent artifacts/MenuOverlayKit.framework artifacts/MenuOverlayKit-iphoneos-unsigned.zip
       - name: Upload framework artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MenuOverlayKit-simulator
-          path: MenuOverlayBeta/artifacts/MenuOverlayKit-simulator.zip
+          name: MenuOverlayKit-iphoneos-unsigned
+          path: MenuOverlayBeta/artifacts/MenuOverlayKit-iphoneos-unsigned.zip
           if-no-files-found: error

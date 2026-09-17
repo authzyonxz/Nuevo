@@ -6,17 +6,20 @@
  objects = {
   111111111111111111111111 = {isa = PBXBuildFile; fileRef = 222222222222222222222222;};
   111111111111111111111112 = {isa = PBXBuildFile; fileRef = 222222222222222222222223; settings = {ATTRIBUTES = (Public,);};};
+  111111111111111111111115 = {isa = PBXBuildFile; fileRef = 222222222222222222222226;};
   222222222222222222222222 = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MenuOverlayViewController.mm; sourceTree = "<group>";};
   222222222222222222222223 = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MenuOverlayViewController.h; sourceTree = "<group>";};
   222222222222222222222224 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>";};
   222222222222222222222225 = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MenuOverlayKit.framework; sourceTree = BUILT_PRODUCTS_DIR;};
+  222222222222222222222226 = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT;};
   333333333333333333333333 = {isa = PBXGroup; children = (222222222222222222222222,222222222222222222222223,222222222222222222222224); path = MenuOverlayKit; sourceTree = "<group>";};
-  444444444444444444444444 = {isa = PBXGroup; children = (333333333333333333333333,555555555555555555555555); sourceTree = "<group>";};
+  444444444444444444444444 = {isa = PBXGroup; children = (333333333333333333333333,555555555555555555555555,666666666666666666666667); sourceTree = "<group>";};
+  666666666666666666666667 = {isa = PBXGroup; children = (222222222222222222222226); name = Frameworks; sourceTree = "<group>";};
   555555555555555555555555 = {isa = PBXGroup; children = (222222222222222222222225); name = Products; sourceTree = "<group>";};
   666666666666666666666666 = {isa = PBXNativeTarget; buildConfigurationList = 777777777777777777777777; buildPhases = (888888888888888888888888,999999999999999999999999,AAAAAAAAAAAAAAAAAAAAAAAA); name = MenuOverlayKit; productName = MenuOverlayKit; productReference = 222222222222222222222225; productType = "com.apple.product-type.framework";};
   BBBBBBBBBBBBBBBBBBBBBBBB = {isa = PBXProject; buildConfigurationList = CCCCCCCCCCCCCCCCCCCCCCCC; compatibilityVersion = "Xcode 14.0"; mainGroup = 444444444444444444444444; productRefGroup = 555555555555555555555555; targets = (666666666666666666666666);};
   888888888888888888888888 = {isa = PBXSourcesBuildPhase; files = (111111111111111111111111);};
-  999999999999999999999999 = {isa = PBXFrameworksBuildPhase; files = ();};
+  999999999999999999999999 = {isa = PBXFrameworksBuildPhase; files = (111111111111111111111115);};
   AAAAAAAAAAAAAAAAAAAAAAAA = {isa = PBXResourcesBuildPhase; files = ();};
   DDDDDDDDDDDDDDDDDDDDDDDD = {isa = PBXHeadersBuildPhase; files = (111111111111111111111112);};
   777777777777777777777777 = {isa = XCConfigurationList; buildConfigurations = (EEEEEEEEEEEEEEEEEEEEEEEE,FFFFFFFFFFFFFFFFFFFFFFFF); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
