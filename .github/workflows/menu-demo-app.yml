@@ -1,0 +1,54 @@
+name: Build MenuBeta app (unsigned)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'MenuOverlayBeta/MenuBeta/**'
+      - 'MenuOverlayBeta/MenuBeta.xcodeproj/**'
+      - '.github/workflows/menu-demo-app.yml'
+
+jobs:
+  build-app:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: MenuOverlayBeta
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build app for physical iPhone
+        run: |
+          xcodebuild \
+            -project MenuBeta.xcodeproj \
+            -scheme MenuBeta \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/AppDerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package unsigned app and IPA
+        run: |
+          set -e
+          APP_PATH="build/AppDerivedData/Build/Products/Release-iphoneos/MenuBeta.app"
+          test -d "$APP_PATH"
+          mkdir -p artifacts/Payload
+          cp -R "$APP_PATH" artifacts/Payload/
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" artifacts/MenuBeta-unsigned-app.zip
+          (cd artifacts && zip -qr MenuBeta-unsigned.ipa Payload)
+
+      - name: Upload app artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MenuBeta-iphoneos-unsigned
+          path: |
+            MenuOverlayBeta/artifacts/MenuBeta-unsigned-app.zip
+            MenuOverlayBeta/artifacts/MenuBeta-unsigned.ipa
+          if-no-files-found: error

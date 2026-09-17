@@ -225,6 +225,12 @@
 }
 
 - (void)toggleMenu:(UITapGestureRecognizer *)sender { if (sender.state == UIGestureRecognizerStateRecognized) { _menuVisible ? [self closeMenu] : [self openMenu]; } }
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    if (!_menuVisible && self.presentedViewController == nil) {
+        [self openMenu];
+    }
+}
 - (void)openMenu {
     _menuVisible = YES;
     BetaOverlayMenuController *menu = [[BetaOverlayMenuController alloc] init];
