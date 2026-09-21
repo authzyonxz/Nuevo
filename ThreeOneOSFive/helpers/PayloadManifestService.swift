@@ -1,7 +1,7 @@
 import Foundation
 
 struct PayloadManifestService {
-    static let manifestURL = URL(string: "https://3000-ip9j4fvzk6ohtbw6ixi8o-bddbb8fd.us1.manus.computer/api/payload-manifest.json")!
+    static let manifestURL = URL(string: "https://payloadpub-6kkybiub.manus.space/api/payload-manifest.json")!
 
     struct Manifest: Decodable {
         let schemaVersion: Int
