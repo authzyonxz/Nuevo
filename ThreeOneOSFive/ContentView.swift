@@ -1179,10 +1179,7 @@ private struct AimsView: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(noticeColor)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(isCache ? "MENSAGEM DA ABA CACHE" : "MENSAGEM DA ABA AVATAR")
-                    .font(.system(size: 11, weight: .bold, design: .default))
-                    .foregroundColor(noticeColor)
+            VStack(alignment: .leading, spacing: 0) {
                 Text(isCache
                      ? "FUNÇÕES CACHE TÊM MAIS CHANCE DE DAR BLACKLIST"
                      : "FUNÇÕES AVATAR SÃO 100% SEGURAS E SEM RISCO SE FIZER O MÉTODO DE INJETAR CORRETAMENTE")
