@@ -479,7 +479,7 @@ class FreeFireModManager: ObservableObject {
                     self.activeMods.insert(mod)
                     self.statusMessage = self.activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
                     self.endOperation()
-                    completion(true, "Injetado com Sucesso!")
+                    completion(true, "Injetado com sucesso")
                 }
             } catch {
                 self.addLog("ERRO: \(error.localizedDescription)")
@@ -630,7 +630,7 @@ class FreeFireModManager: ObservableObject {
                             ? "Pronto para injetar"
                             : self.activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
                         self.endOperation()
-                        completion(true, "\(mod.rawValue) desativada e arquivo original restaurado.")
+                        completion(true, "Função \(mod.rawValue) restaurada com sucesso")
                     }
                 } catch {
                     self.endOperation()
@@ -729,7 +729,7 @@ class FreeFireModManager: ObservableObject {
                         ? "Original restaurado"
                         : self.activeMods.map(\.rawValue).sorted().joined(separator: " + ") + " ATIVO"
                     self.endOperation()
-                    completion(true, "Original restaurado!")
+                    completion(true, "Função restaurada com sucesso")
                 }
             } catch {
                 self.addLog("ERRO: restauração interrompida após \(restoredMods.count)/\(receiptEntries.count): \(error.localizedDescription)")
