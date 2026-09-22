@@ -3,191 +3,86 @@ import UIKit
 
 @main
 struct ThreeOneOSFiveApp: App {
-    @StateObject private var appState = AppState()
-    @StateObject private var patchDraftCoordinator = PatchDraftCoordinator()
-    @StateObject private var fileOperationCoordinator = FileOperationCoordinator()
-    @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
-    @State private var showOnboarding = OnboardingStore.shouldShow()
-    @State private var showAttribution = false
-    @State private var updateOffer: AppUpdateChecker.Offer?
-    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var licenseManager = LicenseManager.shared
+    @StateObject private var exploitState = KernelExploitState()
 
     init() {
         setupLogCapture()
-        log("app: 3105 launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) \(AppInfo.machineName)")
+        log("app: MenagerFF launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
     }
 
-    private var language: AppLanguage {
-        AppLanguage(rawValue: languageCode) ?? .english
-    }
-
-    private func checkForUpdate() {
-        Task {
-            guard let offer = await AppUpdateChecker.check() else { return }
-            await MainActor.run { updateOffer = offer }
-        }
-    }
+    @Environment(\.scenePhase) var scenePhase
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                ContentView()
-                    .environmentObject(appState)
-                    .environmentObject(patchDraftCoordinator)
-                    .environmentObject(fileOperationCoordinator)
-                    .environment(\.appLanguage, language)
-                    .environment(\.locale, language.locale)
-                    .opacity(showOnboarding ? 0 : 1)
-                    .allowsHitTesting(!showOnboarding)
+            ContentView()
+                .environmentObject(licenseManager)
+                .environmentObject(exploitState)
+                .preferredColorScheme(.dark)
+                .onAppear {
+                    // Select the access path by OS family. iOS 17/18 use the
+                    // kernel/offset chain; iOS 26/27 use bad_query lazily.
+                    exploitState.prepareForCurrentOS()
 
-                if showOnboarding {
-                    OnboardingView {
-                        OnboardingStore.markCompleted()
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                            showOnboarding = false
-                        }
-                        appState.detectSupport()
-                        checkForUpdate()
-                    }
-                    .environment(\.appLanguage, language)
-                    .environment(\.locale, language.locale)
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                    .zIndex(1)
+                }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                if !licenseManager.isAuthorized {
+                    licenseManager.resumeAfterSafari()
                 }
             }
-            .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
-            .sheet(isPresented: $showAttribution) {
-                DisplayAttributionSheet()
-            }
-            .alert(item: $updateOffer) { offer in
-                Alert(
-                    title: Text(language.text("update.title")),
-                    message: Text(language.text("update.message", offer.version)),
-                    primaryButton: .default(Text(language.text("update.agree"))) {
-                        UIApplication.shared.open(offer.url)
-                    },
-                    secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
-                        AppUpdateChecker.dismiss(version: offer.version)
-                    }
-                )
-            }
-            .onAppear {
-                if !showOnboarding {
-                    appState.detectSupport()
-                    checkForUpdate()
-                }
-            }
-            .onChange(of: scenePhase) { phase in
-                guard phase == .active, !showOnboarding else { return }
-                appState.detectSupport()
-            }
-            .onOpenURL { url in
-                patchDraftCoordinator.presentImport(url)
+            if newPhase == .background {
+                KernelExploit.cleanup()
             }
         }
     }
 }
 
-class AppState: ObservableObject {
+@MainActor
+final class KernelExploitState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
-    @Published var unsupportedMessage: String?
-    @Published var kernelExploitRunning = false
+    @Published var exploitRunning = false
 
-    private var autoRunAttempted = false
+    func prepareForCurrentOS() {
+        guard !exploitRunning, !exploitStatus.isSuccess else { return }
 
-    var kernelExploitApplicable: Bool {
-        KernelExploit.isApplicable(
-            major: AppInfo.versionTuple.major,
-            minor: AppInfo.versionTuple.minor,
-            patch: AppInfo.versionTuple.patch,
-            build: AppInfo.osBuild
-        )
-    }
+        switch KernelExploit.currentAccessPath {
+        case .kfd16:
+            runKernelExploitIfNeeded()
 
-    var isSupported: Bool { unsupportedMessage == nil }
+        case .badQuery:
+            // bad_query is requested by ContainerStore/DevicePatchService only
+            // when a concrete path needs access; do not run the kernel exploit.
+            exploitStatus = .success(method: "ContainerManager/bad_query")
+            log("access: iOS 26/27 selected ContainerManager bad_query path")
 
-    func detectSupport() {
-        let v = AppInfo.versionTuple
-        let supported = ExploitSupportPolicy.isSupported(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        )
-#if targetEnvironment(simulator)
-        if ProcessInfo.processInfo.arguments.contains("--simulate-access") {
-            exploitStatus = .success(method: "Simulator preview")
-        }
-#endif
+        case .kernelOffsets:
+            runKernelExploitIfNeeded()
 
-        unsupportedMessage = supported ? nil : "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
-        if let unsupportedMessage {
-            exploitStatus = .unsupported(unsupportedMessage)
-            return
-        }
-
-        let applicable = KernelExploit.isApplicable(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        )
-        guard applicable else { return }
-
-        refreshKernelExploitStatus()
-        maybeAutoRunKernelExploit()
-    }
-
-    private func maybeAutoRunKernelExploit() {
-        guard !kernelExploitRunning,
-              !exploitStatus.isSuccess,
-              !exploitStatus.isFailed,
-              !autoRunAttempted else { return }
-        autoRunAttempted = true
-        log("app: starting kernel exploit automatically")
-        runKernelExploitIfNeeded()
-    }
-
-    private func refreshKernelExploitStatus() {
-        guard !kernelExploitRunning else { return }
-
-        // iOS < 26: kernel R/W success persists (no sandbox probe)
-        // iOS >= 26: verify full sandbox escape is still active
-        if KernelExploit.requiresSandboxEscape {
-            if KernelExploit.hasSandboxAccess() {
-                if !exploitStatus.isSuccess {
-                    exploitStatus = .success(method: "kexploit")
-                    log("app: existing sandbox access is still active; skipping kernel exploit")
-                }
-            } else if exploitStatus.isSuccess {
-                exploitStatus = .notStarted
-                log("app: sandbox access is no longer active")
-            }
+        case .unsupported:
+            let message = "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
+            exploitStatus = .unsupported(message)
+            log("access: unsupported OS/build \(message)")
         }
     }
 
-    func runKernelExploitIfNeeded() {
-        refreshKernelExploitStatus()
-        guard !kernelExploitRunning,
-              !exploitStatus.isSuccess,
-              !exploitStatus.isFailed else { return }
-        kernelExploitRunning = true
-        exploitStatus = .notStarted
-        log("app: running kernel exploit on background...")
+    private func runKernelExploitIfNeeded() {
+        guard !exploitRunning, !exploitStatus.isSuccess else { return }
+        exploitRunning = true
+        log("exploit: running selected native access path for iOS \(AppInfo.osVersion)...")
         DispatchQueue.global(qos: .userInitiated).async {
             let ok = KernelExploit.run()
             DispatchQueue.main.async {
-                self.kernelExploitRunning = false
+                self.exploitRunning = false
                 if ok {
-                    self.exploitStatus = .success(method: "kexploit")
-                    if KernelExploit.requiresSandboxEscape {
-                        log("app: kernel exploit success — sandbox access verified")
-                    } else {
-                        log("app: kernel exploit success — kernel access active")
-                    }
+                    let method = KernelExploit.usesKFD16 ? "KFD16 kernel access" : "Kernel offsets"
+                    self.exploitStatus = .success(method: method)
+                    log("exploit: success — kernel access active")
                 } else {
-                    self.exploitStatus = .failed(method: "kexploit", code: -1)
-                    log("app: kernel exploit failed — relaunch the app before retrying")
+                    let method = KernelExploit.usesKFD16 ? "KFD16 kernel access" : "Kernel offsets"
+                    self.exploitStatus = .failed(method: method, code: -1)
+                    log("exploit: failed — \(method)")
                 }
             }
         }

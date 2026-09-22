@@ -1,0 +1,41 @@
+name: Build MenuOverlayKit (demo)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'MenuOverlayBeta/**'
+      - '.github/workflows/menu-overlay-build.yml'
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: MenuOverlayBeta
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show Xcode version
+        run: xcodebuild -version
+      - name: Build Dynamic Framework for Simulator
+        run: |
+          xcodebuild \
+            -project MenuOverlayKit.xcodeproj \
+            -scheme MenuOverlayKit \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Package framework
+        run: |
+          mkdir -p artifacts
+          cp -R build/DerivedData/Build/Products/Debug-iphonesimulator/MenuOverlayKit.framework artifacts/
+          ditto -c -k --sequesterRsrc --keepParent artifacts/MenuOverlayKit.framework artifacts/MenuOverlayKit-simulator.zip
+      - name: Upload framework artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MenuOverlayKit-simulator
+          path: MenuOverlayBeta/artifacts/MenuOverlayKit-simulator.zip
+          if-no-files-found: error

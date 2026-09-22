@@ -37,7 +37,7 @@
 
 ## What's new in 1.1.0
 
-- **Broader iOS support** — verified range now includes iOS 17.0–17.7.x (kernel exploit), iOS 18.0–18.7.1 (kernel exploit), iOS 26.0–26.6.1 and iOS 27 Developer Beta 1–4 / Public Beta 1–2.
+- **Dual access paths** — iOS 17.0–17.7.x and 18.0–18.7.1 use the kernel/offset path; iOS 26.0–26.6.1 and the listed iOS 27 builds use the ContainerManager `bad_query` path.
 - **Wrong-password feedback** — importing a `.3105` patch with an incorrect password now shows "Incorrect password" instead of failing silently.
 - **Onboarding for reinstalls** — onboarding reappears after overwriting the app with the same version, so fresh and overwritten installs both see the guided setup.
 
@@ -71,13 +71,13 @@ See the complete [Patch workspace guide](docs/PATCH_GUIDE.md).
 | --- | --- |
 | iOS 17 | 17.0 through 17.7 (kernel exploit) |
 | iOS 18 | 18.0 through 18.7.1 (kernel exploit) |
-| iOS 26 | 26.0 through 26.6.1 |
+| iOS 26 | 26.0 through 26.6.1 (`bad_query`) |
 | iOS 27 Developer Beta 1 | `24A5355q` |
 | iOS 27 Developer Beta 2 | `24A5370h` |
 | iOS 27 Developer Beta 3 / Public Beta 1 | `24A5380h` |
 | iOS 27 Developer Beta 4 / Public Beta 2 | `24A5390f` |
 
-Unlisted iOS 27 builds are marked unsupported rather than assumed compatible. The iOS 17–18 kernel exploit is opt-in (manual button) because a failed exploit attempt may restart the app.
+The app selects the access path automatically: kernel/offsets for iOS 17/18 and ContainerManager `bad_query` on demand for verified iOS 26/27 builds. The kernel offsets are not used on iOS 26/27. Unlisted iOS 27 builds are marked unsupported rather than assumed compatible. The iOS 17–18 kernel path may restart the app if the exploit fails.
 
 ## Installation notes
 

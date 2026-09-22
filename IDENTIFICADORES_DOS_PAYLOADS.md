@@ -7,6 +7,7 @@ A IPA unificada usa o bundle escolhido na tela inicial em todas as operações. 
 | ESP | AIMBOT + ESP | `teste_patch` |
 | Aims · Avatar | HS ALTO | `aimbot_hs_alto` |
 | Aims · Avatar | HS PESCOÇO | `aimbot_hs_pescoco` |
+| Aims · Avatar | HS PESCOÇO + ANTENA | `aimbot_hs_pescoco_antena` |
 | Aims · Avatar | HS ALTO + PESCOÇO | `aimbot_hs_alto_pescoco` |
 | Aims · Cache | HS ALTO | `cache_hs_alto` |
 | Aims · Cache | HS PESCOÇO | `cache_hs_pescoco` |

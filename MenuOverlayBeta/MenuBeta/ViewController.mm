@@ -206,7 +206,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.blackColor;
-    UILabel *hint = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
+    UILabel *hint = [[UILabel alloc] initWithFrame:CGRectZero];
     hint.text = @"Toque 3 vezes com 3 dedos\npara abrir o menu beta";
     hint.textColor = [UIColor colorWithWhite:0.8 alpha:1.0];
     hint.textAlignment = NSTextAlignmentCenter;
@@ -225,12 +225,6 @@
 }
 
 - (void)toggleMenu:(UITapGestureRecognizer *)sender { if (sender.state == UIGestureRecognizerStateRecognized) { _menuVisible ? [self closeMenu] : [self openMenu]; } }
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    if (!_menuVisible && self.presentedViewController == nil) {
-        [self openMenu];
-    }
-}
 - (void)openMenu {
     _menuVisible = YES;
     BetaOverlayMenuController *menu = [[BetaOverlayMenuController alloc] init];
