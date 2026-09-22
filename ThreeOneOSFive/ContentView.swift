@@ -1246,21 +1246,14 @@ private struct AimsView: View {
             openGameFromLobby()
             return
         }
-        let activeAvatarMods = avatarMods.filter { activeGameMods.contains($0) }
-        restoreAvatarModsAndOpen(activeAvatarMods, at: 0)
-    }
-
-    private func restoreAvatarModsAndOpen(_ mods: [ModType], at index: Int) {
-        guard index < mods.count else {
-            openGameFromLobby()
-            return
-        }
-        modManager.restoreMod(mods[index], bundleID: game.bundleID) { success, message in
+        // Only Avatar functions are restored before Lobby. Cache functions
+        // remain active, and the selected app opens after restoration ends.
+        modManager.restoreActiveModsBeforeLobby(bundleID: game.bundleID) { success, message in
             guard success else {
                 present(message)
                 return
             }
-            restoreAvatarModsAndOpen(mods, at: index + 1)
+            openGameFromLobby()
         }
     }
 
