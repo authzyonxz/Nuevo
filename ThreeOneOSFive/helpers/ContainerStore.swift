@@ -39,13 +39,12 @@ enum ContainerStore {
     static let appDataRoot = "/var/mobile/Containers/Data/Application"
     static let systemDataRoot = "/var/mobile/Containers/Data/System"
     private static var shouldUseBadQuery: Bool {
-        let v = AppInfo.versionTuple
-        return ExploitSupportPolicy.accessPath(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        ) == .badQuery
+        let major = AppInfo.versionTuple.major
+        // The reference project uses ContainerManager/bad_query for the
+        // iOS 26/27 family. The actual grant is still validated per path;
+        // this avoids rejecting valid 27.0 builds just because their build
+        // string is not in an older allow-list.
+        return major == 26 || major == 27
     }
     private static let applicationBundleRoots: [(path: String, nested: Bool)] = [
         ("/var/containers/Bundle/Application", true),

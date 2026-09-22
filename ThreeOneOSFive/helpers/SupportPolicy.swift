@@ -13,7 +13,8 @@ enum ExploitSupportPolicy {
     static let verifiedIOS18Range = "18.0–18.7.1 (offsets; build restricted)"
     static let verifiedIOS26Range = "26.0–26.6.1"
 
-    // iOS 27 is already build-gated in the original project.
+    // Known iOS 27 builds are listed for diagnostics; the bad_query path is
+    // runtime-probed so later 27.0 builds are not rejected by an old table.
     static let verifiedIOS27Builds: [(beta: Int, publicBeta: Int?, build: String)] = [
         (1, nil, "24A5355q"),
         (2, nil, "24A5370h"),
@@ -95,7 +96,7 @@ enum ExploitSupportPolicy {
             return .unsupported
         }
 
-        return iOS27BetaNumber(for: build) != nil ? .badQuery : .unsupported
+        return .badQuery
     }
 
     static func isSupported(
