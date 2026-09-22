@@ -949,7 +949,7 @@ private struct FunctionListCard: View {
                     Rectangle()
                         .fill(palette.divider)
                         .frame(height: 1)
-                        .padding(.leading, 64)
+                        .padding(.leading, 18)
                 }
             }
         }
@@ -969,17 +969,10 @@ private struct FunctionRow: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        HStack(spacing: 13) {
-            Image(systemName: iconName)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(iconColor)
-                .frame(width: 38, height: 38)
-                .background(iconColor.opacity(isActive ? 0.18 : 0.10))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(displayName.uppercased())
-                    .font(.system(size: 15, weight: .semibold, design: .default))
+                    .font(.system(size: 16, weight: .bold, design: .default))
                     .foregroundColor(palette.primaryText)
                 Text(mod.subtitle)
                     .font(.system(size: 12, weight: .regular, design: .default))
@@ -999,32 +992,8 @@ private struct FunctionRow: View {
                     .tint(palette.accent)
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 18)
         .padding(.vertical, 13)
-    }
-
-    private var iconColor: Color {
-        switch mod {
-        case .chamsAmarelo: return .yellow
-        case .chamsVermelho: return .red
-        case .chamsRoxo: return .purple
-        case .chamsLaranja: return .orange
-        case .chamsPreto: return palette.isDark ? .gray : .black
-        case .chamsBranco: return palette.isDark ? .white : .gray
-        default: return isActive ? palette.accent : palette.secondaryText.opacity(0.9)
-        }
-    }
-
-    private var iconName: String {
-        switch mod {
-        case .testePatch: return "eye.fill"
-        case .chamsAmarelo, .chamsVermelho, .chamsRoxo, .chamsLaranja, .chamsPreto, .chamsBranco:
-            return "circle.fill"
-        case .hologramaArmas, .cacheBalaMagica: return "scope"
-        case .texturaAlok1, .texturaAlok2, .texturaAlok3: return "paintpalette.fill"
-        case .fps144: return "gauge.with.dots.needle.67percent"
-        default: return "scope"
-        }
     }
 }
 
