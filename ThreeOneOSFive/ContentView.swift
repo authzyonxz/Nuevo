@@ -1170,6 +1170,7 @@ private struct AimsView: View {
         }
     }
 
+    @ViewBuilder
     private var riskNotice: some View {
         let isCache = fileType == .cache
         let noticeColor: Color = isCache ? .orange : .green
