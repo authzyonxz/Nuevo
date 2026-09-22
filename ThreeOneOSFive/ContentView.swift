@@ -989,7 +989,6 @@ private struct FunctionRow: View {
                 Toggle("", isOn: Binding(get: { isActive }, set: onToggle))
                     .labelsHidden()
                     .toggleStyle(.switch)
-                    .tint(palette.accent)
             }
         }
         .padding(.horizontal, 18)
