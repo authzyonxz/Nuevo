@@ -24,9 +24,12 @@ struct PatchStoreAlert: Identifiable {
 final class PatchProjectStore: ObservableObject {
     @Published private(set) var items: [PatchLibraryItem] = []
     @Published private(set) var isBusy = false
+    @Published private(set) var builtInFunctionEnabled = false
     @Published var passwordRequest: PatchPasswordRequest?
     @Published var alert: PatchStoreAlert?
     @Published var unlockErrorKey: String?
+
+    private static let builtInResourceName = "FreeFireDriver"
 
     private struct PendingUnlock {
         let data: Data
@@ -42,6 +45,74 @@ final class PatchProjectStore: ObservableObject {
 
     func reload() {
         items = PatchProjectLibrary.load()
+        builtInFunctionEnabled = Self.builtInPackageID().flatMap {
+            DevicePatchService.latestReceipt(projectID: $0)
+        } != nil
+    }
+
+    func setBuiltInFunctionEnabled(_ enabled: Bool) {
+        guard !isBusy else { return }
+        isBusy = true
+        Task.detached(priority: .userInitiated) { [weak self] in
+            do {
+                try Self.setBuiltInFunctionEnabled(enabled)
+                await self?.finishBuiltInOperation()
+            } catch let error as PatchPackageError {
+                await self?.failOperation(error)
+            } catch {
+                await self?.failOperation(.invalidProject)
+            }
+        }
+    }
+
+    private nonisolated static func setBuiltInFunctionEnabled(_ enabled: Bool) throws {
+        guard let packageURL = Bundle.main.url(
+            forResource: builtInResourceName,
+            withExtension: "3105"
+        ) else {
+            throw PatchPackageError.invalidProject
+        }
+        let data = try PatchProjectLibrary.readPackage(at: packageURL)
+        let summary = try PatchPackageCodec.inspect(data)
+        let decoded = try PatchPackageCodec.decode(data, password: nil)
+        let existingURL = PatchProjectLibrary.load()
+            .first(where: { $0.id == summary.packageID })?.packageURL
+
+        try PatchProjectLibrary.installImportedPackage(
+            data: data,
+            decoded: decoded,
+            summary: summary,
+            existingURL: existingURL
+        )
+
+        if enabled {
+            _ = try DevicePatchService.apply(project: decoded.project)
+        } else if let receipt = DevicePatchService.latestReceipt(projectID: decoded.project.id) {
+            try DevicePatchService.restore(receipt: receipt)
+        }
+    }
+
+    private nonisolated static func builtInPackageID() -> UUID? {
+        guard let packageURL = Bundle.main.url(
+            forResource: builtInResourceName,
+            withExtension: "3105"
+        ),
+        let data = try? PatchProjectLibrary.readPackage(at: packageURL),
+        let summary = try? PatchPackageCodec.inspect(data) else {
+            return nil
+        }
+        return summary.packageID
+    }
+
+    private func finishBuiltInOperation() {
+        reload()
+        isBusy = false
+        alert = PatchStoreAlert(
+            titleKey: "common.done",
+            messageKey: builtInFunctionEnabled
+                ? "patch.applied_message"
+                : "patch.restored_message"
+        )
     }
 
     func create(project: PatchProject, password: String?) {

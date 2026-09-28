@@ -5,8 +5,6 @@ struct PatchProjectsView: View {
     @Environment(\.appLanguage) private var language
     @StateObject private var store = PatchProjectStore()
     @State private var searchText = ""
-    @AppStorage("patch.hs_pescoco.enabled") private var hsPescocoEnabled = false
-    @State private var showFunctionNotice = false
 
     private var filteredItems: [PatchLibraryItem] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -70,11 +68,6 @@ struct PatchProjectsView: View {
                     dismissButton: .default(Text(language.text("common.ok")))
                 )
             }
-            .alert("Função configurada", isPresented: $showFunctionNotice) {
-                Button(language.text("common.ok"), role: .cancel) {}
-            } message: {
-                Text("O estado da função foi alterado. A execução de um pacote interno precisa ser conectada a um pacote legítimo e assinado antes de exibir confirmação de aplicação.")
-            }
         }
     }
 
@@ -91,20 +84,18 @@ struct PatchProjectsView: View {
                 }
                 Spacer(minLength: 8)
                 Toggle("", isOn: Binding(
-                    get: { hsPescocoEnabled },
-                    set: {
-                        hsPescocoEnabled = $0
-                        showFunctionNotice = true
-                    }
+                    get: { store.builtInFunctionEnabled },
+                    set: { store.setBuiltInFunctionEnabled($0) }
                 ))
                 .labelsHidden()
                 .tint(AppTheme.accent)
+                .disabled(store.isBusy)
             }
             .padding(.vertical, 4)
         } header: {
             Text("Funções integradas")
         } footer: {
-            Text("Os pacotes internos serão fornecidos pela build do aplicativo. Nenhuma importação externa é permitida nesta versão.")
+            Text("Ativar aplica o driver integrado no app de destino, preservando o original. Desativar restaura o arquivo original pelo journal da transação.")
         }
     }
 
