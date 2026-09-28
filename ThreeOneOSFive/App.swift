@@ -123,16 +123,6 @@ class AppState: ObservableObject {
             exploitStatus = .unsupported(unsupportedMessage)
             return
         }
-
-        let applicable = KernelExploit.isApplicable(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        )
-        guard applicable else { return }
-
-        refreshKernelExploitStatus()
     }
 
     private func refreshKernelExploitStatus() {
