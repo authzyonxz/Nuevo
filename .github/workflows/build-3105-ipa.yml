@@ -1,4 +1,4 @@
-name: Build Unified Unsigned IPA
+name: Build 3105 Unsigned IPA
 
 on:
   push:
@@ -9,35 +9,36 @@ permissions:
   contents: read
 
 jobs:
-  build-unsigned-ipa:
-    name: Build MenagerFF Unified
+  build-3105-ipa:
+    name: Build 3105 IPA
     runs-on: macos-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout 3105 project
         uses: actions/checkout@v4
 
-      - name: Set up Xcode
+      - name: Set up latest stable Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
       - name: Show build environment
         run: |
+          set -euo pipefail
           xcodebuild -version
           xcode-select -p
 
-      - name: Build unified unsigned IPA
+      - name: Build unsigned iPhoneOS app
         run: |
           set -euo pipefail
-          rm -rf build/Unified
-          mkdir -p build/Unified/Release-iphoneos
+          rm -rf build/3105
+          mkdir -p build/3105/Release-iphoneos
           xcodebuild \
             -project ThreeOneOSFive.xcodeproj \
             -target 3105 \
             -configuration Release \
             -sdk iphoneos \
-            CONFIGURATION_BUILD_DIR="$PWD/build/Unified/Release-iphoneos" \
+            CONFIGURATION_BUILD_DIR="$PWD/build/3105/Release-iphoneos" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
@@ -49,27 +50,29 @@ jobs:
             COPY_PHASE_STRIP=YES \
             build
 
-      - name: Package unified unsigned IPA
+      - name: Package signer-friendly unsigned IPA
         run: |
           set -euo pipefail
-          APP_PATH="build/Unified/Release-iphoneos/3105.app"
+          APP_PATH="build/3105/Release-iphoneos/3105.app"
           test -d "$APP_PATH"
+          test -x "$APP_PATH/3105"
+          test -f "$APP_PATH/Info.plist"
           xattr -cr "$APP_PATH" || true
           rm -rf "$APP_PATH/_CodeSignature"
           find "$APP_PATH" -name '*.mobileprovision' -delete
-          mkdir -p build/Unified/Payload
-          cp -R "$APP_PATH" build/Unified/Payload/3105.app
-          (
-            cd build/Unified
-            rm -f MenagerFF_Unified_Unsigned.ipa
-            /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload MenagerFF_Unified_Unsigned.ipa
-          )
-          test -s build/Unified/MenagerFF_Unified_Unsigned.ipa
+          rm -rf build/3105/Payload
+          mkdir -p build/3105/Payload
+          cp -R "$APP_PATH" build/3105/Payload/3105.app
+          cd build/3105
+          rm -f 3105_Unsigned.ipa
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload 3105_Unsigned.ipa
+          test -s 3105_Unsigned.ipa
+          unzip -t 3105_Unsigned.ipa
 
-      - name: Upload unified IPA artifact
+      - name: Upload 3105 IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MenagerFF-Unified-Unsigned-IPA
-          path: build/Unified/MenagerFF_Unified_Unsigned.ipa
+          name: 3105-Unsigned-IPA
+          path: build/3105/3105_Unsigned.ipa
           if-no-files-found: error
           retention-days: 14
