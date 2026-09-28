@@ -54,11 +54,15 @@ jobs:
           set -euo pipefail
           APP_PATH="build/Unified/Release-iphoneos/3105.app"
           test -d "$APP_PATH"
+          xattr -cr "$APP_PATH" || true
+          rm -rf "$APP_PATH/_CodeSignature"
+          find "$APP_PATH" -name '*.mobileprovision' -delete
           mkdir -p build/Unified/Payload
           cp -R "$APP_PATH" build/Unified/Payload/3105.app
           (
             cd build/Unified
-            /usr/bin/zip -qry MenagerFF_Unified_Unsigned.ipa Payload
+            rm -f MenagerFF_Unified_Unsigned.ipa
+            /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload MenagerFF_Unified_Unsigned.ipa
           )
           test -s build/Unified/MenagerFF_Unified_Unsigned.ipa
 
