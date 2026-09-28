@@ -6,16 +6,20 @@ struct ThreeOneOSFiveApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var patchDraftCoordinator = PatchDraftCoordinator()
     @StateObject private var fileOperationCoordinator = FileOperationCoordinator()
-    @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.portuguese.rawValue
+    @State private var showOnboarding = OnboardingStore.shouldShow()
     @State private var showAttribution = false
     @State private var updateOffer: AppUpdateChecker.Offer?
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         setupLogCapture()
         log("app: 3105 launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) \(AppInfo.machineName)")
     }
 
-    private var language: AppLanguage { .portuguese }
+    private var language: AppLanguage {
+        AppLanguage(rawValue: languageCode) ?? .portuguese
+    }
 
     private func checkForUpdate() {
         Task {
@@ -26,39 +30,60 @@ struct ThreeOneOSFiveApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(appState)
-                .environmentObject(patchDraftCoordinator)
-                .environmentObject(fileOperationCoordinator)
-                .environment(\.appLanguage, language)
-                .environment(\.locale, language.locale)
-                .preferredColorScheme(.dark)
-                .displayIdentityAttribution(isPresented: $showAttribution, enabled: true)
-                .sheet(isPresented: $showAttribution) {
-                    DisplayAttributionSheet()
-                        .environment(\.appLanguage, language)
-                        .environment(\.locale, language.locale)
-                }
-                .alert(item: $updateOffer) { offer in
-                    Alert(
-                        title: Text(language.text("update.title")),
-                        message: Text(language.text("update.message", offer.version)),
-                        primaryButton: .default(Text(language.text("update.agree"))) {
-                            UIApplication.shared.open(offer.url)
-                        },
-                        secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
-                            AppUpdateChecker.dismiss(version: offer.version)
+            ZStack {
+                ContentView()
+                    .environmentObject(appState)
+                    .environmentObject(patchDraftCoordinator)
+                    .environmentObject(fileOperationCoordinator)
+                    .environment(\.appLanguage, language)
+                    .environment(\.locale, language.locale)
+                    .opacity(showOnboarding ? 0 : 1)
+                    .allowsHitTesting(!showOnboarding)
+
+                if showOnboarding {
+                    OnboardingView {
+                        OnboardingStore.markCompleted()
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                            showOnboarding = false
                         }
-                    )
+                        appState.detectSupport()
+                        checkForUpdate()
+                    }
+                    .environment(\.appLanguage, language)
+                    .environment(\.locale, language.locale)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                    .zIndex(1)
                 }
-                .onAppear {
+            }
+            .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
+            .sheet(isPresented: $showAttribution) {
+                DisplayAttributionSheet()
+            }
+            .alert(item: $updateOffer) { offer in
+                Alert(
+                    title: Text(language.text("update.title")),
+                    message: Text(language.text("update.message", offer.version)),
+                    primaryButton: .default(Text(language.text("update.agree"))) {
+                        UIApplication.shared.open(offer.url)
+                    },
+                    secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
+                        AppUpdateChecker.dismiss(version: offer.version)
+                    }
+                )
+            }
+            .onAppear {
+                if !showOnboarding {
                     appState.detectSupport()
                     checkForUpdate()
                 }
-                .onChange(of: scenePhase) { phase in
-                    guard phase == .active else { return }
-                    appState.detectSupport()
-                }
+            }
+            .onChange(of: scenePhase) { phase in
+                guard phase == .active, !showOnboarding else { return }
+                appState.detectSupport()
+            }
+            .onOpenURL { url in
+                patchDraftCoordinator.presentImport(url)
+            }
         }
     }
 }
@@ -113,6 +138,8 @@ class AppState: ObservableObject {
     private func refreshKernelExploitStatus() {
         guard !kernelExploitRunning else { return }
 
+        // iOS < 26: kernel R/W success persists (no sandbox probe)
+        // iOS >= 26: verify full sandbox escape is still active
         if KernelExploit.requiresSandboxEscape {
             if KernelExploit.hasSandboxAccess() {
                 if !exploitStatus.isSuccess {

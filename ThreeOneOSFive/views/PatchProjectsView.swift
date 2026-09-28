@@ -1,9 +1,19 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
+
+private enum PatchPackagePickerPolicy {
+    static let packageType = UTType(filenameExtension: "3105") ?? .data
+    static let allowedContentTypes: [UTType] = [packageType, .data]
+    static let copiesSelectedDocument = true
+}
 
 struct PatchProjectsView: View {
     @Environment(\.appLanguage) private var language
+    @EnvironmentObject private var draftCoordinator: PatchDraftCoordinator
     @StateObject private var store = PatchProjectStore()
+    @State private var showCreate = false
+    @State private var showImporter = false
     @State private var searchText = ""
 
     private var filteredItems: [PatchLibraryItem] {
@@ -26,6 +36,14 @@ struct PatchProjectsView: View {
                         || $0.replacementFilename.localizedCaseInsensitiveContains(query)
                 }
         }
+    }
+
+    init() {
+#if targetEnvironment(simulator)
+        _showCreate = State(
+            initialValue: ProcessInfo.processInfo.arguments.contains("--simulate-patch-editor")
+        )
+#endif
     }
 
     var body: some View {
@@ -58,6 +76,65 @@ struct PatchProjectsView: View {
             }
             .navigationTitle(language.text("patch.title"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button {
+                            showCreate = true
+                        } label: {
+                            Label(language.text("patch.new"), systemImage: "doc.badge.plus")
+                        }
+                        Button {
+                            showImporter = true
+                        } label: {
+                            Label(language.text("patch.import"), systemImage: "square.and.arrow.down")
+                        }
+                    } label: {
+                        if store.isBusy {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "plus")
+                        }
+                    }
+                    .disabled(store.isBusy)
+                    .accessibilityLabel(language.text("patch.add"))
+                }
+            }
+            .sheet(isPresented: $showImporter) {
+                FileDocumentPicker(
+                    allowedContentTypes: PatchPackagePickerPolicy.allowedContentTypes,
+                    copiesSelectedDocument: PatchPackagePickerPolicy.copiesSelectedDocument,
+                    allowsMultipleSelection: false,
+                    onSelection: { result in
+                        showImporter = false
+                        if case .success(let urls) = result, let url = urls.first {
+                            store.importPackage(at: url)
+                        }
+                    },
+                    onCancel: {
+                        showImporter = false
+                    }
+                )
+                .ignoresSafeArea()
+            }
+            .sheet(isPresented: $showCreate) {
+                PatchProjectEditorView(
+                    existingProject: nil,
+                    passwordIsProtected: false
+                ) { project, password in
+                    store.create(project: project, password: password)
+                }
+            }
+            .sheet(item: $draftCoordinator.request) { request in
+                PatchProjectEditorView(
+                    existingProject: nil,
+                    passwordIsProtected: false,
+                    initialDraft: request.draft
+                ) { project, password in
+                    store.create(project: project, password: password)
+                    draftCoordinator.clear()
+                }
+            }
             .sheet(item: $store.passwordRequest, onDismiss: store.cancelUnlock) { _ in
                 PatchUnlockView(store: store)
             }
@@ -67,6 +144,10 @@ struct PatchProjectsView: View {
                     message: Text(alert.message(language: language)),
                     dismissButton: .default(Text(language.text("common.ok")))
                 )
+            }
+            .onAppear(perform: consumeExternalImport)
+            .onChange(of: draftCoordinator.importRequest?.id) { _ in
+                consumeExternalImport()
             }
         }
     }
@@ -99,6 +180,12 @@ struct PatchProjectsView: View {
         }
     }
 
+    private func consumeExternalImport() {
+        guard let request = draftCoordinator.importRequest else { return }
+        draftCoordinator.clearImport()
+        store.importPackage(from: request.source)
+    }
+
     @ViewBuilder
     private func itemRow(_ item: PatchLibraryItem) -> some View {
         if item.isLocked {
@@ -126,6 +213,9 @@ struct PatchProjectsView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            Button(language.text("patch.new")) { showCreate = true }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 64)
