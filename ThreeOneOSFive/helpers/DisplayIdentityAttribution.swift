@@ -43,13 +43,13 @@ private struct WindowLongPressView: UIViewRepresentable {
         }
 
         func installIfNeeded(hostView: UIView) {
-            // Window ownership is scene-based on iOS 13+. Avoid the
-            // deprecated global window list, which may select a background
-            // scene on devices supporting multiple windows.
-            let allWindows = UIApplication.shared.connectedScenes
-                .compactMap { $0 as? UIWindowScene }
-                .filter { $0.activationState != .unattached }
-                .flatMap { $0.windows }
+            let allWindows: [UIWindow] = {
+                let sceneWindows = UIApplication.shared.connectedScenes
+                    .compactMap({ $0 as? UIWindowScene }).flatMap({ $0.windows })
+                if !sceneWindows.isEmpty { return sceneWindows }
+                // Fallback for edge cases
+                return UIApplication.shared.windows
+            }()
             let win = hostView.window
                 ?? allWindows.first(where: { $0.isKeyWindow })
                 ?? allWindows.first
@@ -136,7 +136,7 @@ struct DisplayAttributionSheet: View {
                     Section(language.text("attribution.link_section")) {
                         LabeledContent(language.text("attribution.url")) {
                             Text(url.absoluteString)
-                                .font(.caption)
+                                .font(.caption.monospaced())
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.trailing)
                                 .textSelection(.enabled)

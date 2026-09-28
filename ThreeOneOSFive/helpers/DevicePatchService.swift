@@ -37,10 +37,6 @@ enum DevicePatchService {
         return PatchTransaction.latestReceipt(projectID: projectID, backupRoot: backupRoot)
     }
 
-    static func requiredBundleIdentifiers(for receipt: PatchTransactionReceipt) throws -> [String] {
-        try PatchTransaction.requiredBundleIdentifiers(for: receipt)
-    }
-
     private static func orderedBundleIdentifiers(in project: PatchProject) -> [String] {
         project.allBundleIdentifiers
     }
@@ -50,6 +46,7 @@ enum DevicePatchService {
         operation: ([String: URL]) throws -> T
     ) throws -> T {
         var roots: [String: URL] = [:]
+
         for bundleID in bundleIDs {
             guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
                   ContainerStore.isApplicationContainerPath(path) else {
