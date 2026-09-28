@@ -36,10 +36,13 @@ struct ContentView: View {
 
     private var regularLayout: some View {
         NavigationSplitView {
-            List(selection: $selectedTab) {
+            List {
                 ForEach(visibleSections) { section in
                     Label(language.text(section.titleKey), systemImage: section.systemImage)
-                        .tag(section)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedTab = section
+                        }
                 }
             }
             .scrollContentBackground(.hidden)
