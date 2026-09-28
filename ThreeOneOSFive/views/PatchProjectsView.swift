@@ -19,6 +19,9 @@ struct PatchProjectsView: View {
             .background(AppTheme.pageBackground.ignoresSafeArea())
             .navigationTitle("Patch")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                store.refreshBuiltInState()
+            }
             .alert(item: $store.alert) { alert in
                 Alert(
                     title: Text(language.text(alert.titleKey)),

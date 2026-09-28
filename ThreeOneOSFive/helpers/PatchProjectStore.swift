@@ -45,6 +45,9 @@ final class PatchProjectStore: ObservableObject {
 
     func reload() {
         items = PatchProjectLibrary.load()
+    }
+
+    func refreshBuiltInState() {
         builtInFunctionEnabled = Self.builtInPackageID().flatMap {
             DevicePatchService.latestReceipt(projectID: $0)
         } != nil
@@ -106,6 +109,7 @@ final class PatchProjectStore: ObservableObject {
 
     private func finishBuiltInOperation() {
         reload()
+        refreshBuiltInState()
         isBusy = false
         alert = PatchStoreAlert(
             titleKey: "common.done",
