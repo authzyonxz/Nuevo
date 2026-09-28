@@ -95,6 +95,7 @@ private struct DashboardView: View {
         NavigationStack {
             List {
                 currentSystemSection
+                accessSection
                 supportedVersionsSection
             }
             .scrollContentBackground(.hidden)
@@ -155,6 +156,42 @@ private struct DashboardView: View {
             Text(language.text("home.compatible_versions"))
         } footer: {
             Text(language.text("home.compatibility_footer"))
+        }
+    }
+
+    private var accessSection: some View {
+        Section {
+            Button {
+                appState.runKernelExploitIfNeeded()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: appState.exploitStatus.isSuccess
+                          ? "checkmark.circle.fill"
+                          : "bolt.shield.fill")
+                        .foregroundStyle(appState.exploitStatus.isSuccess ? .green : AppTheme.accent)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Preparar acesso")
+                            .font(.body.weight(.semibold))
+                        Text(appState.kernelExploitRunning
+                             ? "Executando…"
+                             : appState.exploitStatus.displayText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if !appState.exploitStatus.isSuccess && !appState.kernelExploitRunning {
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(!appState.isSupported || appState.kernelExploitRunning || appState.exploitStatus.isSuccess)
+        } header: {
+            Text("Acesso do dispositivo")
+        } footer: {
+            Text("O acesso não é iniciado automaticamente para evitar encerramento em versões ou builds não compatíveis. Execute manualmente somente em um dispositivo suportado.")
         }
     }
 
