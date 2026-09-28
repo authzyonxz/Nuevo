@@ -1,300 +1,187 @@
 import SwiftUI
-import UIKit
 
 struct ContentView: View {
+    @EnvironmentObject private var appState: AppState
     @Environment(\.appLanguage) private var language
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @EnvironmentObject private var patchDraftCoordinator: PatchDraftCoordinator
-    @State private var tabNavigation: AppTabNavigationState
-    @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
-    @AppStorage(FeatureVisibility.wallpapersStorageKey) private var wallpapersEnabled = true
-
-    init() {
-#if targetEnvironment(simulator)
-        let arguments = ProcessInfo.processInfo.arguments
-        let initialTab: Int
-        if arguments.contains("--simulate-files-tab") {
-            initialTab = 1
-        } else if arguments.contains("--simulate-patch-tab") {
-            initialTab = 2
-        } else if arguments.contains("--simulate-cleaner-tab") {
-            initialTab = 3
-        } else if arguments.contains("--simulate-wallpaper-tab") {
-            initialTab = 4
-        } else {
-            initialTab = 0
-        }
-        _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: initialTab))
-#else
-        _tabNavigation = State(initialValue: AppTabNavigationState())
-#endif
-    }
 
     var body: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                regularLayout
-            } else {
-                compactLayout
-            }
+        TabView {
+            HomeDashboardView()
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
+
+            PatchProjectsView()
+                .tabItem {
+                    Label("Patch", systemImage: "bolt.shield.fill")
+                }
         }
         .tint(AppTheme.accent)
-        .imageScale(.small)
-        .onChange(of: patchDraftCoordinator.request?.id) { requestID in
-            if requestID != nil { tabNavigation.select(AppSection.patches.rawValue) }
-        }
-        .onChange(of: patchDraftCoordinator.importRequest?.id) { requestID in
-            if requestID != nil { tabNavigation.select(AppSection.patches.rawValue) }
-        }
-        .onChange(of: cleanerEnabled) { _ in
-            tabNavigation.reconcileSelection(with: featureVisibility)
-        }
-        .onChange(of: wallpapersEnabled) { _ in
-            tabNavigation.reconcileSelection(with: featureVisibility)
-        }
-        .onAppear {
-            tabNavigation.reconcileSelection(with: featureVisibility)
-        }
-    }
-
-    private var compactLayout: some View {
-        TabView(selection: tabSelection) {
-            ForEach(featureVisibility.visibleSections) { section in
-                sectionContent(section)
-                    .tabItem {
-                        CompactTabLabel(
-                            title: language.text(section.titleKey),
-                            systemImage: section.systemImage
-                        )
-                    }
-                    .tag(section.rawValue)
-            }
-        }
-    }
-
-    private var regularLayout: some View {
-        NavigationSplitView {
-            List {
-                ForEach(featureVisibility.visibleSections) { section in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            tabNavigation.select(section.rawValue)
-                        }
-                    } label: {
-                        Label(language.text(section.titleKey), systemImage: section.systemImage)
-                            .fontWeight(section.rawValue == tabNavigation.selectedTab ? .semibold : .regular)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(
-                        section.rawValue == tabNavigation.selectedTab
-                            ? AppTheme.accent.opacity(0.14)
-                            : Color.clear
-                    )
-                    .accessibilityAddTraits(
-                        section.rawValue == tabNavigation.selectedTab ? .isSelected : []
-                    )
-                }
-            }
-            .navigationTitle("3105")
-            .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 300)
-        } detail: {
-            sectionContent(selectedVisibleSection)
-                .id(selectedVisibleSection.rawValue)
-        }
-        .navigationSplitViewStyle(.balanced)
-    }
-
-    @ViewBuilder
-    private func sectionContent(_ section: AppSection) -> some View {
-        switch section {
-        case .home:
-            DashboardView(
-                cleanerEnabled: $cleanerEnabled,
-                wallpapersEnabled: $wallpapersEnabled,
-                wallpapersSupported: wallpapersSupported
-            )
-        case .files:
-            AppDataBrowserView(
-                tabSession: filesTabSession
-            )
-        case .patches:
-            PatchProjectsView()
-        case .cleaner:
-            CleanerView()
-        case .wallpapers:
-            WallpaperLabView()
-        }
-    }
-
-    private var tabSelection: Binding<Int> {
-        Binding(
-            get: { tabNavigation.selectedTab },
-            set: { tabNavigation.select($0) }
-        )
-    }
-
-    private var filesTabSession: Binding<FilesTabSession> {
-        Binding(
-            get: { tabNavigation.filesTabs },
-            set: { tabNavigation.setFilesTabs($0) }
-        )
-    }
-
-    private var featureVisibility: FeatureVisibility {
-        FeatureVisibility(
-            cleanerEnabled: cleanerEnabled,
-            wallpapersEnabled: wallpapersEnabled,
-            wallpapersSupported: wallpapersSupported
-        )
-    }
-
-    private var wallpapersSupported: Bool {
-        WallpaperFeatureSupportPolicy.isSupported(major: AppInfo.versionTuple.major)
-    }
-
-    private var selectedVisibleSection: AppSection {
-        guard let section = AppSection(rawValue: tabNavigation.selectedTab),
-              featureVisibility.isVisible(section) else {
-            return .home
-        }
-        return section
+        .preferredColorScheme(.dark)
     }
 }
 
-private struct CompactTabLabel: View {
-    let title: String
-    let systemImage: String
-
-    @ViewBuilder
-    var body: some View {
-        if let image = UIImage(
-            systemName: systemImage,
-            withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)
-        )?.withRenderingMode(.alwaysTemplate) {
-            Image(uiImage: image)
-        } else {
-            Image(systemName: systemImage)
-                .font(.system(size: 17, weight: .medium))
-        }
-        Text(title)
-    }
-}
-
-private extension AppSection {
-    var titleKey: String {
-        switch self {
-        case .home: return "tab.home"
-        case .files: return "tab.files"
-        case .patches: return "tab.patches"
-        case .cleaner: return "tab.cleaner"
-        case .wallpapers: return "tab.wallpapers"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .home: return "house.fill"
-        case .files: return "folder.fill"
-        case .patches: return "shippingbox.fill"
-        case .cleaner: return "sparkles"
-        case .wallpapers: return "photo.on.rectangle.angled"
-        }
-    }
-}
-
-private struct DashboardView: View {
-    @Environment(\.appLanguage) private var language
+private struct HomeDashboardView: View {
     @EnvironmentObject private var appState: AppState
-    @State private var showSettings = false
-    @State private var showLogs = false
-    @Binding var cleanerEnabled: Bool
-    @Binding var wallpapersEnabled: Bool
-    let wallpapersSupported: Bool
 
     var body: some View {
         NavigationStack {
-            List {
-                deviceSection
-                featuresSection
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    brandHeader
+                    systemCard
+                    compatibilityCard
+                    exploitCard
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 32)
             }
+            .background(AppTheme.pageBackground.ignoresSafeArea())
+            .navigationTitle("3105")
             .navigationBarTitleDisplayMode(.inline)
-            .tint(AppTheme.accent)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showLogs = true } label: {
-                        Image(systemName: "apple.terminal")
-                    }
-                    .accessibilityLabel(language.text("accessibility.open_logs"))
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showSettings = true } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    .accessibilityLabel(language.text("accessibility.open_settings"))
-                }
-            }
-            .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(isPresented: $showLogs) { LogView() }
         }
     }
 
-    private var featuresSection: some View {
-        Section {
-            Toggle(isOn: $cleanerEnabled) {
-                Label(language.text("tab.cleaner"), systemImage: "sparkles")
+    private var brandHeader: some View {
+        HStack(spacing: 14) {
+            AppLogo(size: 58)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("3105")
+                    .font(.system(size: 27, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("Device utility")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
             }
-            if wallpapersSupported {
-                Toggle(isOn: $wallpapersEnabled) {
-                    Label(language.text("tab.wallpapers"), systemImage: "photo.on.rectangle.angled")
-                }
-            }
-        } header: {
-            Text(language.text("dashboard.features"))
-        } footer: {
-            Text(language.text("dashboard.features_footer"))
+            Spacer()
+            Circle()
+                .fill(appState.isSupported ? Color.green : Color.red)
+                .frame(width: 9, height: 9)
+                .shadow(color: (appState.isSupported ? Color.green : Color.red).opacity(0.7), radius: 8)
         }
     }
 
-    private var deviceSection: some View {
-        Section {
-            LabeledContent(language.text("dashboard.hardware_model")) {
-                Text(AppInfo.displayMachineName)
-                    .font(.body.monospaced())
-            }
-            LabeledContent(language.text("settings.ios_version")) {
-                Text("\(AppInfo.osVersion) (\(AppInfo.osBuild))")
-                    .font(.body.monospaced())
-            }
-            HStack {
-                Text(language.text("settings.compatibility"))
+    private var systemCard: some View {
+        PremiumCard {
+            cardHeader("Sistema", icon: "iphone", tint: AppTheme.accent)
+            infoRow("Versão", value: "iOS \(AppInfo.osVersion)")
+            Divider().overlay(Color.white.opacity(0.08))
+            infoRow("Build", value: AppInfo.osBuild)
+            Divider().overlay(Color.white.opacity(0.08))
+            infoRow("Dispositivo", value: AppInfo.machineName)
+        }
+    }
+
+    private var compatibilityCard: some View {
+        PremiumCard {
+            cardHeader(
+                "Compatibilidade",
+                icon: appState.isSupported ? "checkmark.shield.fill" : "xmark.shield.fill",
+                tint: appState.isSupported ? .green : .red
+            )
+            HStack(spacing: 10) {
+                Image(systemName: appState.isSupported ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .foregroundStyle(appState.isSupported ? .green : .red)
+                Text(appState.isSupported ? "Build compatível" : "Build não compatível")
+                    .font(.subheadline.weight(.semibold))
                 Spacer()
-                Text(language.text(appState.isSupported ? "settings.supported" : "settings.unsupported"))
-                .foregroundStyle(appState.isSupported ? Color.green : Color.red)
             }
-
-            if appState.kernelExploitApplicable && AppInfo.versionTuple.major < 26 {
-                HStack {
-                    Text(language.text("dashboard.kernel_status"))
-                    Spacer()
-                    if appState.kernelExploitRunning {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text(language.text("dashboard.kernel_running"))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                    } else {
-                        Text(language.text(appState.exploitStatus.isSuccess ? "dashboard.kernel_active" : "dashboard.kernel_inactive"))
-                        .foregroundStyle(appState.exploitStatus.isSuccess ? Color.green : Color.secondary)
-                    }
-                }
+            if let reason = appState.unsupportedMessage {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-        } header: {
-            Text(language.text("common.device"))
-        } footer: {
-            Text(language.text("settings.supported_range_summary"))
         }
+    }
+
+    private var exploitCard: some View {
+        PremiumCard {
+            cardHeader("Acesso do dispositivo", icon: "bolt.shield.fill", tint: .orange)
+            Text("O exploit é executado somente quando você tocar no botão. Não há execução automática ao abrir o app.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                appState.runKernelExploitIfNeeded()
+            } label: {
+                HStack(spacing: 10) {
+                    if appState.kernelExploitRunning {
+                        ProgressView()
+                            .tint(.black)
+                    } else {
+                        Image(systemName: appState.exploitStatus.isSuccess ? "checkmark" : "bolt.fill")
+                    }
+                    Text(appState.kernelExploitRunning
+                         ? "Iniciando exploit…"
+                         : appState.exploitStatus.isSuccess ? "Exploit ativo" : "Iniciar exploit")
+                        .font(.body.weight(.bold))
+                    Spacer()
+                }
+                .foregroundStyle(.black)
+                .padding(.horizontal, 16)
+                .frame(height: 52)
+                .background(AppTheme.accent, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(!appState.isSupported || appState.kernelExploitRunning || appState.exploitStatus.isSuccess)
+            .opacity((!appState.isSupported || appState.exploitStatus.isSuccess) ? 0.55 : 1)
+
+            Text(appState.exploitStatus.displayText)
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func cardHeader(_ title: String, icon: String, tint: Color) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 30, height: 30)
+                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            Text(title)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+            Spacer()
+        }
+    }
+
+    private func infoRow(_ label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline.weight(.semibold).monospaced())
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+    }
+}
+
+private struct PremiumCard<Content: View>: View {
+    private let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            content
+        }
+            .padding(18)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color.white.opacity(0.055))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(Color.white.opacity(0.09), lineWidth: 1)
+                    )
+            )
     }
 }
