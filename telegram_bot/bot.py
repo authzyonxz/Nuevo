@@ -170,7 +170,10 @@ async def receive_bundle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not is_admin(update) or not update.message:
         return ConversationHandler.END
     context.user_data["bundle_id"] = update.message.text.strip()
-    await update.message.reply_text("Informe o caminho relativo do arquivo no app, por exemplo: `driver.bin`")
+    await update.message.reply_text(
+        "Informe o caminho relativo COMPLETO do arquivo dentro do app, incluindo o nome final.\n"
+        "Exemplo: `hsneck/3D` (não informe apenas a pasta)."
+    )
     return WAIT_PATH
 
 
@@ -201,7 +204,9 @@ async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE, p
     try:
         upload_path = Path(context.user_data["upload_path"])
         bundle_id = context.user_data["bundle_id"]
-        relative_path = context.user_data["relative_path"]
+        relative_path = context.user_data["relative_path"].strip()
+        if not relative_path or relative_path.endswith(("/", "\\")):
+            raise ValueError("Informe o caminho completo do arquivo, incluindo o nome final")
         item = FUNCTION_BY_ID[function_id]
         author = update.effective_user.full_name if update.effective_user else "3105 Admin"
         package_path = ROOT / "generated" / f"{function_id.replace('.', '_')}.3105"
@@ -212,7 +217,7 @@ async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE, p
             author=author,
             bundle_id=bundle_id,
             relative_path=relative_path,
-            replacement_filename=upload_path.name.rsplit("_", 1)[-1],
+            replacement_filename=Path(relative_path).name,
             replacement_data=upload_path.read_bytes(),
             password=password or None,
         )
@@ -221,7 +226,8 @@ async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE, p
         package_path.unlink(missing_ok=True)
         await update.effective_message.reply_text(
             f"Publicado com sucesso.\n\nFunção: {item.name}\nID: `{function_id}`\n"
-            f"Versão: `{entry['version']}`\nSenha: `{'sim' if password else 'não'}`",
+            f"Versão: `{entry['version']}`\nCaminho: `{relative_path}`\n"
+            f"Senha: `{'sim' if password else 'não'}`",
             parse_mode="Markdown",
             reply_markup=function_keyboard(function_id),
         )

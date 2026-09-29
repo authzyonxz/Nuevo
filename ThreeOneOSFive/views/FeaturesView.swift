@@ -134,6 +134,7 @@ struct FeaturesView: View {
         guard !busyIDs.contains(id.rawValue) else { return }
         busyIDs.insert(id.rawValue)
         defer { busyIDs.remove(id.rawValue) }
+        var destinationDescription: String?
 
         do {
             if enabled {
@@ -146,9 +147,13 @@ struct FeaturesView: View {
                 }
                 let data = try await PublishedFunctionCatalog.downloadPackage(for: status)
                 let decoded = try PatchPackageCodec.decode(data, password: nil)
+                destinationDescription = decoded.project.rules
+                    .map { "\($0.bundleID)/\($0.relativePath)" }
+                    .joined(separator: ", ")
                 _ = try DevicePatchService.apply(project: decoded.project)
                 appliedProjectIDs[id.rawValue] = decoded.project.id
                 featureAlert = language.text("feature.injected_success")
+                    + "\nDestino: " + (destinationDescription ?? "desconhecido")
             } else {
                 guard let projectID = appliedProjectIDs[id.rawValue],
                       let receipt = DevicePatchService.latestReceipt(projectID: projectID) else {
@@ -171,7 +176,8 @@ struct FeaturesView: View {
         } catch let error as PatchPackageError {
             ignoredChanges.insert(id.rawValue)
             binding.wrappedValue = false
-            featureAlert = language.text(error.localizationKey)
+            let detail = destinationDescription.map { "\nDestino: \($0)" } ?? ""
+            featureAlert = language.text(error.localizationKey) + detail
         } catch {
             ignoredChanges.insert(id.rawValue)
             binding.wrappedValue = false
