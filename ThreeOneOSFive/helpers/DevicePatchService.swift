@@ -13,7 +13,7 @@ enum DevicePatchService {
                     log("patch: resolved bundle=\(rule.bundleID) root=\(root.path) target=\(target.path) exists=\(FileManager.default.fileExists(atPath: target.path)) strict=\(requireExistingTargets)")
                 }
             }
-            try PatchTransaction.apply(
+            return try PatchTransaction.apply(
                 project: project,
                 backupRoot: try PatchProjectLibrary.backupRootURL(),
                 containerResolver: { bundleID in
