@@ -727,10 +727,22 @@
 
 "feature.desc_aim_high" = "HS acima da cabeça do inimigo.";
 
-"feature.desc_aim_neck_antenna" = "HS acima da cabeça e no pescoço.";
+"feature.desc_aim_neck_antenna" = "HS no pescoço com antena.";
 
-"feature.desc_aim_neck" = "HS somente no pescoço do inimigo.";
+"feature.desc_aim_neck" = "HS no pescoço do inimigo.";
 
-"feature.desc_hologram_weapons" = "Use o gráfico no padrão para funcionar.";
+"feature.desc_hologram_weapons" = "Holograma nas armas, usar gráfico padrão para funcionar.";
 
-"feature.desc_panel_ffh4x" = "Controles do painel para o pacote selecionado.";
+"feature.desc_panel_ffh4x" = "Painel externo com esp e aim silient.";
+
+"feature.aim_above_head" = "HS ACIMA DA CABEÇA";
+
+"feature.aim_neck_only" = "HS NO PESCOÇO";
+
+"feature.aim_neck_antenna_hand" = "HS NO PESCOÇO + ANTENA MAO";
+
+"feature.desc_aim_above_head" = "Mira direcionada acima da cabeça do inimigo.";
+
+"feature.desc_aim_neck_only" = "HS somente no pescoço do inimigo.";
+
+"feature.desc_aim_neck_antenna_hand" = "HS no pescoço com modo antena mão.";

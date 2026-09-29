@@ -3,9 +3,12 @@ import SwiftUI
 struct FeaturesView: View {
     @Environment(\.appLanguage) private var language
 
-    @State private var aimNeckEnabled = false
     @State private var aimHighEnabled = false
+    @State private var aimAboveHeadEnabled = false
+    @State private var aimNeckEnabled = false
+    @State private var aimNeckOnlyEnabled = false
     @State private var aimNeckAntennaEnabled = false
+    @State private var aimNeckAntennaHandEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
     @State private var appliedProjectIDs: [String: UUID] = [:]
@@ -24,17 +27,18 @@ struct FeaturesView: View {
 
                     featureGroup(
                         titleKey: "feature.aim_group",
-                        subtitle: "feature.group_aim_subtitle",
                         rows: [
                             ("feature.aim_high", "feature.desc_aim_high", PublishedFunctionID.aimHighHS, $aimHighEnabled),
+                            ("feature.aim_above_head", "feature.desc_aim_above_head", PublishedFunctionID.aimAboveHead, $aimAboveHeadEnabled),
+                            ("feature.aim_neck", "feature.desc_aim_neck", PublishedFunctionID.aimNeckHS, $aimNeckEnabled),
+                            ("feature.aim_neck_only", "feature.desc_aim_neck_only", PublishedFunctionID.aimNeckOnly, $aimNeckOnlyEnabled),
                             ("feature.aim_neck_antenna", "feature.desc_aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled),
-                            ("feature.aim_neck", "feature.desc_aim_neck", PublishedFunctionID.aimNeckHS, $aimNeckEnabled)
+                            ("feature.aim_neck_antenna_hand", "feature.desc_aim_neck_antenna_hand", PublishedFunctionID.aimNeckAntennaHand, $aimNeckAntennaHandEnabled)
                         ]
                     )
 
                     featureGroup(
                         titleKey: "feature.hologram_group",
-                        subtitle: "feature.group_hologram_subtitle",
                         rows: [
                             ("feature.hologram_weapons", "feature.desc_hologram_weapons", PublishedFunctionID.hologramWeapons, $hologramWeaponsEnabled)
                         ]
@@ -42,7 +46,6 @@ struct FeaturesView: View {
 
                     featureGroup(
                         titleKey: "feature.panel_group",
-                        subtitle: "feature.group_panel_subtitle",
                         rows: [
                             ("feature.panel_ffh4x", "feature.desc_panel_ffh4x", PublishedFunctionID.panelFFH4X, $panelFFH4XEnabled)
                         ]
@@ -72,21 +75,15 @@ struct FeaturesView: View {
 
     private func featureGroup(
         titleKey: String,
-        subtitle: String,
         rows: [(String, String, PublishedFunctionID, Binding<Bool>)]
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(language.text(titleKey).uppercased())
-                    .font(.caption.weight(.bold))
-                    .tracking(1.1)
-                    .foregroundStyle(.secondary)
-                Text(language.text(subtitle))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 4)
-            .padding(.bottom, 9)
+            Text(language.text(titleKey).uppercased())
+                .font(.caption.weight(.bold))
+                .tracking(1.1)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+                .padding(.bottom, 9)
 
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.element.2.rawValue) { index, row in

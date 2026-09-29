@@ -706,11 +706,11 @@
 
 "feature.aim_group" = "Aim functions";
 
-"feature.aim_neck" = "NECK HS";
+"feature.aim_neck" = "HS NECK";
 
-"feature.aim_high" = "HIGH HS";
+"feature.aim_high" = "HS ALTO";
 
-"feature.aim_neck_antenna" = "NECK HS + ANTENNA";
+"feature.aim_neck_antenna" = "HS NECK + ANTENNA";
 
 "feature.hologram_group" = "HOLOGRAM FUNCTIONS";
 
@@ -744,10 +744,22 @@
 
 "feature.desc_aim_high" = "HS above the enemy head.";
 
-"feature.desc_aim_neck_antenna" = "HS above the head and neck.";
+"feature.desc_aim_neck_antenna" = "HS on the neck with antenna.";
 
-"feature.desc_aim_neck" = "HS only on the enemy neck.";
+"feature.desc_aim_neck" = "HS on the enemy neck.";
 
-"feature.desc_hologram_weapons" = "Use the standard graphics setting to work.";
+"feature.desc_hologram_weapons" = "Weapon hologram. Use the standard graphics setting to work.";
 
-"feature.desc_panel_ffh4x" = "Panel controls for the selected package.";
+"feature.desc_panel_ffh4x" = "External panel with ESP and silent aim.";
+
+"feature.aim_above_head" = "HS ABOVE HEAD";
+
+"feature.aim_neck_only" = "HS ON NECK";
+
+"feature.aim_neck_antenna_hand" = "HS ON NECK + ANTENNA HAND";
+
+"feature.desc_aim_above_head" = "Aim directed above the enemy head.";
+
+"feature.desc_aim_neck_only" = "HS only on the enemy neck.";
+
+"feature.desc_aim_neck_antenna_hand" = "HS on the neck with antenna hand mode.";
