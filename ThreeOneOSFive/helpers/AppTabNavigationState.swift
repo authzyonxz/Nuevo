@@ -2,10 +2,7 @@ import Foundation
 
 enum AppSection: Int, CaseIterable, Identifiable {
     case home
-    case files
-    case patches
-    case cleaner
-    case wallpapers
+    case features
 
     var id: Int { rawValue }
 }
@@ -21,38 +18,20 @@ enum WallpaperFeatureSupportPolicy {
     }
 }
 
+struct OneShotPresentationGate: Equatable {
+    private(set) var hasClaimed = false
+
+    mutating func claim() -> Bool {
+        guard !hasClaimed else { return false }
+        hasClaimed = true
+        return true
+    }
+}
+
+// Kept for settings and legacy feature modules that remain in the target.
 struct FeatureVisibility: Equatable {
     static let cleanerStorageKey = "feature.cleaner.enabled"
-    static let wallpapersStorageKey = "feature.wallpapers.enabled"
-
-    let cleanerEnabled: Bool
-    let wallpapersEnabled: Bool
-    let wallpapersSupported: Bool
-
-    init(
-        cleanerEnabled: Bool,
-        wallpapersEnabled: Bool,
-        wallpapersSupported: Bool = true
-    ) {
-        self.cleanerEnabled = cleanerEnabled
-        self.wallpapersEnabled = wallpapersEnabled
-        self.wallpapersSupported = wallpapersSupported
-    }
-
-    var visibleSections: [AppSection] {
-        AppSection.allCases.filter(isVisible)
-    }
-
-    func isVisible(_ section: AppSection) -> Bool {
-        switch section {
-        case .cleaner:
-            return cleanerEnabled
-        case .wallpapers:
-            return wallpapersEnabled && wallpapersSupported
-        case .home, .files, .patches:
-            return true
-        }
-    }
+    static let developerModeStorageKey = "feature.developer_mode.enabled"
 }
 
 struct AppTabNavigationState: Equatable {
@@ -60,7 +39,7 @@ struct AppTabNavigationState: Equatable {
     private(set) var filesTabs: FilesTabSession
 
     init(
-        selectedTab: Int = 0,
+        selectedTab: Int = AppSection.home.rawValue,
         filesNavigationPath: [FileBrowserDestination] = []
     ) {
         self.selectedTab = selectedTab
@@ -70,6 +49,7 @@ struct AppTabNavigationState: Equatable {
     }
 
     mutating func select(_ tab: Int) {
+        guard AppSection(rawValue: tab) != nil else { return }
         selectedTab = tab
     }
 
@@ -85,9 +65,8 @@ struct AppTabNavigationState: Equatable {
         filesTabs = session
     }
 
-    mutating func reconcileSelection(with visibility: FeatureVisibility) {
-        guard let selectedSection = AppSection(rawValue: selectedTab),
-              visibility.isVisible(selectedSection) else {
+    mutating func reconcileSelection() {
+        guard AppSection(rawValue: selectedTab) != nil else {
             selectedTab = AppSection.home.rawValue
             return
         }
@@ -128,9 +107,17 @@ struct FilesTabSession: Equatable {
         tabs.first { $0.id == selectedTabID }
     }
 
-    mutating func setActiveNavigationPath(_ path: [FileBrowserDestination]) {
-        guard let index = tabs.firstIndex(where: { $0.id == selectedTabID }) else { return }
+    func navigationPath(for id: UUID) -> [FileBrowserDestination] {
+        tabs.first { $0.id == id }?.navigationPath ?? []
+    }
+
+    mutating func setNavigationPath(_ path: [FileBrowserDestination], for id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         tabs[index].navigationPath = path
+    }
+
+    mutating func setActiveNavigationPath(_ path: [FileBrowserDestination]) {
+        setNavigationPath(path, for: selectedTabID)
     }
 
     mutating func openTab(
