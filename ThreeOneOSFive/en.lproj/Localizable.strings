@@ -668,7 +668,7 @@
 "wallpaper.package_details" = "Package Details";
 "wallpaper.package_files" = "%lld files";
 
-"tab.features" = "Features";
+"tab.features" = "Functions";
 "home.account" = "Key information";
 "home.key" = "Key";
 "home.duration" = "Duration";
@@ -678,12 +678,52 @@
 "home.ios_version" = "iOS version";
 "home.device" = "Device";
 "home.build" = "Build";
-"feature.test_function" = "Test function";
-"feature.success_title" = "Success";
-"feature.success_message" = "The patch was applied successfully.";
-"feature.disabled_title" = "Function disabled.";
-"feature.unsupported_title" = "Incompatible device";
-"feature.unsupported_message" = "Your iOS version is not compatible.";
-"feature.no_patch_title" = "Patch unavailable";
-"feature.no_patch_message" = "Install or import a patch before enabling this function.";
 "home.language" = "Language";
+
+"login.title" = "Key login";
+
+"login.subtitle" = "Enter a key to continue";
+
+"login.key" = "Key";
+
+"login.key_placeholder" = "Enter any test key";
+
+"login.validate" = "Validate key";
+
+"login.test_note" = "Test mode: any non-empty text is accepted.";
+
+"login.success_title" = "Login Successfully";
+
+"login.success_message" = "Your test key was validated successfully.";
+
+"login.example_duration" = "30 days";
+
+"login.example_package" = "Example package";
+
+"login.enter_app" = "Enter app";
+
+"feature.group_title" = "FUNCTIONS";
+
+"feature.aim_group" = "Aim functions";
+
+"feature.aim_neck" = "NECK HS";
+
+"feature.aim_high" = "HIGH HS";
+
+"feature.aim_neck_antenna" = "NECK HS + ANTENNA";
+
+"feature.hologram_group" = "HOLOGRAM FUNCTIONS";
+
+"feature.hologram_weapons" = "WEAPON HOLOGRAM";
+
+"feature.panel_group" = "PANEL";
+
+"feature.panel_ffh4x" = "FFH4X PANEL";
+
+"feature.remote_maintenance" = "This function is under maintenance.";
+
+"feature.remote_unavailable" = "No published package is available for this function.";
+
+"feature.remote_password" = "This package requires a password and cannot be activated automatically.";
+
+"feature.remote_not_configured" = "The remote function catalog is not configured.";

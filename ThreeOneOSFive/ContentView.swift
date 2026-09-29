@@ -8,13 +8,13 @@ struct ContentView: View {
         TabView(selection: tabSelection) {
             HomeView()
                 .tabItem {
-                    Label(language.text("tab.home"), systemImage: "house.fill")
+                    Label(language.text("tab.home"), systemImage: "house.circle.fill")
                 }
                 .tag(AppSection.home.rawValue)
 
             FeaturesView()
                 .tabItem {
-                    Label(language.text("tab.features"), systemImage: "switch.2")
+                    Label(language.text("tab.features"), systemImage: "square.grid.2x2.fill")
                 }
                 .tag(AppSection.features.rawValue)
         }

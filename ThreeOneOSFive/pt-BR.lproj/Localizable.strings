@@ -651,7 +651,7 @@
 "settings.developer_mode_footer" = "Modo de Desenvolvedor adiciona Files à navegação principal. Files pode navegar e modificar contêineres de aplicativos.";
 "wallpaper.package_details" = "Detalhes do pacote";
 "wallpaper.package_files" = "%lld arquivos";
-"tab.features" = "Recursos";
+"tab.features" = "FUNÇÕES";
 "home.account" = "Informações da chave";
 "home.key" = "Chave";
 "home.duration" = "Duração";
@@ -661,12 +661,52 @@
 "home.ios_version" = "Versão do iOS";
 "home.device" = "Dispositivo";
 "home.build" = "Build";
-"feature.test_function" = "Função de teste";
-"feature.success_title" = "Sucesso";
-"feature.success_message" = "O patch foi aplicado com sucesso.";
-"feature.disabled_title" = "Função desativada.";
-"feature.unsupported_title" = "Dispositivo incompatível";
-"feature.unsupported_message" = "Sua versão do iOS não é compatível.";
-"feature.no_patch_title" = "Patch indisponível";
-"feature.no_patch_message" = "Instale ou importe um patch antes de ativar esta função.";
 "home.language" = "Idioma";
+
+"login.title" = "Login com Key";
+
+"login.subtitle" = "Digite uma key para continuar";
+
+"login.key" = "Key";
+
+"login.key_placeholder" = "Digite qualquer key de teste";
+
+"login.validate" = "Validar key";
+
+"login.test_note" = "Modo de teste: qualquer texto preenchido é aceito.";
+
+"login.success_title" = "Login Successfully";
+
+"login.success_message" = "Sua key de teste foi validada com sucesso.";
+
+"login.example_duration" = "30 dias";
+
+"login.example_package" = "Pacote de exemplo";
+
+"login.enter_app" = "Entrar no app";
+
+"feature.group_title" = "FUNÇÕES";
+
+"feature.aim_group" = "Funções Aim";
+
+"feature.aim_neck" = "HS PESCOÇO";
+
+"feature.aim_high" = "HS ALTO";
+
+"feature.aim_neck_antenna" = "HS PESCOÇO + ANTENA";
+
+"feature.hologram_group" = "FUNÇÕES HOLOGRAMAS";
+
+"feature.hologram_weapons" = "HOLOGRAMA ARMAS";
+
+"feature.panel_group" = "PAINEL";
+
+"feature.panel_ffh4x" = "PAINEL FFH4X";
+
+"feature.remote_maintenance" = "Esta função está em manutenção.";
+
+"feature.remote_unavailable" = "Não há pacote publicado disponível para esta função.";
+
+"feature.remote_password" = "Este pacote exige uma senha e não pode ser ativado automaticamente.";
+
+"feature.remote_not_configured" = "O catálogo remoto de funções não está configurado.";

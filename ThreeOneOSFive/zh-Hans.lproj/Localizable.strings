@@ -678,12 +678,52 @@
 "home.ios_version" = "iOS 版本";
 "home.device" = "设备";
 "home.build" = "Build";
-"feature.test_function" = "测试功能";
-"feature.success_title" = "成功";
-"feature.success_message" = "Patch 已成功应用。";
-"feature.disabled_title" = "功能已禁用。";
-"feature.unsupported_title" = "设备不兼容";
-"feature.unsupported_message" = "您的 iOS 版本不兼容。";
-"feature.no_patch_title" = "没有可用的 Patch";
-"feature.no_patch_message" = "请先安装或导入 Patch，再启用此功能。";
 "home.language" = "语言";
+
+"login.title" = "Key 登录";
+
+"login.subtitle" = "输入 Key 以继续";
+
+"login.key" = "Key";
+
+"login.key_placeholder" = "输入任意测试 Key";
+
+"login.validate" = "验证 Key";
+
+"login.test_note" = "测试模式：接受任何非空文本。";
+
+"login.success_title" = "Login Successfully";
+
+"login.success_message" = "您的测试 Key 已验证成功。";
+
+"login.example_duration" = "30 天";
+
+"login.example_package" = "示例 Package";
+
+"login.enter_app" = "进入应用";
+
+"feature.group_title" = "功能";
+
+"feature.aim_group" = "Aim 功能";
+
+"feature.aim_neck" = "脖子 HS";
+
+"feature.aim_high" = "高位 HS";
+
+"feature.aim_neck_antenna" = "脖子 HS + 天线";
+
+"feature.hologram_group" = "全息功能";
+
+"feature.hologram_weapons" = "武器全息";
+
+"feature.panel_group" = "面板";
+
+"feature.panel_ffh4x" = "FFH4X 面板";
+
+"feature.remote_maintenance" = "此功能正在维护中。";
+
+"feature.remote_unavailable" = "此功能没有可用的已发布包。";
+
+"feature.remote_password" = "此包需要密码，无法自动激活。";
+
+"feature.remote_not_configured" = "远程功能目录尚未配置。";

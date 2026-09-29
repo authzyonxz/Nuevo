@@ -668,7 +668,7 @@
 "wallpaper.package_details" = "Chi tiết gói";
 "wallpaper.package_files" = "%lld tệp";
 
-"tab.features" = "Tính năng";
+"tab.features" = "Chức năng";
 "home.account" = "Thông tin key";
 "home.key" = "Key";
 "home.duration" = "Thời hạn";
@@ -678,12 +678,52 @@
 "home.ios_version" = "Phiên bản iOS";
 "home.device" = "Thiết bị";
 "home.build" = "Build";
-"feature.test_function" = "Chức năng thử nghiệm";
-"feature.success_title" = "Thành công";
-"feature.success_message" = "Patch đã được áp dụng thành công.";
-"feature.disabled_title" = "Đã tắt chức năng.";
-"feature.unsupported_title" = "Thiết bị không tương thích";
-"feature.unsupported_message" = "Phiên bản iOS của bạn không tương thích.";
-"feature.no_patch_title" = "Không có patch";
-"feature.no_patch_message" = "Hãy cài đặt hoặc nhập một patch trước khi bật chức năng này.";
 "home.language" = "Ngôn ngữ";
+
+"login.title" = "Đăng nhập bằng key";
+
+"login.subtitle" = "Nhập key để tiếp tục";
+
+"login.key" = "Key";
+
+"login.key_placeholder" = "Nhập key thử nghiệm bất kỳ";
+
+"login.validate" = "Xác thực key";
+
+"login.test_note" = "Chế độ thử nghiệm: mọi nội dung không trống đều được chấp nhận.";
+
+"login.success_title" = "Login Successfully";
+
+"login.success_message" = "Key thử nghiệm của bạn đã được xác thực thành công.";
+
+"login.example_duration" = "30 ngày";
+
+"login.example_package" = "Package mẫu";
+
+"login.enter_app" = "Vào ứng dụng";
+
+"feature.group_title" = "CHỨC NĂNG";
+
+"feature.aim_group" = "Chức năng Aim";
+
+"feature.aim_neck" = "HS CỔ";
+
+"feature.aim_high" = "HS CAO";
+
+"feature.aim_neck_antenna" = "HS CỔ + ĂNG-TEN";
+
+"feature.hologram_group" = "CHỨC NĂNG HOLOGRAM";
+
+"feature.hologram_weapons" = "HOLOGRAM VŨ KHÍ";
+
+"feature.panel_group" = "BẢNG ĐIỀU KHIỂN";
+
+"feature.panel_ffh4x" = "BẢNG FFH4X";
+
+"feature.remote_maintenance" = "Chức năng này đang được bảo trì.";
+
+"feature.remote_unavailable" = "Chưa có gói được phát hành cho chức năng này.";
+
+"feature.remote_password" = "Gói này yêu cầu mật khẩu và không thể tự động kích hoạt.";
+
+"feature.remote_not_configured" = "Danh mục chức năng từ xa chưa được cấu hình.";

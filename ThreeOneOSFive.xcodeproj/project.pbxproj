@@ -9,8 +9,10 @@
 /* Begin PBXBuildFile section */
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
+		3105M202 /* KeyLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M102; };
 		3105M200 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M100; };
 		3105M201 /* FeaturesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M101; };
+		3105M203 /* PublishedFunctionCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M103; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
 		3105A204 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A024; };
 		3105A205 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A025; };
@@ -58,7 +60,6 @@
 		3105F203 /* WallpaperInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F104; };
 		3105F204 /* WallpaperLabService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F105; };
 		3105F205 /* WallpaperLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F106; };
-		3105F206 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105F108; };
 		3105G200 /* ZIPArchiveWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105G100; };
 		3105G201 /* FileOperationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105G101; };
 		3105G202 /* ZIPArchiveExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105G102; };
@@ -83,8 +84,10 @@
 		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		3105M102 /* KeyLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyLoginView.swift; sourceTree = "<group>"; };
 		3105M100 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		3105M101 /* FeaturesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturesView.swift; sourceTree = "<group>"; };
+		3105M103 /* PublishedFunctionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublishedFunctionCatalog.swift; sourceTree = "<group>"; };
 		3105A023 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3105A024 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		3105A025 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
@@ -150,7 +153,6 @@
 		3105F104 /* WallpaperInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperInstaller.swift; sourceTree = "<group>"; };
 		3105F105 /* WallpaperLabService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperLabService.swift; sourceTree = "<group>"; };
 		3105F106 /* WallpaperLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperLabView.swift; sourceTree = "<group>"; };
-		3105F108 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		3105G100 /* ZIPArchiveWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZIPArchiveWriter.swift; sourceTree = "<group>"; };
 		3105G101 /* FileOperationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationCoordinator.swift; sourceTree = "<group>"; };
 		3105G102 /* ZIPArchiveExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZIPArchiveExtractor.swift; sourceTree = "<group>"; };
@@ -232,6 +234,7 @@
 			isa = PBXGroup;
 			children = (
 				3105A098 /* DesignSystem.swift */,
+				3105M102 /* KeyLoginView.swift */,
 				3105M100 /* HomeView.swift */,
 				3105M101 /* FeaturesView.swift */,
 				3105A023 /* SettingsView.swift */,
@@ -245,7 +248,6 @@
 				3105C102 /* FolderPatchSelectionView.swift */,
 				3105E101 /* CleanerView.swift */,
 				3105F106 /* WallpaperLabView.swift */,
-				3105F108 /* OnboardingView.swift */,
 				3105L102 /* RepositoryMarketplaceView.swift */,
 				3105L103 /* RepositoryHomeView.swift */,
 				3105L104 /* RepositorySourcesView.swift */,
@@ -276,6 +278,7 @@
 				3105B117 /* PatchTransaction.swift */,
 				3105B118 /* DevicePatchService.swift */,
 				3105B119 /* PatchProjectLibrary.swift */,
+				3105M103 /* PublishedFunctionCatalog.swift */,
 				3105B120 /* PatchProjectStore.swift */,
 				3105G103 /* PatchWorkspaceService.swift */,
 				3105H100 /* AppTabNavigationState.swift */,
@@ -388,9 +391,11 @@
 		3105A700 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (
-				3105A200, 3105A201, 3105A203, 3105A204,
-				3105M200, 3105M201,
+				files = (
+					3105A200, 3105A201, 3105A203, 3105A204,
+					3105M202,
+					3105M200, 3105M201,
+					3105M203,
 				3105A205, 3105A206, 3105A207, 3105A209,
 				3105A210, 3105A220, 3105A221, 3105A222, 3105A223,
 				3105A224, 3105A225,
@@ -430,7 +435,6 @@
 				3105F203,
 				3105F204,
 				3105F205,
-				3105F206,
 				3105G200,
 				3105G201,
 				3105G202,

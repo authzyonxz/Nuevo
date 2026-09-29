@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+private enum LoginStage: Equatable {
+    case keyEntry
+    case successful(key: String)
+    case app
+}
+
 @main
 struct ThreeOneOSFiveApp: App {
     @StateObject private var appState = AppState()
@@ -9,11 +15,10 @@ struct ThreeOneOSFiveApp: App {
     @StateObject private var patchStore = PatchProjectStore()
     @StateObject private var repositoryStore = PackageRepositoryStore()
     @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
-    @State private var showOnboarding = OnboardingStore.shouldShow()
+    @State private var loginStage: LoginStage = .keyEntry
     @State private var showAttribution = false
     @State private var updateOffer: AppUpdateChecker.Offer?
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init() {
         setupLogCapture()
@@ -31,68 +36,70 @@ struct ThreeOneOSFiveApp: App {
         }
     }
 
-    var body: some Scene {
-        WindowGroup {
-            ZStack {
-                ContentView()
-                    .environmentObject(appState)
-                    .environmentObject(patchDraftCoordinator)
-                    .environmentObject(fileOperationCoordinator)
-                    .environmentObject(patchStore)
-                    .environmentObject(repositoryStore)
-                    .environment(\.appLanguage, language)
-                    .environment(\.locale, language.locale)
-                    .opacity(showOnboarding ? 0 : 1)
-                    .allowsHitTesting(!showOnboarding)
-
-                if showOnboarding {
-                    OnboardingView {
-                        OnboardingStore.markCompleted()
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.24)) {
-                            showOnboarding = false
-                        }
-                        appState.detectSupport()
-                        checkForUpdate()
-                    }
-                    .environment(\.appLanguage, language)
-                    .environment(\.locale, language.locale)
-                    .transition(
-                        reduceMotion
-                            ? .opacity
-                            : .opacity.combined(with: .scale(scale: 0.98))
-                    )
-                    .zIndex(1)
+    @ViewBuilder
+    private var rootContent: some View {
+        switch loginStage {
+        case .keyEntry:
+            KeyLoginView { key in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    loginStage = .successful(key: key)
                 }
             }
-            .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
-            .sheet(isPresented: $showAttribution) {
-                DisplayAttributionSheet()
+        case .successful(let key):
+            LoginSuccessfulView(key: key) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    loginStage = .app
+                }
+                appState.detectSupport()
+                checkForUpdate()
             }
-            .alert(item: $updateOffer) { offer in
-                Alert(
-                    title: Text(language.text("update.title")),
-                    message: Text(language.text("update.message", offer.version)),
-                    primaryButton: .default(Text(language.text("update.agree"))) {
-                        UIApplication.shared.open(offer.url)
-                    },
-                    secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
-                        AppUpdateChecker.dismiss(version: offer.version)
-                    }
+        case .app:
+            ContentView()
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            rootContent
+                .environmentObject(appState)
+                .environmentObject(patchDraftCoordinator)
+                .environmentObject(fileOperationCoordinator)
+                .environmentObject(patchStore)
+                .environmentObject(repositoryStore)
+                .environment(\.appLanguage, language)
+                .environment(\.locale, language.locale)
+                .displayIdentityAttribution(
+                    isPresented: $showAttribution,
+                    enabled: loginStage == .app
                 )
-            }
-            .onAppear {
-                if !showOnboarding {
+                .sheet(isPresented: $showAttribution) {
+                    DisplayAttributionSheet()
+                }
+                .alert(item: $updateOffer) { offer in
+                    Alert(
+                        title: Text(language.text("update.title")),
+                        message: Text(language.text("update.message", offer.version)),
+                        primaryButton: .default(Text(language.text("update.agree"))) {
+                            UIApplication.shared.open(offer.url)
+                        },
+                        secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
+                            AppUpdateChecker.dismiss(version: offer.version)
+                        }
+                    )
+                }
+                .onAppear {
+                    guard loginStage == .app else { return }
                     appState.detectSupport()
                     checkForUpdate()
                 }
-            }
-            .onChange(of: scenePhase) { phase in
-                guard phase == .active, !showOnboarding else { return }
-                appState.detectSupport()
-            }
-            .onOpenURL { url in
-                patchDraftCoordinator.presentImport(url)
-            }
+                .onChange(of: scenePhase) { phase in
+                    guard phase == .active, loginStage == .app else { return }
+                    appState.detectSupport()
+                }
+                .onOpenURL { url in
+                    guard loginStage == .app else { return }
+                    patchDraftCoordinator.presentImport(url)
+                }
         }
     }
 }
@@ -160,8 +167,6 @@ class AppState: ObservableObject {
     private func refreshKernelExploitStatus() {
         guard !kernelExploitRunning else { return }
 
-        // iOS < 26: kernel R/W success persists (no sandbox probe)
-        // iOS >= 26: verify full sandbox escape is still active
         if KernelExploit.requiresSandboxEscape {
             if KernelExploit.hasSandboxAccess() {
                 if !exploitStatus.isSuccess {
