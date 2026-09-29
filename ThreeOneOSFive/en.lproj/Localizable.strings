@@ -733,3 +733,21 @@
 "feature.group_hologram_subtitle" = "Visual overlay functions";
 
 "feature.group_panel_subtitle" = "Panel and control functions";
+
+"feature.alert_title" = "Function status";
+
+"feature.injected_success" = "Injected successfully.";
+
+"feature.restored_success" = "Restored successfully.";
+
+"feature.restore_unavailable" = "This function cannot be restored because no active patch was found.";
+
+"feature.desc_aim_high" = "HS above the enemy head.";
+
+"feature.desc_aim_neck_antenna" = "HS above the head and neck.";
+
+"feature.desc_aim_neck" = "HS only on the enemy neck.";
+
+"feature.desc_hologram_weapons" = "Use the standard graphics setting to work.";
+
+"feature.desc_panel_ffh4x" = "Panel controls for the selected package.";

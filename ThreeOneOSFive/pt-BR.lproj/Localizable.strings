@@ -716,3 +716,21 @@
 "feature.group_hologram_subtitle" = "Funções de sobreposição visual";
 
 "feature.group_panel_subtitle" = "Funções de painel e controle";
+
+"feature.alert_title" = "Status da função";
+
+"feature.injected_success" = "Injetado com sucesso.";
+
+"feature.restored_success" = "Restaurado com sucesso.";
+
+"feature.restore_unavailable" = "Não foi possível restaurar porque não há patch ativo.";
+
+"feature.desc_aim_high" = "HS acima da cabeça do inimigo.";
+
+"feature.desc_aim_neck_antenna" = "HS acima da cabeça e no pescoço.";
+
+"feature.desc_aim_neck" = "HS somente no pescoço do inimigo.";
+
+"feature.desc_hologram_weapons" = "Use o gráfico no padrão para funcionar.";
+
+"feature.desc_panel_ffh4x" = "Controles do painel para o pacote selecionado.";

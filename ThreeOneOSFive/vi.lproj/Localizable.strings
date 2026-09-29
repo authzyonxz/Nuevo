@@ -733,3 +733,21 @@
 "feature.group_hologram_subtitle" = "Chức năng lớp phủ hình ảnh";
 
 "feature.group_panel_subtitle" = "Chức năng bảng điều khiển";
+
+"feature.alert_title" = "Trạng thái chức năng";
+
+"feature.injected_success" = "Đã inject thành công.";
+
+"feature.restored_success" = "Đã khôi phục thành công.";
+
+"feature.restore_unavailable" = "Không thể khôi phục vì không có bản vá đang hoạt động.";
+
+"feature.desc_aim_high" = "HS phía trên đầu kẻ địch.";
+
+"feature.desc_aim_neck_antenna" = "HS phía trên đầu và cổ.";
+
+"feature.desc_aim_neck" = "HS chỉ vào cổ kẻ địch.";
+
+"feature.desc_hologram_weapons" = "Dùng đồ họa mặc định để hoạt động.";
+
+"feature.desc_panel_ffh4x" = "Điều khiển bảng cho gói đã chọn.";

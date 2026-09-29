@@ -733,3 +733,21 @@
 "feature.group_hologram_subtitle" = "视觉叠加功能";
 
 "feature.group_panel_subtitle" = "面板与控制功能";
+
+"feature.alert_title" = "功能状态";
+
+"feature.injected_success" = "注入成功。";
+
+"feature.restored_success" = "恢复成功。";
+
+"feature.restore_unavailable" = "没有活动补丁，无法恢复。";
+
+"feature.desc_aim_high" = "敌人头部上方 HS。";
+
+"feature.desc_aim_neck_antenna" = "头部和颈部 HS。";
+
+"feature.desc_aim_neck" = "仅针对敌人颈部 HS。";
+
+"feature.desc_hologram_weapons" = "使用标准图形设置以正常工作。";
+
+"feature.desc_panel_ffh4x" = "所选软件包的面板控制。";
