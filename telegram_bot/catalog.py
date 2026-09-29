@@ -14,11 +14,8 @@ class FunctionDefinition:
 
 FUNCTIONS: Final[tuple[FunctionDefinition, ...]] = (
     FunctionDefinition("aim.high_hs", "aim", "FUNÇÕES AIM", "HS ALTO"),
-    FunctionDefinition("aim.above_head", "aim", "FUNÇÕES AIM", "HS ACIMA DA CABEÇA"),
     FunctionDefinition("aim.neck_hs", "aim", "FUNÇÕES AIM", "HS PESCOÇO"),
-    FunctionDefinition("aim.neck_only", "aim", "FUNÇÕES AIM", "HS NO PESCOÇO"),
     FunctionDefinition("aim.neck_antenna", "aim", "FUNÇÕES AIM", "HS PESCOÇO + ANTENA"),
-    FunctionDefinition("aim.neck_antenna_hand", "aim", "FUNÇÕES AIM", "HS NO PESCOÇO + ANTENA MAO"),
     FunctionDefinition("hologram.weapons", "hologram", "FUNÇÕES HOLOGRAMAS", "HOLOGRAMA ARMAS"),
     FunctionDefinition("panel.ffh4x", "panel", "PAINEL", "PAINEL FFH4X"),
 )

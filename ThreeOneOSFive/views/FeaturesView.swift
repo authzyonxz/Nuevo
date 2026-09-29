@@ -4,11 +4,8 @@ struct FeaturesView: View {
     @Environment(\.appLanguage) private var language
 
     @State private var aimHighEnabled = false
-    @State private var aimAboveHeadEnabled = false
     @State private var aimNeckEnabled = false
-    @State private var aimNeckOnlyEnabled = false
     @State private var aimNeckAntennaEnabled = false
-    @State private var aimNeckAntennaHandEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
     @State private var appliedProjectIDs: [String: UUID] = [:]
@@ -29,11 +26,8 @@ struct FeaturesView: View {
                         titleKey: "feature.aim_group",
                         rows: [
                             ("feature.aim_high", "feature.desc_aim_high", PublishedFunctionID.aimHighHS, $aimHighEnabled),
-                            ("feature.aim_above_head", "feature.desc_aim_above_head", PublishedFunctionID.aimAboveHead, $aimAboveHeadEnabled),
                             ("feature.aim_neck", "feature.desc_aim_neck", PublishedFunctionID.aimNeckHS, $aimNeckEnabled),
-                            ("feature.aim_neck_only", "feature.desc_aim_neck_only", PublishedFunctionID.aimNeckOnly, $aimNeckOnlyEnabled),
-                            ("feature.aim_neck_antenna", "feature.desc_aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled),
-                            ("feature.aim_neck_antenna_hand", "feature.desc_aim_neck_antenna_hand", PublishedFunctionID.aimNeckAntennaHand, $aimNeckAntennaHandEnabled)
+                            ("feature.aim_neck_antenna", "feature.desc_aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled)
                         ]
                     )
 

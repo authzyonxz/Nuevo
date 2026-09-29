@@ -2,11 +2,8 @@ import Foundation
 
 enum PublishedFunctionID: String, CaseIterable, Codable {
     case aimHighHS = "aim.high_hs"
-    case aimAboveHead = "aim.above_head"
     case aimNeckHS = "aim.neck_hs"
-    case aimNeckOnly = "aim.neck_only"
     case aimNeckAntenna = "aim.neck_antenna"
-    case aimNeckAntennaHand = "aim.neck_antenna_hand"
     case hologramWeapons = "hologram.weapons"
     case panelFFH4X = "panel.ffh4x"
 }

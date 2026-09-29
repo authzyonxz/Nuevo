@@ -751,15 +751,3 @@
 "feature.desc_hologram_weapons" = "Hologram trên vũ khí, dùng đồ họa mặc định.";
 
 "feature.desc_panel_ffh4x" = "Bảng bên ngoài với ESP và aim silent.";
-
-"feature.aim_above_head" = "HS TRÊN ĐẦU";
-
-"feature.aim_neck_only" = "HS Ở CỔ";
-
-"feature.aim_neck_antenna_hand" = "HS Ở CỔ + ĂNG-TEN TAY";
-
-"feature.desc_aim_above_head" = "Ngắm phía trên đầu kẻ địch.";
-
-"feature.desc_aim_neck_only" = "HS chỉ vào cổ kẻ địch.";
-
-"feature.desc_aim_neck_antenna_hand" = "HS vào cổ với chế độ ăng-ten tay.";

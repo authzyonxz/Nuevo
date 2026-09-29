@@ -751,15 +751,3 @@
 "feature.desc_hologram_weapons" = "Weapon hologram. Use the standard graphics setting to work.";
 
 "feature.desc_panel_ffh4x" = "External panel with ESP and silent aim.";
-
-"feature.aim_above_head" = "HS ABOVE HEAD";
-
-"feature.aim_neck_only" = "HS ON NECK";
-
-"feature.aim_neck_antenna_hand" = "HS ON NECK + ANTENNA HAND";
-
-"feature.desc_aim_above_head" = "Aim directed above the enemy head.";
-
-"feature.desc_aim_neck_only" = "HS only on the enemy neck.";
-
-"feature.desc_aim_neck_antenna_hand" = "HS on the neck with antenna hand mode.";

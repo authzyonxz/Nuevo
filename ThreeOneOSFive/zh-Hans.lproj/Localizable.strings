@@ -751,15 +751,3 @@
 "feature.desc_hologram_weapons" = "武器全息，使用标准图形设置。";
 
 "feature.desc_panel_ffh4x" = "带 ESP 和静默瞄准的外部面板。";
-
-"feature.aim_above_head" = "头部上方 HS";
-
-"feature.aim_neck_only" = "颈部专属 HS";
-
-"feature.aim_neck_antenna_hand" = "颈部 HS + 手部天线";
-
-"feature.desc_aim_above_head" = "瞄准敌人头部上方。";
-
-"feature.desc_aim_neck_only" = "仅瞄准敌人颈部 HS。";
-
-"feature.desc_aim_neck_antenna_hand" = "带手部天线模式的颈部 HS。";
