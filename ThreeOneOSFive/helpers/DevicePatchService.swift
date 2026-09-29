@@ -1,12 +1,22 @@
 import Foundation
 
 enum DevicePatchService {
-    static func apply(project: PatchProject) throws -> PatchTransactionReceipt {
+    static func apply(
+        project: PatchProject,
+        requireExistingTargets: Bool = false
+    ) throws -> PatchTransactionReceipt {
         let bundleIDs = orderedBundleIdentifiers(in: project)
         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
+            for rule in project.rules {
+                if let root = roots[rule.bundleID] {
+                    let target = root.appendingPathComponent(rule.relativePath, isDirectory: false)
+                    log("patch: resolved bundle=\(rule.bundleID) root=\(root.path) target=\(target.path) exists=\(FileManager.default.fileExists(atPath: target.path)) strict=\(requireExistingTargets)")
+                }
+            }
             try PatchTransaction.apply(
                 project: project,
                 backupRoot: try PatchProjectLibrary.backupRootURL(),
+                requireExistingTargets: requireExistingTargets,
                 containerResolver: { bundleID in
                     guard let root = roots[bundleID] else {
                         throw PatchPackageError.targetAppUnavailable(bundleID)

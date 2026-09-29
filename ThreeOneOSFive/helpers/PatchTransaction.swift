@@ -100,6 +100,7 @@ enum PatchTransaction {
         project: PatchProject,
         backupRoot: URL,
         containerResolver: (String) throws -> URL,
+        requireExistingTargets: Bool = false,
         beforeWrite: ((Int) throws -> Void)? = nil,
         fileManager: FileManager = .default
     ) throws -> PatchTransactionReceipt {
@@ -183,7 +184,8 @@ enum PatchTransaction {
                 target,
                 relativePath: rule.relativePath,
                 containerRoot: root,
-                allowMissingParents: true,
+                allowMissingParents: !requireExistingTargets,
+                requireExistingTarget: requireExistingTargets,
                 fileManager: fileManager
             )
             resolvedRules.append(ResolvedRule(rule: rule, containerRoot: root, target: target))
@@ -841,6 +843,7 @@ enum PatchTransaction {
         relativePath: String,
         containerRoot: URL,
         allowMissingParents: Bool,
+        requireExistingTarget: Bool = false,
         fileManager: FileManager
     ) throws {
         let components = try PatchPathValidator.canonicalRelativePath(relativePath)
@@ -869,6 +872,8 @@ enum PatchTransaction {
             guard values.isDirectory != true else {
                 throw PatchPackageError.applyFailed
             }
+        } else if requireExistingTarget {
+            throw PatchPackageError.targetPathMissing(relativePath)
         }
     }
 

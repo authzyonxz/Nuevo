@@ -154,7 +154,10 @@ struct FeaturesView: View {
                     .map { "\($0.bundleID)/\($0.relativePath)" }
                     .joined(separator: ", ")
                 log("feature: decoded project=\(decoded.project.id.uuidString) destination=\(destinationDescription ?? "none")")
-                _ = try DevicePatchService.apply(project: decoded.project)
+                _ = try DevicePatchService.apply(
+                    project: decoded.project,
+                    requireExistingTargets: true
+                )
                 appliedProjectIDs[id.rawValue] = decoded.project.id
                 log("feature: apply succeeded project=\(decoded.project.id.uuidString)")
                 featureAlert = language.text("feature.injected_success")

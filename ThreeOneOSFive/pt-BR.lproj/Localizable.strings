@@ -224,6 +224,7 @@
 "patch.error.active_delete" = "Este patch ainda está ativo. Restaure seus arquivos originais antes de excluir o pacote.";
 "patch.error.symlink" = "Alvos de patch não podem passar por links simbólicos.";
 "patch.error.apply" = "O patch não pôde ser aplicado. Quaisquer gravações anteriores foram revertidas.";
+"patch.error.target_missing" = "O arquivo-alvo não existe no container atual:\n%@\nNenhuma pasta nova foi criada.";
 "patch.error.restore" = "Os originais não puderam ser restaurados com segurança. Nenhum alvo não verificado foi sobrescrito.";
 "patch.error.reset" = "Os arquivos não puderam ser redefinidos para o estado do pacote aplicado. Quaisquer gravações parciais foram revertidas.";
 "patch.error.invalid_import_link" = "Este link de importação de patch é inválido. Use um link HTTPS seguro para um pacote .3105.";
