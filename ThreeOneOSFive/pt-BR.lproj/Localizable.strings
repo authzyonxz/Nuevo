@@ -710,3 +710,9 @@
 "feature.remote_password" = "Este pacote exige uma senha e não pode ser ativado automaticamente.";
 
 "feature.remote_not_configured" = "O catálogo remoto de funções não está configurado.";
+
+"feature.group_aim_subtitle" = "Funções de assistência de mira";
+
+"feature.group_hologram_subtitle" = "Funções de sobreposição visual";
+
+"feature.group_panel_subtitle" = "Funções de painel e controle";

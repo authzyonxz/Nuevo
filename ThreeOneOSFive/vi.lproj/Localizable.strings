@@ -727,3 +727,9 @@
 "feature.remote_password" = "Gói này yêu cầu mật khẩu và không thể tự động kích hoạt.";
 
 "feature.remote_not_configured" = "Danh mục chức năng từ xa chưa được cấu hình.";
+
+"feature.group_aim_subtitle" = "Chức năng hỗ trợ ngắm";
+
+"feature.group_hologram_subtitle" = "Chức năng lớp phủ hình ảnh";
+
+"feature.group_panel_subtitle" = "Chức năng bảng điều khiển";

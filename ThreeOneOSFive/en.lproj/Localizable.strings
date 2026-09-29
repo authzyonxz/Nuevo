@@ -727,3 +727,9 @@
 "feature.remote_password" = "This package requires a password and cannot be activated automatically.";
 
 "feature.remote_not_configured" = "The remote function catalog is not configured.";
+
+"feature.group_aim_subtitle" = "Aim assistance functions";
+
+"feature.group_hologram_subtitle" = "Visual overlay functions";
+
+"feature.group_panel_subtitle" = "Panel and control functions";

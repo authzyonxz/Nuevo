@@ -75,7 +75,20 @@
     <key>AppReleaseDisplayVersion</key>
     <string>2.0</string>
     <key>FunctionCatalogBaseURL</key>
-    <string></string>
+    <string>http://2.25.157.40:8081</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>2.25.157.40</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSPhotoLibraryUsageDescription</key>

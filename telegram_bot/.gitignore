@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+bot_data/manifest.json
+bot_data/packages/*
+bot_data/uploads/*
+generated/

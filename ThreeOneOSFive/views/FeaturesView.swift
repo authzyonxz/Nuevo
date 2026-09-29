@@ -14,28 +14,42 @@ struct FeaturesView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    featureToggleRow("feature.aim_neck", id: .aimNeckHS, icon: "scope", isOn: $aimNeckEnabled)
-                    featureToggleRow("feature.aim_high", id: .aimHighHS, icon: "scope", isOn: $aimHighEnabled)
-                    featureToggleRow("feature.aim_neck_antenna", id: .aimNeckAntenna, icon: "scope", isOn: $aimNeckAntennaEnabled)
-                } header: {
-                    groupHeader("feature.aim_group")
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    featureGroup(
+                        number: "01",
+                        titleKey: "feature.aim_group",
+                        subtitle: "feature.group_aim_subtitle",
+                        rows: [
+                            ("feature.aim_neck", PublishedFunctionID.aimNeckHS, $aimNeckEnabled),
+                            ("feature.aim_high", PublishedFunctionID.aimHighHS, $aimHighEnabled),
+                            ("feature.aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled)
+                        ]
+                    )
 
-                Section {
-                    featureToggleRow("feature.hologram_weapons", id: .hologramWeapons, icon: "cube.transparent", isOn: $hologramWeaponsEnabled)
-                } header: {
-                    groupHeader("feature.hologram_group")
-                }
+                    featureGroup(
+                        number: "02",
+                        titleKey: "feature.hologram_group",
+                        subtitle: "feature.group_hologram_subtitle",
+                        rows: [
+                            ("feature.hologram_weapons", PublishedFunctionID.hologramWeapons, $hologramWeaponsEnabled)
+                        ]
+                    )
 
-                Section {
-                    featureToggleRow("feature.panel_ffh4x", id: .panelFFH4X, icon: "rectangle.3.group", isOn: $panelFFH4XEnabled)
-                } header: {
-                    groupHeader("feature.panel_group")
+                    featureGroup(
+                        number: "03",
+                        titleKey: "feature.panel_group",
+                        subtitle: "feature.group_panel_subtitle",
+                        rows: [
+                            ("feature.panel_ffh4x", PublishedFunctionID.panelFFH4X, $panelFFH4XEnabled)
+                        ]
+                    )
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
-            .listStyle(.insetGrouped)
+            .background(AppTheme.pageBackground)
             .navigationTitle(language.text("tab.features"))
             .navigationBarTitleDisplayMode(.large)
             .alert(
@@ -52,40 +66,71 @@ struct FeaturesView: View {
         }
     }
 
-    private func groupHeader(_ key: String) -> some View {
-        HStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .fill(Color.white)
-                .frame(width: 26, height: 8)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .stroke(Color.black.opacity(0.16), lineWidth: 0.5)
+    private func featureGroup(
+        number: String,
+        titleKey: String,
+        subtitle: String,
+        rows: [(String, PublishedFunctionID, Binding<Bool>)]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 12) {
+                Text(number)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppTheme.pageBackground)
+                    .frame(width: 30, height: 30)
+                    .background(AppTheme.accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(language.text(titleKey))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+                    Text(language.text(subtitle))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-            Text(language.text(key))
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.primary)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 15)
+
+            Divider()
+                .padding(.horizontal, 16)
+
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.element.1.rawValue) { index, row in
+                    featureToggleRow(row.0, id: row.1, isOn: row.2)
+                    if index < rows.count - 1 {
+                        Divider().padding(.leading, 16)
+                    }
+                }
+            }
         }
-        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(uiColor: .secondarySystemBackground))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color(uiColor: .separator).opacity(0.28), lineWidth: 0.7)
+        }
     }
 
     private func featureToggleRow(
         _ key: String,
         id: PublishedFunctionID,
-        icon: String,
         isOn: Binding<Bool>
     ) -> some View {
         Toggle(isOn: isOn) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 24)
-                Text(language.text(key))
-                    .foregroundStyle(.primary)
-            }
+            Text(language.text(key))
+                .font(.body.weight(.medium))
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .tint(AppTheme.accent)
         .disabled(busyIDs.contains(id.rawValue))
-        .padding(.vertical, 5)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .accessibilityLabel(language.text(key))
         .accessibilityIdentifier(id.rawValue)
         .onChange(of: isOn.wrappedValue) { enabled in

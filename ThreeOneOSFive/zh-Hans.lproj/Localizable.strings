@@ -727,3 +727,9 @@
 "feature.remote_password" = "此包需要密码，无法自动激活。";
 
 "feature.remote_not_configured" = "远程功能目录尚未配置。";
+
+"feature.group_aim_subtitle" = "瞄准辅助功能";
+
+"feature.group_hologram_subtitle" = "视觉叠加功能";
+
+"feature.group_panel_subtitle" = "面板与控制功能";
