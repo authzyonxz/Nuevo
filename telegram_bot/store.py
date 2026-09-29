@@ -95,7 +95,7 @@ class FunctionStore:
         entry = self.get(function_id)
         package_path = entry.get("package")
         if package_path:
-            path = self.root.parent / package_path
+            path = self.root / package_path
             if path.exists():
                 path.unlink()
         entry.update({"package": None, "password_protected": False, "status": "maintenance"})

@@ -12,7 +12,9 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 
 MAGIC = b"3105PATCH\0"
-SCHEMA_VERSION = 3
+# Bot packages are public and must remain readable by older 3105 builds,
+# whose decoder supports schema 2. Private packages are not generated here.
+SCHEMA_VERSION = 2
 KDF_ITERATIONS = 250_000
 MAX_PASSWORD_BYTES = 1_024
 MAX_PATH_BYTES = 4_096
