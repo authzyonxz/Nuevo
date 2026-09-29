@@ -16,13 +16,13 @@ enum DevicePatchService {
             try PatchTransaction.apply(
                 project: project,
                 backupRoot: try PatchProjectLibrary.backupRootURL(),
-                requireExistingTargets: requireExistingTargets,
                 containerResolver: { bundleID in
                     guard let root = roots[bundleID] else {
                         throw PatchPackageError.targetAppUnavailable(bundleID)
                     }
                     return root
-                }
+                },
+                requireExistingTargets: requireExistingTargets
             )
         }
     }
