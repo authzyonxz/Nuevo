@@ -669,6 +669,7 @@
 "wallpaper.package_files" = "%lld tệp";
 
 "tab.features" = "Chức năng";
+"tab.logs" = "Nhật ký";
 "home.account" = "Thông tin key";
 "home.key" = "Key";
 "home.duration" = "Thời hạn";

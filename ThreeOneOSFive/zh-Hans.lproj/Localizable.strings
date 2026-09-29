@@ -669,6 +669,7 @@
 "wallpaper.package_files" = "%lld 个文件";
 
 "tab.features" = "功能";
+"tab.logs" = "日志";
 "home.account" = "Key 信息";
 "home.key" = "Key";
 "home.duration" = "有效期";

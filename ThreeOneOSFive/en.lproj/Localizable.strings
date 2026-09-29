@@ -669,6 +669,7 @@
 "wallpaper.package_files" = "%lld files";
 
 "tab.features" = "Functions";
+"tab.logs" = "Logs";
 "home.account" = "Key information";
 "home.key" = "Key";
 "home.duration" = "Duration";

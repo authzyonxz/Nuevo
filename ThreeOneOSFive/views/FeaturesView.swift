@@ -135,10 +135,12 @@ struct FeaturesView: View {
         busyIDs.insert(id.rawValue)
         defer { busyIDs.remove(id.rawValue) }
         var destinationDescription: String?
+        log("feature: toggle id=\(id.rawValue) enabled=\(enabled)")
 
         do {
             if enabled {
                 let status = try await PublishedFunctionCatalog.fetchStatus(for: id)
+                log("feature: status id=\(id.rawValue) available=\(status.available) maintenance=\(status.isInMaintenance) protected=\(status.passwordProtected)")
                 guard !status.isInMaintenance, status.available else {
                     throw FeatureRemoteError.message("feature.remote_maintenance")
                 }
@@ -146,12 +148,15 @@ struct FeaturesView: View {
                     throw FeatureRemoteError.message("feature.remote_password")
                 }
                 let data = try await PublishedFunctionCatalog.downloadPackage(for: status)
+                log("feature: package downloaded id=\(id.rawValue) bytes=\(data.count)")
                 let decoded = try PatchPackageCodec.decode(data, password: nil)
                 destinationDescription = decoded.project.rules
                     .map { "\($0.bundleID)/\($0.relativePath)" }
                     .joined(separator: ", ")
+                log("feature: decoded project=\(decoded.project.id.uuidString) destination=\(destinationDescription ?? "none")")
                 _ = try DevicePatchService.apply(project: decoded.project)
                 appliedProjectIDs[id.rawValue] = decoded.project.id
+                log("feature: apply succeeded project=\(decoded.project.id.uuidString)")
                 featureAlert = language.text("feature.injected_success")
                     + "\nDestino: " + (destinationDescription ?? "desconhecido")
             } else {
@@ -159,26 +164,32 @@ struct FeaturesView: View {
                       let receipt = DevicePatchService.latestReceipt(projectID: projectID) else {
                     throw FeatureRemoteError.message("feature.restore_unavailable")
                 }
+                log("feature: restore requested project=\(projectID.uuidString)")
                 try DevicePatchService.restore(receipt: receipt)
                 appliedProjectIDs[id.rawValue] = nil
+                log("feature: restore succeeded project=\(projectID.uuidString)")
                 featureAlert = language.text("feature.restored_success")
             }
         } catch let error as FeatureRemoteError {
+            log("feature: remote error id=\(id.rawValue) key=\(error.key)")
             ignoredChanges.insert(id.rawValue)
             binding.wrappedValue = false
             featureAlert = language.text(error.key)
         } catch PublishedFunctionCatalogError.notConfigured,
                 PublishedFunctionCatalogError.invalidResponse,
                 PublishedFunctionCatalogError.unavailable {
+            log("feature: catalog unavailable id=\(id.rawValue)")
             ignoredChanges.insert(id.rawValue)
             binding.wrappedValue = false
             featureAlert = language.text("feature.remote_maintenance")
         } catch let error as PatchPackageError {
+            log("feature: patch error id=\(id.rawValue) key=\(error.localizationKey) destination=\(destinationDescription ?? "unknown")")
             ignoredChanges.insert(id.rawValue)
             binding.wrappedValue = false
             let detail = destinationDescription.map { "\nDestino: \($0)" } ?? ""
             featureAlert = language.text(error.localizationKey) + detail
         } catch {
+            log("feature: unexpected error id=\(id.rawValue) error=\(error.localizedDescription)")
             ignoredChanges.insert(id.rawValue)
             binding.wrappedValue = false
             featureAlert = language.text(enabled ? "patch.error.apply" : "patch.error.restore")

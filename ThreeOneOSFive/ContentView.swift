@@ -17,6 +17,12 @@ struct ContentView: View {
                     Label(language.text("tab.features"), systemImage: "square.grid.2x2.fill")
                 }
                 .tag(AppSection.features.rawValue)
+
+            LogView()
+                .tabItem {
+                    Label(language.text("tab.logs"), systemImage: "text.alignleft")
+                }
+                .tag(AppSection.logs.rawValue)
         }
         .tint(AppTheme.accent)
     }

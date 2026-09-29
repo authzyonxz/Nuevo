@@ -2,7 +2,6 @@ import SwiftUI
 
 struct LogView: View {
     @ObservedObject var appLog = AppLog.shared
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.appLanguage) private var language
     @State private var copied = false
@@ -77,7 +76,7 @@ struct LogView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(language.text("logs.clear"), role: .destructive) { appLog.entries.removeAll() }
+                    Button(language.text("logs.clear"), role: .destructive) { appLog.clear() }
                         .disabled(appLog.entries.isEmpty)
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -97,8 +96,6 @@ struct LogView: View {
                     .disabled(appLog.entries.isEmpty)
                     .accessibilityLabel(language.text("logs.share"))
 
-                    Button(language.text("common.done")) { dismiss() }
-                        .fontWeight(.semibold)
                 }
             }
         }
