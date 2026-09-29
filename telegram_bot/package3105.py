@@ -141,6 +141,9 @@ def build_package(
         "keyFingerprint": hashlib.sha256(content_key).digest(),
         "encryptedPayload": payload_combined,
     }
+    # PropertyListEncoder omits nil optional properties. Python's plistlib
+    # serializes None as a null object, which PropertyListDecoder may reject.
+    envelope = {key: value for key, value in envelope.items() if value is not None}
     return MAGIC + plistlib.dumps(envelope, fmt=plistlib.FMT_BINARY, sort_keys=False)
 
 
