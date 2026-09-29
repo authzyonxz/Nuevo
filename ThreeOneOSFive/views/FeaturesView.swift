@@ -86,7 +86,7 @@ struct FeaturesView: View {
                 .padding(.bottom, 9)
 
             VStack(spacing: 0) {
-                ForEach(Array(rows.enumerated()), id: \.element.2.rawValue) { index, row in
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                     featureToggleRow(row.0, descriptionKey: row.1, id: row.2, isOn: row.3)
                     if index < rows.count - 1 {
                         Divider().background(Color.white.opacity(0.1)).padding(.leading, 16)
