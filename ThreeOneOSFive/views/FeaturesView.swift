@@ -88,7 +88,7 @@ struct FeaturesView: View {
         .padding(.vertical, 5)
         .accessibilityLabel(language.text(key))
         .accessibilityIdentifier(id.rawValue)
-        .onChange(of: isOn.wrappedValue) { _, enabled in
+        .onChange(of: isOn.wrappedValue) { enabled in
             Task { await handleToggle(id, enabled: enabled, binding: isOn) }
         }
     }
