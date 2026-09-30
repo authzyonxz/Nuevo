@@ -687,6 +687,8 @@
 "home.exploit" = "System access";
 "home.start_exploit" = "Start Exploit";
 "home.starting_exploit" = "Starting exploit";
+"home.exploit_active" = "Exploit active";
+"home.exploit_inactive" = "Exploit inactive";
 "home.system_ready" = "System ready";
 "home.exploit_footer" = "Start it manually while the app is in the foreground. Leaving the app invalidates access and requires starting again.";
 

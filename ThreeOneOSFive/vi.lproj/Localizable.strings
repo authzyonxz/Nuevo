@@ -687,6 +687,8 @@
 "home.exploit" = "Quyền hệ thống";
 "home.start_exploit" = "Khởi động Exploit";
 "home.starting_exploit" = "Đang khởi động exploit";
+"home.exploit_active" = "Exploit đang hoạt động";
+"home.exploit_inactive" = "Exploit không hoạt động";
 "home.system_ready" = "Hệ thống sẵn sàng";
 "home.exploit_footer" = "Hãy khởi động thủ công khi ứng dụng ở phía trước. Khi rời ứng dụng, quyền truy cập bị vô hiệu hóa và cần khởi động lại.";
 

@@ -687,6 +687,8 @@
 "home.exploit" = "系统访问";
 "home.start_exploit" = "启动 Exploit";
 "home.starting_exploit" = "正在启动 exploit";
+"home.exploit_active" = "漏洞利用已激活";
+"home.exploit_inactive" = "漏洞利用未激活";
 "home.system_ready" = "系统就绪";
 "home.exploit_footer" = "请在应用处于前台时手动启动。离开应用后访问权限会失效，需要重新启动。";
 

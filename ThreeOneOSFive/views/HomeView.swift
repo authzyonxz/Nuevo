@@ -26,6 +26,21 @@ struct HomeView: View {
                 }
 
                 Section {
+                    if appState.isSystemReady {
+                        Label(
+                            language.text("home.exploit_active"),
+                            systemImage: "checkmark.circle.fill"
+                        )
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.green)
+                    } else if appState.exploitStatus.isFailed {
+                        Label(
+                            language.text("home.exploit_inactive"),
+                            systemImage: "xmark.circle.fill"
+                        )
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.red)
+                    }
                     Button {
                         appState.startExploit()
                     } label: {
