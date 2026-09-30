@@ -342,7 +342,11 @@
 "logs.copy" = "Copiar log";
 "logs.share" = "Compartilhar log";
 "logs.empty_title" = "Nenhuma entrada de log";
-"logs.empty_message" = "Atividades do exploit e do editor aparecerão aqui durante esta sessão.";
+"logs.empty_message" = "Início, sucesso, falhas do exploit e acessos a containers aparecerão aqui.";
+"logs.event_starting" = "Exploit iniciado";
+"logs.event_success" = "Sucesso / acesso liberado";
+"logs.event_failure" = "Falha";
+"logs.event_container" = "Acesso ao container";
 "browser.title" = "Navegador de Dados do App";
 "browser.workspace" = "3105 Workspace";
 "browser.workspace_subtitle" = "Patches e arquivos disponíveis em On My iPhone";

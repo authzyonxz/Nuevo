@@ -354,7 +354,11 @@
 "logs.copy" = "Sao chép nhật ký";
 "logs.share" = "Chia sẻ nhật ký";
 "logs.empty_title" = "Chưa có nhật ký";
-"logs.empty_message" = "Hoạt động exploit và chỉnh sửa sẽ xuất hiện tại đây trong phiên này.";
+"logs.empty_message" = "Lần khởi động, thành công, lỗi exploit và quyền truy cập container sẽ xuất hiện tại đây.";
+"logs.event_starting" = "Đã bắt đầu exploit";
+"logs.event_success" = "Thành công / đã cấp quyền";
+"logs.event_failure" = "Lỗi";
+"logs.event_container" = "Quyền truy cập container";
 
 "browser.title" = "Duyệt dữ liệu ứng dụng";
 "browser.workspace" = "Workspace 3105";

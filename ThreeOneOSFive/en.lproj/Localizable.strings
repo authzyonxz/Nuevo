@@ -354,7 +354,11 @@
 "logs.copy" = "Copy log";
 "logs.share" = "Share log";
 "logs.empty_title" = "No Log Entries";
-"logs.empty_message" = "Exploit and editor activity will appear here during this session.";
+"logs.empty_message" = "Exploit starts, successes, failures, and container access will appear here.";
+"logs.event_starting" = "Exploit started";
+"logs.event_success" = "Success / access granted";
+"logs.event_failure" = "Failure";
+"logs.event_container" = "Container access";
 
 "browser.title" = "App Data Browser";
 "browser.workspace" = "3105 Workspace";

@@ -354,7 +354,11 @@
 "logs.copy" = "复制日志";
 "logs.share" = "分享日志";
 "logs.empty_title" = "没有日志条目";
-"logs.empty_message" = "本次会话中的漏洞利用和编辑器活动将显示在这里。";
+"logs.empty_message" = "漏洞利用启动、成功、失败和容器访问将显示在这里。";
+"logs.event_starting" = "漏洞利用已启动";
+"logs.event_success" = "成功 / 已获得访问权限";
+"logs.event_failure" = "失败";
+"logs.event_container" = "容器访问";
 
 "browser.title" = "应用数据浏览器";
 "browser.workspace" = "3105 工作区";
