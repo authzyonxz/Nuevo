@@ -178,7 +178,6 @@ struct FeaturesView: View {
                     log("feature: apply succeeded project=\(decoded.project.id.uuidString)")
                 }
                 featureAlert = language.text("feature.injected_success")
-                    + "\nDestino: " + (destinationDescription ?? "desconhecido")
             } else {
                 guard let projectID = appliedProjectIDs[id.rawValue],
                       let receipt = DevicePatchService.latestReceipt(projectID: projectID) else {
