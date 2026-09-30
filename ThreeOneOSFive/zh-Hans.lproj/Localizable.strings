@@ -671,11 +671,10 @@
 
 "tab.features" = "功能";
 "tab.logs" = "日志";
-"home.account" = "Key 信息";
+"home.account" = "客户信息";
 "home.key" = "Key";
 "home.duration" = "有效期";
 "home.package" = "Package";
-"home.example_footer" = "仅为示例信息。Key 登录系统尚未实现。";
 "home.device_information" = "设备信息";
 "home.ios_version" = "iOS 版本";
 "home.device" = "设备";

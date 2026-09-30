@@ -671,11 +671,10 @@
 
 "tab.features" = "Functions";
 "tab.logs" = "Logs";
-"home.account" = "Key information";
+"home.account" = "Client information";
 "home.key" = "Key";
 "home.duration" = "Duration";
 "home.package" = "Package";
-"home.example_footer" = "Example values only. The key login system is not implemented yet.";
 "home.device_information" = "Device information";
 "home.ios_version" = "iOS version";
 "home.device" = "Device";

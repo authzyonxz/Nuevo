@@ -15,8 +15,6 @@ struct HomeView: View {
                     infoRow(label: language.text("home.package"), value: licenseManager.licenseInfo?.productName ?? "—")
                 } header: {
                     Text(language.text("home.account"))
-                } footer: {
-                    Text(language.text("home.example_footer"))
                 }
 
                 Section {

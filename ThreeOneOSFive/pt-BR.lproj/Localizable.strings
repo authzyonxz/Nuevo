@@ -654,11 +654,10 @@
 "wallpaper.package_files" = "%lld arquivos";
 "tab.features" = "FUNÇÕES";
 "tab.logs" = "LOGS";
-"home.account" = "Informações da chave";
+"home.account" = "Informações do cliente";
 "home.key" = "Chave";
 "home.duration" = "Duração";
 "home.package" = "Pacote";
-"home.example_footer" = "Apenas valores de exemplo. O sistema de login por chave ainda não está implementado.";
 "home.device_information" = "Informações do dispositivo";
 "home.ios_version" = "Versão do iOS";
 "home.device" = "Dispositivo";

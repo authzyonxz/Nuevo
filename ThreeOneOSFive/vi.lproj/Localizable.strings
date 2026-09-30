@@ -671,11 +671,10 @@
 
 "tab.features" = "Chức năng";
 "tab.logs" = "Nhật ký";
-"home.account" = "Thông tin key";
+"home.account" = "Thông tin khách hàng";
 "home.key" = "Key";
 "home.duration" = "Thời hạn";
 "home.package" = "Package";
-"home.example_footer" = "Chỉ là thông tin mẫu. Hệ thống đăng nhập bằng key chưa được triển khai.";
 "home.device_information" = "Thông tin thiết bị";
 "home.ios_version" = "Phiên bản iOS";
 "home.device" = "Thiết bị";
