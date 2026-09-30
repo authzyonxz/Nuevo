@@ -548,7 +548,8 @@ final class LicenseManager: ObservableObject {
     @Published var flowState: FlowState = .checkingPackage
     @Published var pendingWebURL: URL?
 
-    private let keychainService = "com.ffh4x.rage.keyauth"
+    // Namespace exclusivo do Nuevo: não reutiliza sessão/key gravada por outro IPA.
+    private let keychainService = "com.authzyonxz.nuevo.keyauth.v1"
     private let keychainAccount = "saved-key"
     private let sessionAccount = "device-session-token"
     private let client: FFH4XSecureClient?
