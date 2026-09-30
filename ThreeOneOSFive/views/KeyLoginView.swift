@@ -632,6 +632,11 @@ final class LicenseManager: ObservableObject {
         bootstrap(completion: completion)
     }
 
+    func clearLoginError() {
+        guard flowState == .askingForKey else { return }
+        errorMessage = nil
+    }
+
     func validateKey(_ key: String, completion: @escaping (Bool, String?) -> Void) {
         let normalized = key.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard !normalized.isEmpty else {
@@ -674,14 +679,15 @@ final class LicenseManager: ObservableObject {
                 isLoading = false
                 isValidatingActivation = false
                 isAuthorized = false
-                flowState = .failure(message(for: error))
-                errorMessage = message(for: error)
-                completion(false, errorMessage)
+                let failureMessage = message(for: error)
+                flowState = .askingForKey
+                errorMessage = failureMessage
+                completion(false, failureMessage)
             } catch {
                 isLoading = false
                 isValidatingActivation = false
                 isAuthorized = false
-                flowState = .failure("Não foi possível validar a KEY agora.")
+                flowState = .askingForKey
                 errorMessage = "Não foi possível validar a KEY agora."
                 completion(false, errorMessage)
             }
@@ -787,20 +793,10 @@ final class LicenseManager: ObservableObject {
     private func message(for error: FFH4XSecureClient.ClientError) -> String {
         switch error {
         case .server(let code):
-            switch code {
-            case "PACKAGE_UNAVAILABLE": return "O Package EXTERNAL - iOS está indisponível."
-            case "KEY_INVALID": return "A KEY não pertence a este Package."
-            case "KEY_UNAVAILABLE": return "A KEY está pausada, banida ou removida."
-            case "KEY_EXPIRED": return "A KEY expirou."
-            case "DEVICE_MISMATCH": return "A KEY está vinculada a outro dispositivo."
-            case "DEVICE_ALREADY_REGISTERED": return "Este dispositivo já possui outra KEY ativa."
-            case "SESSION_EXPIRED", "SESSION_NOT_FOUND": return "A sessão expirou. Gere um novo perfil."
-            case "RATE_LIMITED": return "Muitas tentativas. Aguarde alguns minutos."
-            default: return "Não foi possível validar o acesso."
-            }
+            return message(forServerCode: code)
         case .http(_, let code):
-            if code == "RATE_LIMITED" { return "Muitas tentativas. Aguarde alguns minutos." }
-            return "Não foi possível validar o acesso."
+            guard let code else { return "Não foi possível validar o acesso." }
+            return message(forServerCode: code)
         case .packageMismatch:
             return "A configuração do Package não corresponde ao aplicativo."
         case .responseDecodingFailed:
@@ -808,6 +804,20 @@ final class LicenseManager: ObservableObject {
         case .timestampExpired: return "Ajuste a data e hora do dispositivo automaticamente."
         case .invalidSecret, .invalidEnvelope, .invalidServerResponse, .signatureInvalid, .cryptoFailure:
             return "Falha ao autenticar a comunicação com o servidor."
+        }
+    }
+
+    private func message(forServerCode code: String) -> String {
+        switch code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() {
+        case "KEY_INVALID", "INVALID_KEY", "KEY_NOT_FOUND": return "invalid_key"
+        case "PACKAGE_UNAVAILABLE": return "O Package EXTERNAL - iOS está indisponível."
+        case "KEY_UNAVAILABLE": return "A KEY está pausada, banida ou removida."
+        case "KEY_EXPIRED": return "A KEY expirou."
+        case "DEVICE_MISMATCH": return "A KEY está vinculada a outro dispositivo."
+        case "DEVICE_ALREADY_REGISTERED": return "Este dispositivo já possui outra KEY ativa."
+        case "SESSION_EXPIRED", "SESSION_NOT_FOUND": return "A sessão expirou. Gere um novo perfil."
+        case "RATE_LIMITED": return "Muitas tentativas. Aguarde alguns minutos."
+        default: return "Não foi possível validar o acesso."
         }
     }
 
@@ -855,142 +865,302 @@ final class LicenseManager: ObservableObject {
 struct LicenseGateView: View {
     @EnvironmentObject private var licenseManager: LicenseManager
     @State private var inputKey = ""
-    @State private var showingKey = false
+    @FocusState private var keyFieldFocused: Bool
 
     private var canSubmit: Bool {
         !inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !licenseManager.isLoading
     }
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.03, green: 0.07, blue: 0.13), Color.black],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            ScrollView {
-                VStack(spacing: 24) {
-                    Spacer(minLength: 48)
-                    VStack(spacing: 12) {
-                        Text("VERIFICAÇÃO DE DISPOSITIVO")
-                            .font(.system(size: 24, weight: .heavy, design: .rounded))
-                            .tracking(1.4)
+        GeometryReader { geometry in
+            ZStack {
+                background
+
+                ScrollView {
+                    VStack(spacing: 0) {
+                        topBar
+
+                        Spacer(minLength: max(58, geometry.size.height * 0.14))
+
+                        VStack(spacing: 12) {
+                            Text("TOOLKIT")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .tracking(7)
+                                .foregroundStyle(.white.opacity(0.48))
+
+                            Text("EXTERNAL")
+                                .font(.system(size: min(max(geometry.size.width * 0.145, 44), 68), weight: .black, design: .rounded))
+                                .tracking(-1.8)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.68)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.39, green: 0.82, blue: 1), .white],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                .shadow(color: Color.cyan.opacity(0.2), radius: 22, y: 4)
+                                .accessibilityAddTraits(.isHeader)
+
+                            Text("AUTH")
+                                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                .tracking(8)
+                                .foregroundStyle(Color(red: 1, green: 0.58, blue: 0.28))
+                        }
+
+                        Spacer(minLength: 48)
+
+                        stateContent
+                            .frame(maxWidth: 360)
+
+                        Spacer(minLength: 42)
+
+                        Text("SECURE ACCESS  ·  KEY STORED ON IPHONE")
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .tracking(1.5)
+                            .foregroundStyle(.white.opacity(0.34))
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(.white)
-                        Text(message)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.62))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(3)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.horizontal, 12)
-                    VStack(spacing: 16) {
-                    if licenseManager.flowState == .askingForKey {
-                        HStack(spacing: 10) {
-                            Image(systemName: "key.fill")
-                                .foregroundStyle(accent)
-                            Group {
-                                if showingKey {
-                                    TextField("Digite sua KEY", text: $inputKey)
-                                } else {
-                                    SecureField("Digite sua KEY", text: $inputKey)
-                                }
-                            }
-                            .textInputAutocapitalization(.characters)
-                            .autocorrectionDisabled()
-                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            Button { showingKey.toggle() } label: {
-                                Image(systemName: showingKey ? "eye.slash" : "eye")
-                                    .foregroundStyle(.white.opacity(0.55))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(minHeight: 58)
-                        .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).stroke(Color.white.opacity(0.12), lineWidth: 1))
-                        Button {
-                            licenseManager.validateKey(inputKey) { _, _ in }
-                        } label: {
-                            Text("ENTRAR")
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .tracking(0.8)
-                                .foregroundStyle(.black)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .frame(height: 52)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .disabled(!canSubmit)
-                        .opacity(canSubmit ? 1 : 0.45)
-                    }
-                    if licenseManager.pendingWebURL != nil && (licenseManager.flowState == .openingDeviceRegistration || licenseManager.flowState == .waitingForDevice) {
-                        Button {
-                            licenseManager.openPendingRegistration()
-                        } label: {
-                            Text("REGISTRAR UDID")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .tracking(0.7)
-                                .foregroundStyle(.black)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .frame(height: 50)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    }
-                    if case .failure = licenseManager.flowState {
-                        Button { licenseManager.retryBootstrap() } label: {
-                            Label("TENTAR NOVAMENTE", systemImage: "arrow.clockwise")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .frame(maxWidth: .infinity)
-                        }
-                            .buttonStyle(.bordered)
-                    }
-                    if let error = licenseManager.errorMessage {
-                        Text(error)
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 12)
-                    }
-                    if licenseManager.isLoading {
-                        ProgressView().tint(accent).scaleEffect(1.05)
-                    }
-                    }
-                    .padding(20)
-                    .background(Color.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Color.white.opacity(0.12), lineWidth: 1))
-                    Spacer(minLength: 34)
-                    Label("CONEXÃO PROTEGIDA · KEY SALVA NO IPHONE", systemImage: "lock.fill")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(0.7)
-                        .foregroundStyle(.white.opacity(0.36))
-                        .multilineTextAlignment(.center)
+                    .frame(minHeight: geometry.size.height)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 26)
+                    .padding(.vertical, 16)
                 }
-                .padding(.horizontal, 20)
+                .scrollIndicators(.hidden)
+                .scrollDismissesKeyboard(.interactively)
             }
         }
         .preferredColorScheme(.dark)
-    }
-
-    private var accent: Color {
-        switch licenseManager.flowState {
-        case .authorized: return .green
-        case .failure: return .red
-        default: return AppTheme.accent
+        .onChange(of: inputKey) { _ in
+            licenseManager.clearLoginError()
         }
     }
 
-    private var message: String {
-        switch licenseManager.flowState {
-        case .checkingPackage: return "Verificando o acesso seguro com o servidor."
-        case .openingDeviceRegistration: return "Instale o perfil para identificar este iPhone."
-        case .waitingForDevice: return "Após instalar o perfil em Ajustes, retorne ao aplicativo."
-        case .askingForKey: return "Informe a KEY autorizada para este dispositivo."
-        case .activatingKey: return "Validando a KEY e vinculando o acesso ao dispositivo."
-        case .authorized: return "Acesso autorizado."
-        case .failure(let value): return value
+    private var background: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color.black, Color(red: 0.025, green: 0.035, blue: 0.065), Color(red: 0.045, green: 0.025, blue: 0.075), .black],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Circle()
+                .fill(Color.cyan.opacity(0.12))
+                .frame(width: 310, height: 310)
+                .blur(radius: 100)
+                .offset(x: 155, y: -250)
+
+            Circle()
+                .fill(Color.purple.opacity(0.13))
+                .frame(width: 290, height: 290)
+                .blur(radius: 105)
+                .offset(x: -145, y: 360)
         }
+        .ignoresSafeArea()
+    }
+
+    private var topBar: some View {
+        HStack {
+            Text("EXTERNAL")
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(2.4)
+                .foregroundStyle(.white.opacity(0.82))
+
+            Spacer()
+
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(licenseManager.isLoading ? Color.orange : Color.green)
+                    .frame(width: 6, height: 6)
+                Text("AUTH")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(2.6)
+                    .foregroundStyle(.white.opacity(0.64))
+            }
+        }
+        .padding(.top, 8)
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
+        VStack(spacing: 22) {
+            switch licenseManager.flowState {
+            case .askingForKey, .activatingKey:
+                keyEntry
+            case .openingDeviceRegistration, .waitingForDevice:
+                deviceRegistration
+            case .checkingPackage:
+                VStack(spacing: 14) {
+                    sectionLabel("SECURE ACCESS")
+                    Text("Verificando o acesso seguro com o servidor.")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.62))
+                        .multilineTextAlignment(.center)
+                    ProgressView()
+                        .tint(Color.cyan)
+                        .padding(.top, 4)
+                }
+            case .failure(let message):
+                VStack(spacing: 16) {
+                    sectionLabel("CONNECTION")
+                    Text(message)
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .multilineTextAlignment(.center)
+                    actionButton("TRY AGAIN", systemImage: "arrow.clockwise") {
+                        licenseManager.retryBootstrap()
+                    }
+                }
+            case .authorized:
+                EmptyView()
+            }
+
+            if let error = licenseManager.errorMessage,
+               licenseManager.flowState == .askingForKey {
+                Text(error)
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .tracking(0.4)
+                    .foregroundStyle(Color(red: 1, green: 0.32, blue: 0.34))
+                    .multilineTextAlignment(.center)
+                    .transition(.opacity)
+            }
+
+            if licenseManager.isLoading && licenseManager.flowState != .checkingPackage {
+                ProgressView()
+                    .tint(Color.cyan)
+                    .padding(.top, 2)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .animation(.easeOut(duration: 0.18), value: licenseManager.errorMessage)
+    }
+
+    private var keyEntry: some View {
+        VStack(spacing: 0) {
+            sectionLabel("LICENSE")
+                .padding(.bottom, 16)
+
+            TextField("Enter your license key", text: $inputKey)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .keyboardType(.asciiCapable)
+                .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .disabled(licenseManager.isLoading)
+                .focused($keyFieldFocused)
+                .submitLabel(.go)
+                .onSubmit(submitKey)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 15)
+                .accessibilityLabel("License key")
+
+            Rectangle()
+                .fill(keyFieldFocused ? Color.cyan.opacity(0.9) : Color.white.opacity(0.62))
+                .frame(height: keyFieldFocused ? 1.5 : 1)
+
+            Button(action: submitKey) {
+                Text(licenseManager.isLoading ? "CHECKING" : "ENTER")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .tracking(8)
+                    .foregroundStyle(canSubmit ? .white : .white.opacity(0.38))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 62)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.24))
+                            .frame(height: 1)
+                            .padding(.horizontal, 28)
+                    }
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSubmit)
+            .padding(.top, 14)
+        }
+    }
+
+    private var deviceRegistration: some View {
+        VStack(spacing: 17) {
+            sectionLabel("DEVICE REGISTRATION")
+
+            Text(deviceMessage)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.66))
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if licenseManager.pendingWebURL != nil {
+                actionButton("REGISTER UDID", systemImage: "arrow.up.right") {
+                    licenseManager.openPendingRegistration()
+                }
+
+                Button {
+                    licenseManager.resumeAfterSafari()
+                } label: {
+                    Text("I INSTALLED THE PROFILE · CHECK DEVICE")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .tracking(1.2)
+                        .foregroundStyle(.white.opacity(0.56))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var deviceMessage: String {
+        switch licenseManager.flowState {
+        case .openingDeviceRegistration:
+            return "Instale o perfil para identificar este iPhone."
+        case .waitingForDevice:
+            return "Depois de instalar o perfil em Ajustes, retorne ao aplicativo e verifique o registro."
+        default:
+            return "Identifique este iPhone para vincular a licença ao dispositivo."
+        }
+    }
+
+    private func sectionLabel(_ value: String) -> some View {
+        Text(value)
+            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .tracking(4.5)
+            .foregroundStyle(Color(red: 1, green: 0.66, blue: 0.38))
+            .multilineTextAlignment(.center)
+    }
+
+    private func actionButton(
+        _ title: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Text(title)
+                    .tracking(2.2)
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .bold))
+            }
+            .font(.system(size: 12, weight: .bold, design: .monospaced))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.27), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(licenseManager.isLoading)
+        .opacity(licenseManager.isLoading ? 0.55 : 1)
+    }
+
+    private func submitKey() {
+        guard canSubmit else { return }
+        keyFieldFocused = false
+        licenseManager.validateKey(inputKey) { _, _ in }
     }
 }
