@@ -704,15 +704,25 @@
 
 "login.test_note" = "测试模式：接受任何非空文本。";
 
-"login.success_title" = "Login Successfully";
+"login.success_title" = "许可证已授权";
 
-"login.success_message" = "您的测试 Key 已验证成功。";
+"login.success_message" = "您的许可证已在此设备上激活。";
 
 "login.example_duration" = "30 天";
 
 "login.example_package" = "示例 Package";
 
 "login.enter_app" = "进入应用";
+
+"license.authorized.status" = "状态";
+"license.authorized.active" = "已授权";
+"license.authorized.udid" = "已注册 UDID";
+"license.authorized.device_fallback" = "此 iPhone 已注册";
+"license.authorized.activated" = "激活时间";
+"license.authorized.expires" = "到期时间";
+"license.authorized.days" = "%lld 天";
+"license.checking" = "正在验证许可证…";
+"license.inactive" = "许可证已失效。请输入有效密钥以继续。";
 
 "feature.group_title" = "功能";
 "feature.exploit_required" = "请在主页启动 exploit，等待系统就绪后再启用功能。";

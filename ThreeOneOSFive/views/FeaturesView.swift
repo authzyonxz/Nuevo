@@ -3,6 +3,7 @@ import SwiftUI
 struct FeaturesView: View {
     @Environment(\.appLanguage) private var language
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var licenseManager: LicenseManager
 
     @State private var aimHighEnabled = false
     @State private var aimNeckEnabled = false
@@ -127,7 +128,12 @@ struct FeaturesView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .tint(.white)
-        .disabled(busyIDs.contains(id.rawValue) || !appState.canUseFeatures)
+        .disabled(
+            busyIDs.contains(id.rawValue)
+                || !appState.canUseFeatures
+                || !licenseManager.isAuthorized
+                || licenseManager.isRecheckingSession
+        )
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .accessibilityLabel(language.text(key))
@@ -152,6 +158,15 @@ struct FeaturesView: View {
 
         do {
             if enabled {
+                let session = await licenseManager.recheckSecureSession()
+                guard session.authorized else {
+                    ignoredChanges.insert(id.rawValue)
+                    binding.wrappedValue = false
+                    featureAlert = session.message ?? language.text("license.inactive")
+                    log("feature: blocked enable id=\(id.rawValue) because license session is inactive")
+                    return
+                }
+
                 let status = try await PublishedFunctionCatalog.fetchStatus(for: id)
                 log("feature: status id=\(id.rawValue) available=\(status.available) maintenance=\(status.isInMaintenance) protected=\(status.passwordProtected)")
                 guard !status.isInMaintenance, status.available else {

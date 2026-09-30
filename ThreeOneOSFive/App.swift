@@ -26,7 +26,19 @@ struct ThreeOneOSFiveApp: App {
     @ViewBuilder
     private var rootContent: some View {
         if licenseManager.isAuthorized {
-            ContentView()
+            if licenseManager.hasEnteredApp {
+                ContentView()
+            } else {
+                LoginSuccessfulView {
+                    Task {
+                        let session = await licenseManager.recheckSecureSession()
+                        guard session.authorized else { return }
+                        licenseManager.enterApp()
+                        appState.detectSupport()
+                        checkForUpdate()
+                    }
+                }
+            }
         } else {
             LicenseGateView()
         }
@@ -77,15 +89,24 @@ struct ThreeOneOSFiveApp: App {
                         checkForUpdate()
                     }
                 }
+                .onChange(of: licenseManager.isAuthorized) { authorized in
+                    guard authorized else { return }
+                    appState.markForegroundActive()
+                    appState.detectSupport()
+                }
                 .onChange(of: scenePhase) { phase in
                     switch phase {
                     case .active:
                         appState.markForegroundActive()
                         if licenseManager.isAuthorized {
-                            // Keep the explicit session and applied patches
-                            // across background. Never restart automatically.
-                            appState.detectSupport()
-                            checkForUpdate()
+                            Task {
+                                let session = await licenseManager.recheckSecureSession()
+                                guard session.authorized else { return }
+                                // Keep the explicit session and applied patches
+                                // across background. Never restart automatically.
+                                appState.detectSupport()
+                                checkForUpdate()
+                            }
                         } else {
                             licenseManager.resumeAfterSafari()
                         }
@@ -107,6 +128,7 @@ final class AppState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
     @Published var unsupportedMessage: String?
     @Published var kernelExploitRunning = false
+    @Published var isCheckingAuthorization = false
     @Published var exploitProgress = 0
 
     private var isForegroundActive = true
@@ -165,8 +187,8 @@ final class AppState: ObservableObject {
             exploitStatus = .unsupported(unsupportedMessage)
             exploitProgress = 0
         }
-        // Deliberately no automatic exploit start and no implicit access
-        // refresh. This keeps the operation explicit and foreground-only.
+        // The exploit remains explicit. Session entitlement is checked before
+        // protected actions and whenever the app returns to the foreground.
     }
 
     func markForegroundActive() {
@@ -183,7 +205,32 @@ final class AppState: ObservableObject {
         log("app: backgrounded — preserving exploit session and applied features")
     }
 
-    func startExploit() {
+    @MainActor
+    func startExploit(licenseManager: LicenseManager) async {
+        guard isForegroundActive,
+              isSupported,
+              !kernelExploitRunning,
+              !isCheckingAuthorization else { return }
+        guard !exploitStatus.isSuccess else { return }
+
+        isCheckingAuthorization = true
+        defer { isCheckingAuthorization = false }
+
+        let session = await licenseManager.recheckSecureSession()
+        guard session.authorized,
+              isForegroundActive,
+              isSupported,
+              !kernelExploitRunning,
+              !exploitStatus.isSuccess else {
+            log("app: blocked exploit start because the license session is not active")
+            return
+        }
+
+        beginExploit()
+    }
+
+    @MainActor
+    private func beginExploit() {
         guard isForegroundActive, isSupported, !kernelExploitRunning else { return }
         guard !exploitStatus.isSuccess else { return }
 
@@ -234,9 +281,9 @@ final class AppState: ObservableObject {
         }
     }
 
-    // Kept as a compatibility entry point for existing callers. It is now
-    // manual and foreground-only rather than an implicit auto-run path.
-    func runKernelExploitIfNeeded() {
-        startExploit()
+    // Compatibility entry point also performs the same online license check.
+    @MainActor
+    func runKernelExploitIfNeeded(licenseManager: LicenseManager) async {
+        await startExploit(licenseManager: licenseManager)
     }
 }
