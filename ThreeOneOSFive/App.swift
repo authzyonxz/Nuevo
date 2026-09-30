@@ -1,21 +1,15 @@
 import SwiftUI
 import UIKit
 
-private enum LoginStage: Equatable {
-    case keyEntry
-    case successful(key: String)
-    case app
-}
-
 @main
 struct ThreeOneOSFiveApp: App {
     @StateObject private var appState = AppState()
+    @StateObject private var licenseManager = LicenseManager.shared
     @StateObject private var patchDraftCoordinator = PatchDraftCoordinator()
     @StateObject private var fileOperationCoordinator = FileOperationCoordinator()
     @StateObject private var patchStore = PatchProjectStore()
     @StateObject private var repositoryStore = PackageRepositoryStore()
     @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
-    @State private var loginStage: LoginStage = .keyEntry
     @State private var showAttribution = false
     @State private var updateOffer: AppUpdateChecker.Offer?
     @Environment(\.scenePhase) private var scenePhase
@@ -29,6 +23,15 @@ struct ThreeOneOSFiveApp: App {
         AppLanguage(rawValue: languageCode) ?? .english
     }
 
+    @ViewBuilder
+    private var rootContent: some View {
+        if licenseManager.isAuthorized {
+            ContentView()
+        } else {
+            LicenseGateView()
+        }
+    }
+
     private func checkForUpdate() {
         Task {
             guard let offer = await AppUpdateChecker.check() else { return }
@@ -36,32 +39,11 @@ struct ThreeOneOSFiveApp: App {
         }
     }
 
-    @ViewBuilder
-    private var rootContent: some View {
-        switch loginStage {
-        case .keyEntry:
-            KeyLoginView { key in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    loginStage = .successful(key: key)
-                }
-            }
-        case .successful(let key):
-            LoginSuccessfulView(key: key) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    loginStage = .app
-                }
-                appState.detectSupport()
-                checkForUpdate()
-            }
-        case .app:
-            ContentView()
-        }
-    }
-
     var body: some Scene {
         WindowGroup {
             rootContent
                 .environmentObject(appState)
+                .environmentObject(licenseManager)
                 .environmentObject(patchDraftCoordinator)
                 .environmentObject(fileOperationCoordinator)
                 .environmentObject(patchStore)
@@ -70,7 +52,7 @@ struct ThreeOneOSFiveApp: App {
                 .environment(\.locale, language.locale)
                 .displayIdentityAttribution(
                     isPresented: $showAttribution,
-                    enabled: loginStage == .app
+                    enabled: licenseManager.isAuthorized
                 )
                 .sheet(isPresented: $showAttribution) {
                     DisplayAttributionSheet()
@@ -88,16 +70,23 @@ struct ThreeOneOSFiveApp: App {
                     )
                 }
                 .onAppear {
-                    guard loginStage == .app else { return }
-                    appState.detectSupport()
-                    checkForUpdate()
+                    licenseManager.bootstrap()
+                    if licenseManager.isAuthorized {
+                        appState.detectSupport()
+                        checkForUpdate()
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
-                    guard phase == .active, loginStage == .app else { return }
-                    appState.detectSupport()
+                    guard phase == .active else { return }
+                    if licenseManager.isAuthorized {
+                        appState.detectSupport()
+                        checkForUpdate()
+                    } else {
+                        licenseManager.resumeAfterSafari()
+                    }
                 }
                 .onOpenURL { url in
-                    guard loginStage == .app else { return }
+                    guard licenseManager.isAuthorized else { return }
                     patchDraftCoordinator.presentImport(url)
                 }
         }
