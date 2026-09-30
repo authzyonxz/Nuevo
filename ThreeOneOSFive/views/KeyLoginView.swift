@@ -549,7 +549,7 @@ final class LicenseManager: ObservableObject {
     @Published var pendingWebURL: URL?
 
     // Namespace exclusivo do Nuevo: não reutiliza sessão/key gravada por outro IPA.
-    private let keychainService = "com.authzyonxz.nuevo.keyauth.v1"
+    private let keychainService = "com.authzyonxz.nuevo.keyauth.v2"
     private let keychainAccount = "saved-key"
     private let sessionAccount = "device-session-token"
     private let client: FFH4XSecureClient?
@@ -762,6 +762,14 @@ final class LicenseManager: ObservableObject {
         flowState = .checkingPackage
     }
 
+    var maskedKey: String {
+        let value = keychainRead(account: keychainAccount) ?? licenseInfo?.keyPreview ?? ""
+        guard !value.isEmpty else { return "—" }
+        let characters = Array(value)
+        let visibleCount = max(1, characters.count / 2)
+        return String(characters.prefix(visibleCount)) + String(repeating: "*", count: characters.count - visibleCount)
+    }
+
     private func finishFailure(_ message: String) {
         isLoading = false
         isValidatingActivation = false
@@ -840,27 +848,45 @@ struct LicenseGateView: View {
 
     var body: some View {
         ZStack {
-            AppTheme.pageBackground.ignoresSafeArea()
+            LinearGradient(
+                colors: [Color.black, Color(red: 0.03, green: 0.07, blue: 0.13), Color.black],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             ScrollView {
-                VStack(spacing: 22) {
-                    Spacer(minLength: 70)
-                    Image(systemName: iconName)
-                        .font(.system(size: 48, weight: .bold))
-                        .foregroundStyle(accent)
-                        .frame(width: 100, height: 100)
-                        .background(accent.opacity(0.12), in: Circle())
-                    VStack(spacing: 8) {
+                VStack(spacing: 24) {
+                    Spacer(minLength: 48)
+                    VStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(colors: [accent, accent.opacity(0.35)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 78, height: 78)
+                                .shadow(color: accent.opacity(0.35), radius: 22, y: 8)
+                            Image(systemName: iconName)
+                                .font(.system(size: 31, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                        Text("NUEVO ACCESS")
+                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                            .tracking(2.6)
+                            .foregroundStyle(.white.opacity(0.65))
                         Text("Acesso protegido")
-                            .font(.system(size: 30, weight: .bold, design: .rounded))
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
                         Text(message)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.62))
                             .multilineTextAlignment(.center)
+                            .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    .padding(.horizontal, 12)
+                    VStack(spacing: 16) {
                     if licenseManager.flowState == .askingForKey {
                         HStack(spacing: 10) {
-                            Image(systemName: "key.fill").foregroundStyle(.secondary)
+                            Image(systemName: "key.fill")
+                                .foregroundStyle(accent)
                             Group {
                                 if showingKey {
                                     TextField("Digite sua KEY", text: $inputKey)
@@ -870,40 +896,72 @@ struct LicenseGateView: View {
                             }
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
+                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.white)
                             Button { showingKey.toggle() } label: {
                                 Image(systemName: showingKey ? "eye.slash" : "eye")
+                                    .foregroundStyle(.white.opacity(0.55))
                             }
                             .buttonStyle(.plain)
                         }
                         .padding(.horizontal, 16)
-                        .frame(minHeight: 56)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
-                        Button("Validar KEY") {
+                        .frame(minHeight: 58)
+                        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).stroke(Color.white.opacity(0.14), lineWidth: 1))
+                        Button {
                             licenseManager.validateKey(inputKey) { _, _ in }
+                        } label: {
+                            Label("VALIDAR KEY", systemImage: "arrow.right.circle.fill")
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .tracking(0.8)
+                                .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(accent)
                         .disabled(!canSubmit)
                     }
                     if licenseManager.pendingWebURL != nil && (licenseManager.flowState == .openingDeviceRegistration || licenseManager.flowState == .waitingForDevice) {
-                        Button("Identificar este iPhone") {
+                        Button {
                             licenseManager.openPendingRegistration()
+                        } label: {
+                            Label("IDENTIFICAR ESTE IPHONE", systemImage: "safari.fill")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .tracking(0.7)
+                                .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(accent)
                     }
                     if case .failure = licenseManager.flowState {
-                        Button("Tentar novamente") { licenseManager.retryBootstrap() }
+                        Button { licenseManager.retryBootstrap() } label: {
+                            Label("TENTAR NOVAMENTE", systemImage: "arrow.clockwise")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .frame(maxWidth: .infinity)
+                        }
                             .buttonStyle(.bordered)
                     }
                     if let error = licenseManager.errorMessage {
                         Text(error)
-                            .font(.footnote)
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
                     }
-                    if licenseManager.isLoading { ProgressView().tint(accent) }
-                    Spacer(minLength: 50)
+                    if licenseManager.isLoading {
+                        ProgressView().tint(accent).scaleEffect(1.05)
+                    }
+                    }
+                    .padding(20)
+                    .background(Color.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Color.white.opacity(0.12), lineWidth: 1))
+                    Spacer(minLength: 34)
+                    Label("CONEXÃO PROTEGIDA · KEY SALVA NO IPHONE", systemImage: "lock.fill")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(0.7)
+                        .foregroundStyle(.white.opacity(0.36))
+                        .multilineTextAlignment(.center)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
             }
         }
         .preferredColorScheme(.dark)

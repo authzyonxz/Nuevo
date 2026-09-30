@@ -2,19 +2,28 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.appLanguage) private var language
+    @EnvironmentObject private var licenseManager: LicenseManager
     @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    infoRow(label: language.text("home.key"), value: "EXEMPLO-KEY-0000")
-                    infoRow(label: language.text("home.duration"), value: "30 dias")
-                    infoRow(label: language.text("home.package"), value: "Exemplo de package")
+                    infoRow(label: language.text("home.key"), value: licenseManager.maskedKey)
+                    infoRow(label: language.text("home.duration"), value: durationText)
+                    infoRow(label: language.text("home.package"), value: licenseManager.licenseInfo?.productName ?? "—")
                 } header: {
                     Text(language.text("home.account"))
                 } footer: {
                     Text(language.text("home.example_footer"))
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        licenseManager.clearSavedKey()
+                    } label: {
+                        Label("Sair e limpar KEY", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
                 }
 
                 Section {
@@ -52,5 +61,12 @@ struct HomeView: View {
         }
         .font(.subheadline)
         .padding(.vertical, 5)
+    }
+
+    private var durationText: String {
+        if let days = licenseManager.licenseInfo?.durationDays {
+            return "\(days) dias"
+        }
+        return "—"
     }
 }
