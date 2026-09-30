@@ -704,15 +704,25 @@
 
 "login.test_note" = "Chế độ thử nghiệm: mọi nội dung không trống đều được chấp nhận.";
 
-"login.success_title" = "Login Successfully";
+"login.success_title" = "Giấy phép đã được cấp";
 
-"login.success_message" = "Key thử nghiệm của bạn đã được xác thực thành công.";
+"login.success_message" = "Giấy phép của bạn đang hoạt động trên thiết bị này.";
 
 "login.example_duration" = "30 ngày";
 
 "login.example_package" = "Package mẫu";
 
 "login.enter_app" = "Vào ứng dụng";
+
+"license.authorized.status" = "Trạng thái";
+"license.authorized.active" = "Đã cấp quyền";
+"license.authorized.udid" = "UDID đã đăng ký";
+"license.authorized.device_fallback" = "iPhone này đã được đăng ký";
+"license.authorized.activated" = "Đã kích hoạt";
+"license.authorized.expires" = "Hết hạn";
+"license.authorized.days" = "%lld ngày";
+"license.checking" = "Đang kiểm tra giấy phép…";
+"license.inactive" = "Giấy phép không còn hoạt động. Nhập key hợp lệ để tiếp tục.";
 
 "feature.group_title" = "TÍNH NĂNG";
 "feature.exploit_required" = "Hãy khởi động exploit ở tab Trang chủ và chờ Hệ thống sẵn sàng trước khi bật tính năng.";

@@ -704,15 +704,25 @@
 
 "login.test_note" = "Test mode: any non-empty text is accepted.";
 
-"login.success_title" = "Login Successfully";
+"login.success_title" = "License authorized";
 
-"login.success_message" = "Your test key was validated successfully.";
+"login.success_message" = "Your license is active for this device.";
 
 "login.example_duration" = "30 days";
 
 "login.example_package" = "Example package";
 
 "login.enter_app" = "Enter app";
+
+"license.authorized.status" = "Status";
+"license.authorized.active" = "Authorized";
+"license.authorized.udid" = "Registered UDID";
+"license.authorized.device_fallback" = "This iPhone is registered";
+"license.authorized.activated" = "Activated";
+"license.authorized.expires" = "Expires";
+"license.authorized.days" = "%lld days";
+"license.checking" = "Checking license…";
+"license.inactive" = "The license is no longer active. Enter a valid key to continue.";
 
 "feature.group_title" = "FEATURES";
 "feature.exploit_required" = "Start the exploit on the Home tab and wait for System ready before enabling features.";

@@ -42,14 +42,22 @@ struct HomeView: View {
                         .foregroundStyle(.red)
                     }
                     Button {
-                        appState.startExploit()
+                        Task {
+                            await appState.startExploit(licenseManager: licenseManager)
+                        }
                     } label: {
                         HStack {
-                            if appState.kernelExploitRunning {
+                            if appState.kernelExploitRunning
+                                || appState.isCheckingAuthorization
+                                || licenseManager.isRecheckingSession {
                                 ProgressView()
                                     .controlSize(.small)
                             }
-                            Text(language.text("home.start_exploit"))
+                            Text(
+                                appState.isCheckingAuthorization || licenseManager.isRecheckingSession
+                                    ? language.text("license.checking")
+                                    : language.text("home.start_exploit")
+                            )
                                 .fontWeight(.semibold)
                         }
                         .frame(maxWidth: .infinity, minHeight: 42)
@@ -59,6 +67,8 @@ struct HomeView: View {
                     .foregroundStyle(.black)
                     .disabled(
                         appState.kernelExploitRunning
+                            || appState.isCheckingAuthorization
+                            || licenseManager.isRecheckingSession
                             || appState.isSystemReady
                             || !appState.isSupported
                     )

@@ -687,15 +687,25 @@
 
 "login.test_note" = "Modo de teste: qualquer texto preenchido é aceito.";
 
-"login.success_title" = "Login Successfully";
+"login.success_title" = "Licença autorizada";
 
-"login.success_message" = "Sua key de teste foi validada com sucesso.";
+"login.success_message" = "Sua licença está ativa neste dispositivo.";
 
 "login.example_duration" = "30 dias";
 
 "login.example_package" = "Pacote de exemplo";
 
 "login.enter_app" = "Entrar no app";
+
+"license.authorized.status" = "Status";
+"license.authorized.active" = "Autorizada";
+"license.authorized.udid" = "UDID registrado";
+"license.authorized.device_fallback" = "Este iPhone está registrado";
+"license.authorized.activated" = "Ativada em";
+"license.authorized.expires" = "Expira em";
+"license.authorized.days" = "%lld dias";
+"license.checking" = "Verificando licença…";
+"license.inactive" = "A licença não está mais ativa. Informe uma key válida para continuar.";
 
 "feature.group_title" = "FUNÇÕES";
 "feature.exploit_required" = "Inicie o exploit na aba Início e aguarde Sistema pronto antes de ativar funções.";

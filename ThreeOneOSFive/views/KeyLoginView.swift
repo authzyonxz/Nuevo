@@ -115,93 +115,174 @@ struct KeyLoginView: View {
 
 struct LoginSuccessfulView: View {
     @Environment(\.appLanguage) private var language
-    let key: String
+    @EnvironmentObject private var licenseManager: LicenseManager
     let onEnterApp: () -> Void
+
+    private var licenseInfo: LicenseInfo? { licenseManager.licenseInfo }
 
     var body: some View {
         ZStack {
-            AppTheme.pageBackground
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: [Color.black, Color(red: 0.025, green: 0.04, blue: 0.075), Color(red: 0.045, green: 0.025, blue: 0.075), .black],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Spacer(minLength: 54)
+                    Text("EXTERNAL  ·  AUTH")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .tracking(3.5)
+                        .foregroundStyle(.white.opacity(0.46))
+                        .padding(.top, 20)
+
+                    Spacer(minLength: 38)
 
                     ZStack {
                         Circle()
-                            .fill(AppTheme.accent)
-                            .frame(width: 82, height: 82)
+                            .fill(Color.green.opacity(0.14))
+                            .frame(width: 94, height: 94)
+                        Circle()
+                            .stroke(Color.green.opacity(0.38), lineWidth: 1)
+                            .frame(width: 72, height: 72)
                         Image(systemName: "checkmark")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(AppTheme.pageBackground)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundStyle(Color.green)
                     }
                     .accessibilityHidden(true)
 
                     VStack(spacing: 10) {
                         Text(language.text("login.success_title"))
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .font(.system(size: 29, weight: .black, design: .rounded))
                             .multilineTextAlignment(.center)
+                            .foregroundStyle(.white)
 
                         Text(language.text("login.success_message"))
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.62))
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, 24)
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(language.text("home.account"))
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white.opacity(0.5))
                             .textCase(.uppercase)
-                            .tracking(1)
-                            .padding(.bottom, 10)
+                            .tracking(1.8)
+                            .padding(.bottom, 6)
 
-                        successDetailRow(label: language.text("login.key"), value: key)
+                        successDetailRow(
+                            label: language.text("license.authorized.status"),
+                            value: statusText
+                        )
                         Divider()
-                        successDetailRow(label: language.text("home.duration"), value: language.text("login.example_duration"))
+                        successDetailRow(label: language.text("home.key"), value: licenseManager.maskedKey)
                         Divider()
-                        successDetailRow(label: language.text("home.package"), value: language.text("login.example_package"))
+                        successDetailRow(
+                            label: language.text("home.package"),
+                            value: licenseInfo?.productName ?? "EXTERNAL - iOS"
+                        )
+                        Divider()
+                        successDetailRow(
+                            label: language.text("license.authorized.udid"),
+                            value: licenseInfo?.deviceIdentifier ?? language.text("license.authorized.device_fallback")
+                        )
+                        if let activatedAt = licenseInfo?.activatedAt {
+                            Divider()
+                            successDetailRow(
+                                label: language.text("license.authorized.activated"),
+                                value: activatedAt
+                            )
+                        }
+                        Divider()
+                        successDetailRow(
+                            label: language.text("license.authorized.expires"),
+                            value: licenseInfo?.expiresAt ?? "—"
+                        )
+                        if let days = licenseInfo?.durationDays {
+                            Divider()
+                            successDetailRow(
+                                label: language.text("home.duration"),
+                                value: language.text("license.authorized.days", Int64(days))
+                            )
+                        }
                     }
                     .padding(18)
                     .background(
-                        Color(uiColor: .secondarySystemBackground),
+                        Color.white.opacity(0.055),
                         in: RoundedRectangle(cornerRadius: 20, style: .continuous)
                     )
                     .overlay {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(Color(uiColor: .separator).opacity(0.3), lineWidth: 0.7)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
                     }
-                    .padding(.top, 34)
+                    .padding(.top, 28)
 
                     Button(action: onEnterApp) {
-                        Text(language.text("login.enter_app"))
-                            .font(.headline)
-                            .foregroundStyle(AppTheme.pageBackground)
-                            .frame(maxWidth: .infinity)
-                            .frame(minHeight: 56)
-                            .background(AppTheme.accent, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        HStack(spacing: 10) {
+                            if licenseManager.isRecheckingSession {
+                                ProgressView()
+                                    .tint(.black)
+                            }
+                            Text(
+                                licenseManager.isRecheckingSession
+                                    ? language.text("license.checking")
+                                    : language.text("login.enter_app")
+                            )
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .tracking(2.5)
+                        }
+                        .foregroundStyle(Color.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 56)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 0.43, green: 0.84, blue: 1), .white],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        )
                     }
                     .buttonStyle(.plain)
+                    .disabled(licenseManager.isRecheckingSession)
                     .padding(.top, 18)
 
-                    Spacer(minLength: 42)
+                    Spacer(minLength: 30)
                 }
+                .frame(maxWidth: 420)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 24)
+                .padding(.bottom, 18)
             }
+            .scrollIndicators(.hidden)
         }
+        .preferredColorScheme(.dark)
+    }
+
+    private var statusText: String {
+        guard let status = licenseInfo?.status else {
+            return language.text("license.authorized.active")
+        }
+        return status.caseInsensitiveCompare("active") == .orderedSame
+            ? language.text("license.authorized.active")
+            : status
     }
 
     private func successDetailRow(label: String, value: String) -> some View {
         HStack(alignment: .top, spacing: 16) {
             Text(label)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.white.opacity(0.58))
             Spacer(minLength: 8)
             Text(value)
                 .font(.subheadline.weight(.semibold))
                 .multilineTextAlignment(.trailing)
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
+                .textSelection(.enabled)
         }
         .padding(.vertical, 13)
     }
@@ -519,6 +600,8 @@ struct LicenseInfo: Codable {
     let status: String
     let productName: String
     let expiresAt: String
+    let activatedAt: String?
+    let deviceIdentifier: String?
     let message: String
     let sessionToken: String?
     let keyPreview: String?
@@ -541,8 +624,10 @@ final class LicenseManager: ObservableObject {
 
     @Published var isAuthorized = false
     @Published var hasStoredKey = false
+    @Published var hasEnteredApp = false
     @Published var isLoading = false
     @Published var isValidatingActivation = false
+    @Published var isRecheckingSession = false
     @Published var errorMessage: String?
     @Published var licenseInfo: LicenseInfo?
     @Published var flowState: FlowState = .checkingPackage
@@ -552,12 +637,15 @@ final class LicenseManager: ObservableObject {
     private let keychainService = "com.authzyonxz.nuevo.keyauth.v2"
     private let keychainAccount = "saved-key"
     private let sessionAccount = "device-session-token"
+    private let deviceAccount = "registered-device-id"
+    private let hasEnteredAppPreferenceKey = "com.authzyonxz.nuevo.keyauth.did-enter-app"
     private let client: FFH4XSecureClient?
     private var hasBootstrapped = false
 
     init() {
         client = try? FFH4XSecureClient()
         hasStoredKey = keychainRead(account: keychainAccount)?.isEmpty == false
+        hasEnteredApp = UserDefaults.standard.bool(forKey: hasEnteredAppPreferenceKey)
     }
 
     func bootstrap(completion: ((Bool, String?) -> Void)? = nil) {
@@ -660,12 +748,19 @@ final class LicenseManager: ObservableObject {
                     throw FFH4XSecureClient.ClientError.server(code: "KEY_INVALID")
                 }
                 save(value: normalized, account: keychainAccount)
+                if !result.device.isEmpty {
+                    save(value: result.device, account: deviceAccount)
+                }
+                hasEnteredApp = false
+                UserDefaults.standard.set(false, forKey: hasEnteredAppPreferenceKey)
                 hasStoredKey = true
                 isAuthorized = true
                 licenseInfo = LicenseInfo(
                     status: result.status,
                     productName: result.package.name,
                     expiresAt: Self.formatDate(result.expiresAt),
+                    activatedAt: Self.formatDate(result.activatedAt),
+                    deviceIdentifier: result.device.isEmpty ? nil : result.device,
                     message: "Ativação concluída",
                     sessionToken: token,
                     keyPreview: normalized,
@@ -694,28 +789,38 @@ final class LicenseManager: ObservableObject {
         }
     }
 
-    func recheckSecureSession(completion: @escaping (Bool, String?) -> Void) {
-        guard let client, let token = keychainRead(account: sessionAccount), !token.isEmpty else {
-            isAuthorized = false
-            completion(false, "Sessão de dispositivo não encontrada.")
-            return
+    @MainActor
+    func recheckSecureSession() async -> (authorized: Bool, message: String?) {
+        guard !isRecheckingSession else {
+            return (false, "Uma verificação da licença já está em andamento.")
         }
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                try await inspectSession(token: token, client: client)
-                completion(isAuthorized, isAuthorized ? nil : errorMessage)
-            } catch let error as FFH4XSecureClient.ClientError {
-                isAuthorized = false
-                flowState = .failure(message(for: error))
-                completion(false, message(for: error))
-            } catch {
-                isAuthorized = false
-                completion(false, "Não foi possível verificar a sessão.")
+        guard let client, let token = keychainRead(account: sessionAccount), !token.isEmpty else {
+            finishFailure("Sessão de dispositivo não encontrada.")
+            return (false, errorMessage)
+        }
+        isRecheckingSession = true
+        defer { isRecheckingSession = false }
+
+        do {
+            try await inspectSession(token: token, client: client)
+            guard isAuthorized else {
+                let failureMessage = errorMessage ?? "A licença não está ativa ou foi revogada."
+                errorMessage = failureMessage
+                return (false, failureMessage)
             }
+            return (true, nil)
+        } catch let error as FFH4XSecureClient.ClientError {
+            let failureMessage = message(for: error)
+            finishFailure(failureMessage)
+            return (false, failureMessage)
+        } catch {
+            let failureMessage = "Não foi possível verificar a sessão."
+            finishFailure(failureMessage)
+            return (false, failureMessage)
         }
     }
 
+    @MainActor
     private func inspectSession(token: String, client: FFH4XSecureClient) async throws {
         let status = try await client.sessionStatus(token: token)
         guard status.package.slug == "external1", status.package.status == "active" else {
@@ -729,10 +834,16 @@ final class LicenseManager: ObservableObject {
             pendingWebURL = session.webUrl
             return
         }
-        guard status.registered, let access = status.access, access.status == "active" else {
+        guard status.registered,
+              let access = status.access,
+              access.status?.caseInsensitiveCompare("active") == .orderedSame else {
             isAuthorized = false
             flowState = .askingForKey
-            errorMessage = nil
+            let code = status.access?.reason ?? status.access?.status
+            let mappedMessage = code.map(message(forServerCode:))
+            errorMessage = mappedMessage == nil || mappedMessage == "Não foi possível validar o acesso."
+                ? "A licença não está ativa ou foi revogada."
+                : mappedMessage
             return
         }
         isAuthorized = true
@@ -748,6 +859,8 @@ final class LicenseManager: ObservableObject {
             status: access.status ?? "active",
             productName: access.package?.name ?? status.package.name,
             expiresAt: Self.formatDate(access.expiresAt ?? status.expiresAt),
+            activatedAt: access.activatedAt.map(Self.formatDate),
+            deviceIdentifier: keychainRead(account: deviceAccount),
             message: "Acesso autorizado",
             sessionToken: token,
             keyPreview: recoveredKey,
@@ -764,13 +877,21 @@ final class LicenseManager: ObservableObject {
     func clearSavedKey() {
         keychainDelete(account: keychainAccount)
         keychainDelete(account: sessionAccount)
+        keychainDelete(account: deviceAccount)
         isAuthorized = false
         hasStoredKey = false
+        hasEnteredApp = false
+        UserDefaults.standard.set(false, forKey: hasEnteredAppPreferenceKey)
         licenseInfo = nil
         pendingWebURL = nil
         errorMessage = nil
         hasBootstrapped = false
         flowState = .checkingPackage
+    }
+
+    func enterApp() {
+        hasEnteredApp = true
+        UserDefaults.standard.set(true, forKey: hasEnteredAppPreferenceKey)
     }
 
     var maskedKey: String {
@@ -811,8 +932,9 @@ final class LicenseManager: ObservableObject {
         switch code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() {
         case "KEY_INVALID", "INVALID_KEY", "KEY_NOT_FOUND": return "invalid_key"
         case "PACKAGE_UNAVAILABLE": return "O Package EXTERNAL - iOS está indisponível."
-        case "KEY_UNAVAILABLE": return "A KEY está pausada, banida ou removida."
-        case "KEY_EXPIRED": return "A KEY expirou."
+        case "KEY_UNAVAILABLE", "KEY_BANNED", "BANNED", "PAUSED", "REMOVED", "REVOKED", "SUSPENDED", "DISABLED":
+            return "A KEY está pausada, banida ou removida."
+        case "KEY_EXPIRED", "EXPIRED": return "A KEY expirou."
         case "DEVICE_MISMATCH": return "A KEY está vinculada a outro dispositivo."
         case "DEVICE_ALREADY_REGISTERED": return "Este dispositivo já possui outra KEY ativa."
         case "SESSION_EXPIRED", "SESSION_NOT_FOUND": return "A sessão expirou. Gere um novo perfil."
