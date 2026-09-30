@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FeaturesView: View {
     @Environment(\.appLanguage) private var language
+    @EnvironmentObject private var appState: AppState
 
     @State private var aimHighEnabled = false
     @State private var aimNeckEnabled = false
@@ -22,6 +23,16 @@ struct FeaturesView: View {
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
                         .padding(.horizontal, 4)
+
+                    if !appState.canUseFeatures {
+                        Label(
+                            language.text("feature.exploit_required"),
+                            systemImage: "lock.shield"
+                        )
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 4)
+                    }
 
                     featureGroup(
                         titleKey: "feature.aim_group",
@@ -116,7 +127,7 @@ struct FeaturesView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .tint(.white)
-        .disabled(busyIDs.contains(id.rawValue))
+        .disabled(busyIDs.contains(id.rawValue) || !appState.canUseFeatures)
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .accessibilityLabel(language.text(key))

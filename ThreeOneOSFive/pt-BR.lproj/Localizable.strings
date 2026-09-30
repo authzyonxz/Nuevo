@@ -664,6 +664,10 @@
 "home.device" = "Dispositivo";
 "home.build" = "Build";
 "home.language" = "Idioma";
+"home.exploit" = "Acesso do sistema";
+"home.start_exploit" = "Iniciar Exploit";
+"home.system_ready" = "Sistema pronto";
+"home.exploit_footer" = "Inicie manualmente em primeiro plano. Ao deixar o app, o acesso é invalidado e precisa ser iniciado novamente.";
 
 "login.title" = "Login com Key";
 
@@ -688,6 +692,7 @@
 "login.enter_app" = "Entrar no app";
 
 "feature.group_title" = "FUNÇÕES";
+"feature.exploit_required" = "Inicie o exploit na aba Início e aguarde Sistema pronto antes de ativar funções.";
 
 "feature.aim_group" = "Funções Aim";
 

@@ -681,6 +681,10 @@
 "home.device" = "设备";
 "home.build" = "Build";
 "home.language" = "语言";
+"home.exploit" = "系统访问";
+"home.start_exploit" = "启动 Exploit";
+"home.system_ready" = "系统就绪";
+"home.exploit_footer" = "请在应用处于前台时手动启动。离开应用后访问权限会失效，需要重新启动。";
 
 "login.title" = "Key 登录";
 
@@ -705,6 +709,7 @@
 "login.enter_app" = "进入应用";
 
 "feature.group_title" = "功能";
+"feature.exploit_required" = "请在主页启动 exploit，等待系统就绪后再启用功能。";
 
 "feature.aim_group" = "Aim 功能";
 

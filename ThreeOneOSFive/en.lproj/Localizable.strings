@@ -681,6 +681,10 @@
 "home.device" = "Device";
 "home.build" = "Build";
 "home.language" = "Language";
+"home.exploit" = "System access";
+"home.start_exploit" = "Start Exploit";
+"home.system_ready" = "System ready";
+"home.exploit_footer" = "Start it manually while the app is in the foreground. Leaving the app invalidates access and requires starting again.";
 
 "login.title" = "Key login";
 
@@ -704,7 +708,8 @@
 
 "login.enter_app" = "Enter app";
 
-"feature.group_title" = "FUNCTIONS";
+"feature.group_title" = "FEATURES";
+"feature.exploit_required" = "Start the exploit on the Home tab and wait for System ready before enabling features.";
 
 "feature.aim_group" = "Aim functions";
 

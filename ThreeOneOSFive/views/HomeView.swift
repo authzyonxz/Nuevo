@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.appLanguage) private var language
     @EnvironmentObject private var licenseManager: LicenseManager
+    @EnvironmentObject private var appState: AppState
     @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
 
     var body: some View {
@@ -24,6 +25,49 @@ struct HomeView: View {
                     infoRow(label: language.text("home.build"), value: AppInfo.osBuild)
                 } header: {
                     Text(language.text("home.device_information"))
+                }
+
+                Section {
+                    HStack {
+                        Label(
+                            appState.exploitStatusText,
+                            systemImage: appState.isSystemReady
+                                ? "checkmark.shield.fill"
+                                : "exclamationmark.shield.fill"
+                        )
+                        .foregroundStyle(appState.isSystemReady ? .green : .orange)
+                        Spacer()
+                        Text("\(appState.exploitProgress)%")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                    ProgressView(value: Double(appState.exploitProgress), total: 100)
+                        .tint(appState.isSystemReady ? .green : AppTheme.accent)
+                    Button {
+                        appState.startExploit()
+                    } label: {
+                        HStack {
+                            if appState.kernelExploitRunning {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                            Text(appState.isSystemReady
+                                ? language.text("home.system_ready")
+                                : language.text("home.start_exploit"))
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 42)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(
+                        appState.kernelExploitRunning
+                            || appState.isSystemReady
+                            || !appState.isSupported
+                    )
+                } header: {
+                    Text(language.text("home.exploit"))
+                } footer: {
+                    Text(language.text("home.exploit_footer"))
                 }
 
                 Section {

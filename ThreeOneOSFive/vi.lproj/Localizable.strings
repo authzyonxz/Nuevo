@@ -681,6 +681,10 @@
 "home.device" = "Thiết bị";
 "home.build" = "Build";
 "home.language" = "Ngôn ngữ";
+"home.exploit" = "Quyền hệ thống";
+"home.start_exploit" = "Khởi động Exploit";
+"home.system_ready" = "Hệ thống sẵn sàng";
+"home.exploit_footer" = "Hãy khởi động thủ công khi ứng dụng ở phía trước. Khi rời ứng dụng, quyền truy cập bị vô hiệu hóa và cần khởi động lại.";
 
 "login.title" = "Đăng nhập bằng key";
 
@@ -704,7 +708,8 @@
 
 "login.enter_app" = "Vào ứng dụng";
 
-"feature.group_title" = "CHỨC NĂNG";
+"feature.group_title" = "TÍNH NĂNG";
+"feature.exploit_required" = "Hãy khởi động exploit ở tab Trang chủ và chờ Hệ thống sẵn sàng trước khi bật tính năng.";
 
 "feature.aim_group" = "Chức năng Aim";
 
