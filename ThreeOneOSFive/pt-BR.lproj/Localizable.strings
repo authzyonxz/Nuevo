@@ -696,6 +696,8 @@
 "feature.aim_high" = "HS ALTO";
 
 "feature.aim_neck_antenna" = "HS PESCOÇO + ANTENA";
+"feature.aim_chest" = "HS PEITO";
+"feature.desc_aim_chest" = "HS NO PEITO DO INIMIGO";
 
 "feature.hologram_group" = "FUNÇÕES HOLOGRAMAS";
 

@@ -6,6 +6,7 @@ struct FeaturesView: View {
     @State private var aimHighEnabled = false
     @State private var aimNeckEnabled = false
     @State private var aimNeckAntennaEnabled = false
+    @State private var aimChestEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
     @State private var appliedProjectIDs: [String: UUID] = [:]
@@ -27,7 +28,8 @@ struct FeaturesView: View {
                         rows: [
                             ("feature.aim_high", "feature.desc_aim_high", PublishedFunctionID.aimHighHS, $aimHighEnabled),
                             ("feature.aim_neck", "feature.desc_aim_neck", PublishedFunctionID.aimNeckHS, $aimNeckEnabled),
-                            ("feature.aim_neck_antenna", "feature.desc_aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled)
+                            ("feature.aim_neck_antenna", "feature.desc_aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled),
+                            ("feature.aim_chest", "feature.desc_aim_chest", PublishedFunctionID.aimChestHS, $aimChestEnabled)
                         ]
                     )
 

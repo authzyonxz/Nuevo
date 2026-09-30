@@ -713,6 +713,8 @@
 "feature.aim_high" = "高位 HS";
 
 "feature.aim_neck_antenna" = "颈部 HS + 天线";
+"feature.aim_chest" = "胸部 HS";
+"feature.desc_aim_chest" = "瞄准敌人胸部 HS。";
 
 "feature.hologram_group" = "全息功能";
 

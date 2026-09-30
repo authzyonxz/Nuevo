@@ -713,6 +713,8 @@
 "feature.aim_high" = "HS ALTO";
 
 "feature.aim_neck_antenna" = "HS NECK + ANTENNA";
+"feature.aim_chest" = "HS CHEST";
+"feature.desc_aim_chest" = "HS on the enemy chest.";
 
 "feature.hologram_group" = "HOLOGRAM FUNCTIONS";
 

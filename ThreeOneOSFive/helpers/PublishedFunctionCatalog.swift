@@ -4,6 +4,7 @@ enum PublishedFunctionID: String, CaseIterable, Codable {
     case aimHighHS = "aim.high_hs"
     case aimNeckHS = "aim.neck_hs"
     case aimNeckAntenna = "aim.neck_antenna"
+    case aimChestHS = "aim.chest_hs"
     case hologramWeapons = "hologram.weapons"
     case panelFFH4X = "panel.ffh4x"
 }

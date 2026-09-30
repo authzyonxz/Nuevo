@@ -713,6 +713,8 @@
 "feature.aim_high" = "HS CAO";
 
 "feature.aim_neck_antenna" = "HS CỔ + ĂNG-TEN";
+"feature.aim_chest" = "HS NGỰC";
+"feature.desc_aim_chest" = "HS vào ngực kẻ địch.";
 
 "feature.hologram_group" = "CHỨC NĂNG HOLOGRAM";
 
