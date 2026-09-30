@@ -683,6 +683,7 @@
 "home.language" = "语言";
 "home.exploit" = "系统访问";
 "home.start_exploit" = "启动 Exploit";
+"home.starting_exploit" = "正在启动 exploit";
 "home.system_ready" = "系统就绪";
 "home.exploit_footer" = "请在应用处于前台时手动启动。离开应用后访问权限会失效，需要重新启动。";
 

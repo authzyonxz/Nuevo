@@ -82,17 +82,17 @@ struct ThreeOneOSFiveApp: App {
                     case .active:
                         appState.markForegroundActive()
                         if licenseManager.isAuthorized {
-                            // Returning to the foreground never silently
-                            // re-enables access; the user must start it again.
+                            // Keep the explicit session and applied patches
+                            // across background. Never restart automatically.
                             appState.detectSupport()
                             checkForUpdate()
                         } else {
                             licenseManager.resumeAfterSafari()
                         }
                     case .background, .inactive:
-                        appState.invalidateForBackground()
+                        appState.markBackgrounded()
                     @unknown default:
-                        appState.invalidateForBackground()
+                        appState.markBackgrounded()
                     }
                 }
                 .onOpenURL { url in
@@ -177,15 +177,10 @@ final class AppState: ObservableObject {
         }
     }
 
-    func invalidateForBackground() {
-        isForegroundActive = false
-        exploitGeneration = UUID()
-        progressTask?.cancel()
-        exploitProgress = 0
-        if !kernelExploitRunning {
-            exploitStatus = .notStarted
-        }
-        log("app: foreground exploit session invalidated on background")
+    func markBackgrounded() {
+        // Applied patches remain active until the user disables/restores them.
+        // The exploit is not started again when the app returns to foreground.
+        log("app: backgrounded — preserving exploit session and applied features")
     }
 
     func startExploit() {

@@ -666,6 +666,7 @@
 "home.language" = "Idioma";
 "home.exploit" = "Acesso do sistema";
 "home.start_exploit" = "Iniciar Exploit";
+"home.starting_exploit" = "Iniciando exploit";
 "home.system_ready" = "Sistema pronto";
 "home.exploit_footer" = "Inicie manualmente em primeiro plano. Ao deixar o app, o acesso é invalidado e precisa ser iniciado novamente.";
 

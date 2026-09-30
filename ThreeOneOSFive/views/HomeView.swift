@@ -28,21 +28,6 @@ struct HomeView: View {
                 }
 
                 Section {
-                    HStack {
-                        Label(
-                            appState.exploitStatusText,
-                            systemImage: appState.isSystemReady
-                                ? "checkmark.shield.fill"
-                                : "exclamationmark.shield.fill"
-                        )
-                        .foregroundStyle(appState.isSystemReady ? .green : .orange)
-                        Spacer()
-                        Text("\(appState.exploitProgress)%")
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                    }
-                    ProgressView(value: Double(appState.exploitProgress), total: 100)
-                        .tint(appState.isSystemReady ? .green : AppTheme.accent)
                     Button {
                         appState.startExploit()
                     } label: {
@@ -51,19 +36,33 @@ struct HomeView: View {
                                 ProgressView()
                                     .controlSize(.small)
                             }
-                            Text(appState.isSystemReady
-                                ? language.text("home.system_ready")
-                                : language.text("home.start_exploit"))
+                            Text(language.text("home.start_exploit"))
                                 .fontWeight(.semibold)
                         }
                         .frame(maxWidth: .infinity, minHeight: 42)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(.white)
+                    .foregroundStyle(.black)
                     .disabled(
                         appState.kernelExploitRunning
                             || appState.isSystemReady
                             || !appState.isSupported
                     )
+                    if appState.kernelExploitRunning {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(language.text("home.starting_exploit"))
+                                Spacer()
+                                Text("\(appState.exploitProgress)%")
+                                    .monospacedDigit()
+                            }
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            ProgressView(value: Double(appState.exploitProgress), total: 100)
+                                .tint(AppTheme.accent)
+                        }
+                    }
                 } header: {
                     Text(language.text("home.exploit"))
                 } footer: {
