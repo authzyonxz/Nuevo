@@ -19,14 +19,6 @@ struct HomeView: View {
                 }
 
                 Section {
-                    Button(role: .destructive) {
-                        licenseManager.clearSavedKey()
-                    } label: {
-                        Label("Sair e limpar KEY", systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                }
-
-                Section {
                     infoRow(label: language.text("home.ios_version"), value: AppInfo.osVersion)
                     infoRow(label: language.text("home.device"), value: AppInfo.displayMachineName)
                     infoRow(label: language.text("home.build"), value: AppInfo.osBuild)
