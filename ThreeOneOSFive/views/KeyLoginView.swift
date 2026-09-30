@@ -663,7 +663,7 @@ final class LicenseManager: ObservableObject {
                     expiresAt: Self.formatDate(result.expiresAt),
                     message: "Ativação concluída",
                     sessionToken: token,
-                    keyPreview: result.key,
+                    keyPreview: normalized,
                     durationDays: result.durationDays
                 )
                 flowState = .authorized
@@ -739,7 +739,7 @@ final class LicenseManager: ObservableObject {
             expiresAt: Self.formatDate(access.expiresAt ?? status.expiresAt),
             message: "Acesso autorizado",
             sessionToken: token,
-            keyPreview: access.key,
+            keyPreview: savedKey,
             durationDays: access.durationDays
         )
     }
@@ -763,7 +763,8 @@ final class LicenseManager: ObservableObject {
     }
 
     var maskedKey: String {
-        let value = keychainRead(account: keychainAccount) ?? licenseInfo?.keyPreview ?? ""
+        // Exibir somente a KEY digitada e validada localmente após a ativação.
+        let value = keychainRead(account: keychainAccount) ?? ""
         guard !value.isEmpty else { return "—" }
         let characters = Array(value)
         let visibleCount = max(1, characters.count / 2)
@@ -858,21 +859,10 @@ struct LicenseGateView: View {
                 VStack(spacing: 24) {
                     Spacer(minLength: 48)
                     VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(LinearGradient(colors: [accent, accent.opacity(0.35)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 78, height: 78)
-                                .shadow(color: accent.opacity(0.35), radius: 22, y: 8)
-                            Image(systemName: iconName)
-                                .font(.system(size: 31, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
-                        Text("NUEVO ACCESS")
-                            .font(.system(size: 12, weight: .heavy, design: .rounded))
-                            .tracking(2.6)
-                            .foregroundStyle(.white.opacity(0.65))
-                        Text("Acesso protegido")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                        Text("VERIFICAÇÃO DE DISPOSITIVO")
+                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .tracking(1.4)
+                            .multilineTextAlignment(.center)
                             .foregroundStyle(.white)
                         Text(message)
                             .font(.system(size: 15, weight: .medium, design: .rounded))
@@ -906,31 +896,34 @@ struct LicenseGateView: View {
                         }
                         .padding(.horizontal, 16)
                         .frame(minHeight: 58)
-                        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).stroke(Color.white.opacity(0.14), lineWidth: 1))
+                        .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).stroke(Color.white.opacity(0.12), lineWidth: 1))
                         Button {
                             licenseManager.validateKey(inputKey) { _, _ in }
                         } label: {
-                            Label("VALIDAR KEY", systemImage: "arrow.right.circle.fill")
+                            Text("ENTRAR")
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .tracking(0.8)
+                                .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accent)
+                        .frame(height: 52)
+                        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .disabled(!canSubmit)
+                        .opacity(canSubmit ? 1 : 0.45)
                     }
                     if licenseManager.pendingWebURL != nil && (licenseManager.flowState == .openingDeviceRegistration || licenseManager.flowState == .waitingForDevice) {
                         Button {
                             licenseManager.openPendingRegistration()
                         } label: {
-                            Label("IDENTIFICAR ESTE IPHONE", systemImage: "safari.fill")
+                            Text("REGISTRAR UDID")
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .tracking(0.7)
+                                .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accent)
+                        .frame(height: 50)
+                        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     if case .failure = licenseManager.flowState {
                         Button { licenseManager.retryBootstrap() } label: {
@@ -972,16 +965,6 @@ struct LicenseGateView: View {
         case .authorized: return .green
         case .failure: return .red
         default: return AppTheme.accent
-        }
-    }
-
-    private var iconName: String {
-        switch licenseManager.flowState {
-        case .authorized: return "checkmark.shield.fill"
-        case .askingForKey, .activatingKey: return "key.fill"
-        case .openingDeviceRegistration, .waitingForDevice: return "iphone"
-        case .failure: return "exclamationmark.shield.fill"
-        default: return "lock.shield.fill"
         }
     }
 
