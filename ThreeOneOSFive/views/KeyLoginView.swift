@@ -732,14 +732,19 @@ final class LicenseManager: ObservableObject {
         isAuthorized = true
         flowState = .authorized
         let savedKey = keychainRead(account: keychainAccount)
-        hasStoredKey = savedKey?.isEmpty == false
+        let recoveredKey = savedKey ?? Self.validKey(from: access.key)
+        if savedKey == nil, let recoveredKey {
+            save(value: recoveredKey, account: keychainAccount)
+            hasStoredKey = true
+        }
+        hasStoredKey = recoveredKey != nil
         licenseInfo = LicenseInfo(
             status: access.status ?? "active",
             productName: access.package?.name ?? status.package.name,
             expiresAt: Self.formatDate(access.expiresAt ?? status.expiresAt),
             message: "Acesso autorizado",
             sessionToken: token,
-            keyPreview: savedKey,
+            keyPreview: recoveredKey,
             durationDays: access.durationDays
         )
     }
@@ -813,6 +818,15 @@ final class LicenseManager: ObservableObject {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    private static func validKey(from value: String?) -> String? {
+        guard let value else { return nil }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard normalized.range(of: #"^(?:[A-Z0-9]+-[A-Z1-9]{8}|[A-Z1-9]{11,15})$"#, options: .regularExpression) != nil else {
+            return nil
+        }
+        return normalized
     }
 
     private func save(value: String, account: String) {
