@@ -75,7 +75,7 @@
     <key>AppReleaseDisplayVersion</key>
     <string>2.0</string>
     <key>FunctionCatalogBaseURL</key>
-    <string>http://2.25.157.40:8081</string>
+    <string>https://keyauthv2.org/function-catalog</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSExceptionDomains</key>
