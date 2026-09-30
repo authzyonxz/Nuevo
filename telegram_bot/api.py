@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse
 
 from catalog import validate_function_id
@@ -19,7 +19,8 @@ def create_app(store: FunctionStore) -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/api/functions")
-    def functions() -> dict:
+    def functions(response: Response) -> dict:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
         entries = []
         for entry in store.all_public():
             item = dict(entry)
@@ -32,7 +33,8 @@ def create_app(store: FunctionStore) -> FastAPI:
         return {"version": 1, "functions": entries}
 
     @app.get("/api/functions/{function_id}")
-    def function(function_id: str) -> dict:
+    def function(function_id: str, response: Response) -> dict:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
         try:
             validate_function_id(function_id)
             entry = dict(store.get(function_id))
@@ -47,7 +49,7 @@ def create_app(store: FunctionStore) -> FastAPI:
         return entry
 
     @app.get("/packages/{package_name}")
-    def package(package_name: str):
+    def package(package_name: str, response: Response):
         package_path = f"packages/{package_name}"
         entry = next(
             (
@@ -64,6 +66,11 @@ def create_app(store: FunctionStore) -> FastAPI:
         path = store.package_path(entry["id"])
         if path is None:
             raise HTTPException(status_code=404, detail="Package not published")
-        return FileResponse(path, media_type="application/octet-stream", filename=path.name)
+        return FileResponse(
+            path,
+            media_type="application/octet-stream",
+            filename=path.name,
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+        )
 
     return app

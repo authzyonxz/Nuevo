@@ -24,7 +24,11 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
     let targetFilename: String?
 
     var isInMaintenance: Bool { status != "active" }
-    var isRawFile: Bool { packageFormat == "raw" }
+    var isRawFile: Bool {
+        packageFormat == "raw"
+            || packageURL?.pathExtension.lowercased() == "raw"
+            || (targetBundleID != nil && targetFilename != nil)
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -60,7 +64,10 @@ enum PublishedFunctionCatalog {
 
     static func fetchStatus(for id: PublishedFunctionID) async throws -> PublishedFunctionStatus {
         guard let manifestURL else { throw PublishedFunctionCatalogError.notConfigured }
-        let (data, response) = try await URLSession.shared.data(from: manifestURL)
+        var request = URLRequest(url: manifestURL)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw PublishedFunctionCatalogError.invalidResponse
         }
@@ -75,7 +82,10 @@ enum PublishedFunctionCatalog {
         guard let packageURL = status.packageURL else {
             throw PublishedFunctionCatalogError.unavailable
         }
-        let (data, response) = try await URLSession.shared.data(from: packageURL)
+        var request = URLRequest(url: packageURL)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw PublishedFunctionCatalogError.unavailable
         }
