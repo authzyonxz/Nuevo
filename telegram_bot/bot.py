@@ -19,7 +19,6 @@ from telegram.ext import (
 )
 
 from catalog import FUNCTIONS, GROUPS, FUNCTION_BY_ID
-from package3105 import write_package
 from store import FunctionStore
 
 load_dotenv()
@@ -59,7 +58,7 @@ def function_keyboard(function_id: str) -> InlineKeyboardMarkup:
     status_action = "maintenance" if entry["status"] == "active" else "active"
     status_label = "Colocar em manutenção" if entry["status"] == "active" else "Ativar função"
     rows = [
-        [InlineKeyboardButton("Publicar/substituir .3105", callback_data=f"publish:{function_id}")],
+        [InlineKeyboardButton("Publicar/substituir arquivo normal", callback_data=f"publish:{function_id}")],
         [InlineKeyboardButton(status_label, callback_data=f"status:{status_action}:{function_id}")],
     ]
     if entry.get("package"):
@@ -133,17 +132,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | 
         context.user_data.clear()
         context.user_data["function_id"] = function_id
         await query.edit_message_text(
-            f"Envie agora o arquivo de substituição para *{FUNCTION_BY_ID[function_id].name}*.",
+            f"Envie agora o arquivo normal para *{FUNCTION_BY_ID[function_id].name}*.\n"
+            "O nome original do arquivo será preservado e usado na busca exata dentro do container.",
             parse_mode="Markdown",
         )
         return WAIT_DOCUMENT
     if data.startswith("password:"):
-        choice, function_id = data.split(":", 2)[1:]
-        context.user_data["function_id"] = function_id
-        if choice == "no":
-            return await finalize_publish(update, context, password=None)
-        await query.edit_message_text("Digite a senha do pacote. Ela não será exibida no catálogo público:")
-        return WAIT_PASSWORD_VALUE
+        await query.edit_message_text("A publicação agora usa arquivo normal, sem pacote .3105 e sem senha.")
+        return ConversationHandler.END
     return ConversationHandler.END
 
 
@@ -155,6 +151,10 @@ async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if function_id not in FUNCTION_BY_ID:
         await update.message.reply_text("Sessão expirada. Use /start novamente.")
         return ConversationHandler.END
+    original_name = (document.file_name or "").strip()
+    if not original_name or Path(original_name).name != original_name or original_name in {".", ".."}:
+        await update.message.reply_text("O arquivo precisa ter um nome simples, sem pastas.")
+        return WAIT_DOCUMENT
     upload_dir = ROOT / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
     safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", document.file_name or "replacement.bin")
@@ -162,6 +162,7 @@ async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     telegram_file = await document.get_file()
     await telegram_file.download_to_drive(destination)
     context.user_data["upload_path"] = str(destination)
+    context.user_data["target_filename"] = original_name
     await update.message.reply_text("Informe o Bundle ID, por exemplo: `com.dts.freefireth`", parse_mode="Markdown")
     return WAIT_BUNDLE
 
@@ -170,11 +171,7 @@ async def receive_bundle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not is_admin(update) or not update.message:
         return ConversationHandler.END
     context.user_data["bundle_id"] = update.message.text.strip()
-    await update.message.reply_text(
-        "Informe o caminho relativo COMPLETO do arquivo dentro do app, incluindo o nome final.\n"
-        "Exemplo: `hsneck/3D` (não informe apenas a pasta)."
-    )
-    return WAIT_PATH
+    return await finalize_publish(update, context)
 
 
 async def receive_path(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -193,10 +190,10 @@ async def receive_path(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update) or not update.message:
         return ConversationHandler.END
-    return await finalize_publish(update, context, password=update.message.text)
+    return await finalize_publish(update, context)
 
 
-async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE, password: str | None) -> int:
+async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     function_id = context.user_data.get("function_id")
     if function_id not in FUNCTION_BY_ID:
         await update.effective_message.reply_text("Sessão expirada. Use /start novamente.")
@@ -204,30 +201,20 @@ async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE, p
     try:
         upload_path = Path(context.user_data["upload_path"])
         bundle_id = context.user_data["bundle_id"]
-        relative_path = context.user_data["relative_path"].strip()
-        if not relative_path or relative_path.endswith(("/", "\\")):
-            raise ValueError("Informe o caminho completo do arquivo, incluindo o nome final")
+        target_filename = context.user_data["target_filename"]
         item = FUNCTION_BY_ID[function_id]
-        author = update.effective_user.full_name if update.effective_user else "3105 Admin"
-        package_path = ROOT / "generated" / f"{function_id.replace('.', '_')}.3105"
-        write_package(
-            package_path,
-            function_id=function_id,
-            function_name=item.name,
-            author=author,
-            bundle_id=bundle_id,
-            relative_path=relative_path,
-            replacement_filename=Path(relative_path).name,
-            replacement_data=upload_path.read_bytes(),
-            password=password or None,
+        entry = STORE.publish(
+            function_id,
+            upload_path.read_bytes(),
+            package_format="raw",
+            target_bundle_id=bundle_id,
+            target_filename=target_filename,
         )
-        entry = STORE.publish(function_id, package_path.read_bytes(), bool(password))
         upload_path.unlink(missing_ok=True)
-        package_path.unlink(missing_ok=True)
         await update.effective_message.reply_text(
             f"Publicado com sucesso.\n\nFunção: {item.name}\nID: `{function_id}`\n"
-            f"Versão: `{entry['version']}`\nCaminho: `{relative_path}`\n"
-            f"Senha: `{'sim' if password else 'não'}`",
+            f"Versão: `{entry['version']}`\nBundle ID: `{bundle_id}`\n"
+            f"Nome exato: `{target_filename}`\nFormato: `arquivo normal`",
             parse_mode="Markdown",
             reply_markup=function_keyboard(function_id),
         )

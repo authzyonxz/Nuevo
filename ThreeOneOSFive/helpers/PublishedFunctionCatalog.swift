@@ -19,8 +19,12 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
     let passwordProtected: Bool
     let available: Bool
     let packageURL: URL?
+    let packageFormat: String?
+    let targetBundleID: String?
+    let targetFilename: String?
 
     var isInMaintenance: Bool { status != "active" }
+    var isRawFile: Bool { packageFormat == "raw" }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -33,6 +37,9 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
         case passwordProtected = "password_protected"
         case available
         case packageURL = "package_url"
+        case packageFormat = "package_format"
+        case targetBundleID = "target_bundle_id"
+        case targetFilename = "target_filename"
     }
 }
 

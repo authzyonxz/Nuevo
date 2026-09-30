@@ -33,6 +33,9 @@ class FunctionStore:
             entry.setdefault("version", 0)
             entry.setdefault("package", None)
             entry.setdefault("password_protected", False)
+            entry.setdefault("package_format", "3105")
+            entry.setdefault("target_bundle_id", None)
+            entry.setdefault("target_filename", None)
         self._save(data)
         return data
 
@@ -71,17 +74,30 @@ class FunctionStore:
         self._save()
         return entry
 
-    def publish(self, function_id: str, package_bytes: bytes, password_protected: bool) -> dict[str, Any]:
+    def publish(
+        self,
+        function_id: str,
+        package_bytes: bytes,
+        password_protected: bool = False,
+        *,
+        package_format: str = "raw",
+        target_bundle_id: str | None = None,
+        target_filename: str | None = None,
+    ) -> dict[str, Any]:
         item = validate_function_id(function_id)
-        filename = f"{function_id.replace('.', '_')}.3105"
+        suffix = "3105" if package_format == "3105" else "raw"
+        filename = f"{function_id.replace('.', '_')}.{suffix}"
         destination = self.package_dir / filename
-        temporary = destination.with_suffix(".3105.tmp")
+        temporary = destination.with_suffix(f".{suffix}.tmp")
         temporary.write_bytes(package_bytes)
         os.replace(temporary, destination)
         entry = self.get(function_id)
         entry.update({
             "package": f"packages/{filename}",
             "password_protected": password_protected,
+            "package_format": package_format,
+            "target_bundle_id": target_bundle_id,
+            "target_filename": target_filename,
             "version": int(entry.get("version", 0)) + 1,
             "status": "active",
             "name": item.name,

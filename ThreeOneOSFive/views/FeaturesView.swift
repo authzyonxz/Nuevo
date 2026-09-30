@@ -149,17 +149,34 @@ struct FeaturesView: View {
                 }
                 let data = try await PublishedFunctionCatalog.downloadPackage(for: status)
                 log("feature: package downloaded id=\(id.rawValue) bytes=\(data.count)")
-                let decoded = try PatchPackageCodec.decode(data, password: nil)
-                destinationDescription = decoded.project.rules
-                    .map { "\($0.bundleID)/\($0.relativePath)" }
-                    .joined(separator: ", ")
-                log("feature: decoded project=\(decoded.project.id.uuidString) destination=\(destinationDescription ?? "none")")
-                _ = try DevicePatchService.apply(
-                    project: decoded.project,
-                    requireExistingTargets: true
-                )
-                appliedProjectIDs[id.rawValue] = decoded.project.id
-                log("feature: apply succeeded project=\(decoded.project.id.uuidString)")
+                if status.isRawFile {
+                    guard let bundleID = status.targetBundleID,
+                          let filename = status.targetFilename,
+                          !bundleID.isEmpty,
+                          !filename.isEmpty else {
+                        throw PublishedFunctionCatalogError.invalidResponse
+                    }
+                    destinationDescription = "\(bundleID)/\(filename) (busca exata)"
+                    let receipt = try PublishedRawFileService.apply(
+                        data: data,
+                        bundleID: bundleID,
+                        filename: filename
+                    )
+                    appliedProjectIDs[id.rawValue] = receipt.projectID
+                    log("feature: raw file applied project=\(receipt.projectID.uuidString) destination=\(destinationDescription ?? "none")")
+                } else {
+                    let decoded = try PatchPackageCodec.decode(data, password: nil)
+                    destinationDescription = decoded.project.rules
+                        .map { "\($0.bundleID)/\($0.relativePath)" }
+                        .joined(separator: ", ")
+                    log("feature: decoded project=\(decoded.project.id.uuidString) destination=\(destinationDescription ?? "none")")
+                    _ = try DevicePatchService.apply(
+                        project: decoded.project,
+                        requireExistingTargets: true
+                    )
+                    appliedProjectIDs[id.rawValue] = decoded.project.id
+                    log("feature: apply succeeded project=\(decoded.project.id.uuidString)")
+                }
                 featureAlert = language.text("feature.injected_success")
                     + "\nDestino: " + (destinationDescription ?? "desconhecido")
             } else {

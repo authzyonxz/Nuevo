@@ -24,7 +24,7 @@ def create_app(store: FunctionStore) -> FastAPI:
         for entry in store.all_public():
             item = dict(entry)
             item["package_url"] = (
-                f"{public_base_url}/packages/{entry['id'].replace('.', '_')}.3105"
+                f"{public_base_url}/{entry['package']}"
                 if item["available"] and public_base_url
                 else None
             )
@@ -40,7 +40,7 @@ def create_app(store: FunctionStore) -> FastAPI:
             raise HTTPException(status_code=404, detail="Unknown function") from exc
         entry["available"] = store.package_path(function_id) is not None
         entry["package_url"] = (
-            f"{public_base_url}/packages/{function_id.replace('.', '_')}.3105"
+            f"{public_base_url}/{entry['package']}"
             if entry["available"] and public_base_url
             else None
         )
@@ -48,8 +48,6 @@ def create_app(store: FunctionStore) -> FastAPI:
 
     @app.get("/packages/{package_name}")
     def package(package_name: str):
-        if not package_name.endswith(".3105"):
-            raise HTTPException(status_code=404, detail="Package not found")
         package_path = f"packages/{package_name}"
         entry = next(
             (
