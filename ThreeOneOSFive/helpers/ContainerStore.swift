@@ -91,9 +91,11 @@ enum ContainerStore {
     ]
 
     static func resolveAppContainerPath(bundleID: String) -> String? {
-        guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
+        guard let normalizedBundleID = try? PatchPathValidator.canonicalBundleIdentifier(bundleID) else {
+            log("patch: invalid bundle identifier raw=\(bundleID)")
             return nil
         }
+        let bundleID = normalizedBundleID
         var lookupError: NSString?
         if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
            isApplicationContainerPath(path) {
@@ -111,6 +113,7 @@ enum ContainerStore {
             log("patch: filesystem metadata scan resolved \(bundleID)")
             return scanned
         }
+        log("patch: resolution failed \(bundleID); app may be installed but container access is unavailable")
         return nil
     }
 

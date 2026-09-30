@@ -59,15 +59,19 @@ func setupLogCapture() {
         return
     }
 
-    pipe.fileHandleForReading.readabilityHandler = { handle in
-        let data = handle.availableData
-        guard !data.isEmpty else { return }
-        if let text = String(data: data, encoding: .utf8) {
+    // FileHandle.readabilityHandler installs a run-loop source. On some
+    // iOS builds that source emits an invalid kCFRunLoopCommonModes warning.
+    // A dedicated reader queue captures the same output without CFRunLoop.
+    DispatchQueue(label: "com.3105.log-capture", qos: .utility).async {
+        let reader = pipe.fileHandleForReading
+        while true {
+            let data = reader.readData(ofLength: 4 * 1024)
+            guard !data.isEmpty else { break }
+            guard let text = String(data: data, encoding: .utf8) else { continue }
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty {
-                DispatchQueue.main.async {
-                    AppLog.shared.append(trimmed)
-                }
+            guard !trimmed.isEmpty else { continue }
+            DispatchQueue.main.async {
+                AppLog.shared.append(trimmed)
             }
         }
     }

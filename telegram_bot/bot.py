@@ -25,7 +25,8 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger("3105-telegram-bot")
 
-WAIT_DOCUMENT, WAIT_BUNDLE, WAIT_PATH, WAIT_PASSWORD, WAIT_PASSWORD_VALUE = range(5)
+WAIT_DOCUMENT, WAIT_BUNDLE = range(2)
+_BUNDLE_ID_PATTERN = re.compile(r"^[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)+$")
 ROOT = Path(os.getenv("BOT_DATA_DIR", "./bot_data")).resolve()
 STORE = FunctionStore(ROOT)
 ADMIN_IDS = {int(item.strip()) for item in os.getenv("TELEGRAM_ADMIN_IDS", "").split(",") if item.strip().isdigit()}
@@ -137,9 +138,6 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | 
             parse_mode="Markdown",
         )
         return WAIT_DOCUMENT
-    if data.startswith("password:"):
-        await query.edit_message_text("A publicação agora usa arquivo normal, sem pacote .3105 e sem senha.")
-        return ConversationHandler.END
     return ConversationHandler.END
 
 
@@ -170,26 +168,14 @@ async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 async def receive_bundle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update) or not update.message:
         return ConversationHandler.END
-    context.user_data["bundle_id"] = update.message.text.strip()
-    return await finalize_publish(update, context)
-
-
-async def receive_path(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if not is_admin(update) or not update.message:
-        return ConversationHandler.END
-    context.user_data["relative_path"] = update.message.text.strip()
-    function_id = context.user_data["function_id"]
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Sim, proteger com senha", callback_data=f"password:yes:{function_id}")],
-        [InlineKeyboardButton("Não usar senha", callback_data=f"password:no:{function_id}")],
-    ])
-    await update.message.reply_text("Deseja proteger o pacote .3105 com senha?", reply_markup=keyboard)
-    return WAIT_PASSWORD
-
-
-async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if not is_admin(update) or not update.message:
-        return ConversationHandler.END
+    bundle_id = update.message.text.strip()
+    if len(bundle_id) > 255 or not _BUNDLE_ID_PATTERN.fullmatch(bundle_id):
+        await update.message.reply_text(
+            "Bundle ID inválido. Informe um identificador como `com.dts.freefireth`.",
+            parse_mode="Markdown",
+        )
+        return WAIT_BUNDLE
+    context.user_data["bundle_id"] = bundle_id
     return await finalize_publish(update, context)
 
 
@@ -240,9 +226,6 @@ def build_application() -> Application:
         states={
             WAIT_DOCUMENT: [MessageHandler(filters.Document.ALL, receive_document)],
             WAIT_BUNDLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_bundle)],
-            WAIT_PATH: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_path)],
-            WAIT_PASSWORD: [CallbackQueryHandler(callback, pattern=r"^password:")],
-            WAIT_PASSWORD_VALUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_password)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
         per_user=True,
