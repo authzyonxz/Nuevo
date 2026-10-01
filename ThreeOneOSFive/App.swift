@@ -226,7 +226,16 @@ final class AppState: ObservableObject {
             return
         }
 
-        beginExploit()
+        switch KernelExploit.currentAccessPath {
+        case .badQuery:
+            exploitProgress = 100
+            exploitStatus = .success(method: "ContainerManager/bad_query")
+            log("app: selected ContainerManager/bad_query; kexploit_opa334 not started")
+        case .kernelOffsets:
+            beginExploit()
+        case .unsupported:
+            exploitStatus = .unsupported("iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
+        }
     }
 
     @MainActor
