@@ -2,11 +2,13 @@ import Foundation
 
 enum ExploitSupportPolicy {
     enum AccessPath: Equatable {
+        case kfd16
         case kernelOffsets
         case badQuery
         case unsupported
     }
 
+    static let verifiedIOS16Range = "16.0–16.6.1 (KFD; dispositivo/build restritos)"
     static let verifiedIOS17Range = "17.0–17.7.x"
     static let verifiedIOS18Range = "18.0–18.7.1"
     static let verifiedIOS26Range = "26.0–26.6.1"
@@ -24,6 +26,11 @@ enum ExploitSupportPolicy {
 
     static func iOS27PublicBetaNumber(for build: String) -> Int? {
         verifiedIOS27Builds.first { $0.build == build }?.publicBeta
+    }
+
+    static func supportsKFD16(major: Int, minor: Int, patch: Int) -> Bool {
+        guard major == 16, minor >= 0, patch >= 0 else { return false }
+        return minor < 6 || (minor == 6 && patch <= 1)
     }
 
     static func supportsKernelExploit(major: Int, minor: Int, patch: Int) -> Bool {
@@ -51,6 +58,10 @@ enum ExploitSupportPolicy {
         patch: Int,
         build: String
     ) -> AccessPath {
+        if supportsKFD16(major: major, minor: minor, patch: patch) {
+            return .kfd16
+        }
+
         if supportsKernelExploit(major: major, minor: minor, patch: patch) {
             return .kernelOffsets
         }
