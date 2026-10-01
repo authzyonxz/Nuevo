@@ -40,8 +40,10 @@ enum ExploitSupportPolicy {
         }
 
         if major == 26 {
-            guard minor >= 0, patch >= 0 else { return false }
-            return minor < 6 || (minor == 6 && patch <= 1)
+            // offsets.m only contains a verified 26.0.x table. Do not claim
+            // support for later 26.x releases until their offsets are added
+            // and tested on a physical device.
+            return minor == 0 && patch >= 0
         }
 
         guard major == 27, minor == 0, patch == 0 else { return false }
