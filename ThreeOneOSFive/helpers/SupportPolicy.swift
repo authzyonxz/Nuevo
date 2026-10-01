@@ -1,6 +1,12 @@
 import Foundation
 
 enum ExploitSupportPolicy {
+    enum AccessPath: Equatable {
+        case kernelOffsets
+        case badQuery
+        case unsupported
+    }
+
     static let verifiedIOS17Range = "17.0–17.7.x"
     static let verifiedIOS18Range = "18.0–18.7.1"
     static let verifiedIOS26Range = "26.0–26.6.1"
@@ -34,19 +40,35 @@ enum ExploitSupportPolicy {
         return false
     }
 
-    static func isSupported(major: Int, minor: Int, patch: Int, build: String) -> Bool {
+    static func supportsBadQuery(major: Int, minor: Int, patch: Int) -> Bool {
+        guard major == 26, minor >= 0, patch >= 0 else { return false }
+        return minor < 6 || (minor == 6 && patch <= 1)
+    }
+
+    static func accessPath(
+        major: Int,
+        minor: Int,
+        patch: Int,
+        build: String
+    ) -> AccessPath {
         if supportsKernelExploit(major: major, minor: minor, patch: patch) {
-            return true
+            return .kernelOffsets
         }
 
-        if major == 26 {
-            // offsets.m only contains a verified 26.0.x table. Do not claim
-            // support for later 26.x releases until their offsets are added
-            // and tested on a physical device.
-            return minor == 0 && patch >= 0
+        if supportsBadQuery(major: major, minor: minor, patch: patch) {
+            return .badQuery
         }
 
-        guard major == 27, minor == 0, patch == 0 else { return false }
-        return iOS27BetaNumber(for: build) != nil
+        guard major == 27, minor == 0, patch == 0 else { return .unsupported }
+        return iOS27BetaNumber(for: build) != nil ? .badQuery : .unsupported
+    }
+
+    static func isSupported(major: Int, minor: Int, patch: Int, build: String) -> Bool {
+        accessPath(
+            major: major,
+            minor: minor,
+            patch: patch,
+            build: build
+        ) != .unsupported
     }
 }

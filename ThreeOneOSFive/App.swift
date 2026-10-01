@@ -223,12 +223,24 @@ final class AppState: ObservableObject {
                 }
                 if ok {
                     self.exploitProgress = 100
-                    self.exploitStatus = .success(method: "kexploit")
-                    log("app: manual exploit success — system ready")
+                    let method: String
+                    switch KernelExploit.currentAccessPath {
+                    case .badQuery:
+                        method = "ContainerManager/bad_query"
+                    case .kernelOffsets:
+                        method = "kexploit"
+                    case .unsupported:
+                        method = "unsupported"
+                    }
+                    self.exploitStatus = .success(method: method)
+                    log("app: manual access success via \(method) — system ready")
                 } else {
                     self.exploitProgress = 0
-                    self.exploitStatus = .failed(method: "kexploit", code: -1)
-                    log("app: manual exploit failed — system is not ready")
+                    let method = KernelExploit.currentAccessPath == .badQuery
+                        ? "ContainerManager/bad_query"
+                        : "kexploit"
+                    self.exploitStatus = .failed(method: method, code: -1)
+                    log("app: manual access failed via \(method) — system is not ready")
                 }
             }
         }
