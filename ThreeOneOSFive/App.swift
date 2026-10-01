@@ -153,6 +153,8 @@ final class AppState: ObservableObject {
             patch: v.patch,
             build: AppInfo.osBuild
         )
+        let path = KernelExploit.currentAccessPath
+        let deviceBuildSupported = path != .kfd16 || kfd16_candidate_for_current_device()
 #if targetEnvironment(simulator)
         if ProcessInfo.processInfo.arguments.contains("--simulate-access") {
             exploitStatus = .success(method: "Simulator preview")
@@ -160,7 +162,9 @@ final class AppState: ObservableObject {
         }
 #endif
 
-        unsupportedMessage = supported ? nil : "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
+        unsupportedMessage = supported && deviceBuildSupported
+            ? nil
+            : "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) — caminho nativo não validado para este dispositivo"
         if let unsupportedMessage {
             exploitStatus = .unsupported(unsupportedMessage)
             exploitProgress = 0
@@ -225,6 +229,8 @@ final class AppState: ObservableObject {
                     self.exploitProgress = 100
                     let method: String
                     switch KernelExploit.currentAccessPath {
+                    case .kfd16:
+                        method = "KFD16 kernel access"
                     case .badQuery:
                         method = "ContainerManager/bad_query"
                     case .kernelOffsets:
@@ -236,9 +242,15 @@ final class AppState: ObservableObject {
                     log("app: manual access success via \(method) — system ready")
                 } else {
                     self.exploitProgress = 0
-                    let method = KernelExploit.currentAccessPath == .badQuery
-                        ? "ContainerManager/bad_query"
-                        : "kexploit"
+                    let method: String
+                    switch KernelExploit.currentAccessPath {
+                    case .kfd16:
+                        method = "KFD16"
+                    case .badQuery:
+                        method = "ContainerManager/bad_query"
+                    default:
+                        method = "kexploit"
+                    }
                     self.exploitStatus = .failed(method: method, code: -1)
                     log("app: manual access failed via \(method) — system is not ready")
                 }

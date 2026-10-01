@@ -60,6 +60,7 @@ So với 1.1.1, bản 2.0 chuyển 3105 từ một bộ công cụ riêng lẻ t
 
 | Hệ thống | Phiên bản/build |
 | --- | --- |
+| iOS 16 | 16.0 đến 16.6.1 (KFD16; chỉ các cặp thiết bị/build đã xác minh) |
 | iOS 17 | 17.0 đến 17.7.x |
 | iOS 18 | 18.0 đến 18.7.1 |
 | iOS 26 | 26.0 đến 26.6.1 (đường dẫn ContainerManager/bad_query) |
@@ -68,7 +69,7 @@ So với 1.1.1, bản 2.0 chuyển 3105 từ một bộ công cụ riêng lẻ t
 | iOS 27 Developer Beta 3 / Public Beta 1 | `24A5380h` |
 | iOS 27 Developer Beta 4 / Public Beta 2 | `24A5390f` |
 
-Những build không có trong bảng sẽ được đánh dấu là không hỗ trợ.
+Mỗi dải phiên bản dùng backend riêng: KFD16 cho các cặp iOS 16 đã xác minh, offset `kexploit_opa334` cho iOS 17–18 và ContainerManager `bad_query` cho iOS 26–27. Những build không có trong bảng sẽ được đánh dấu là không hỗ trợ.
 
 ## Lưu ý cài đặt
 

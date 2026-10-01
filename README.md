@@ -67,6 +67,7 @@ Compared with 1.1.1, version 2.0 turns 3105 from a collection of separate tools 
 
 | System | Verified range/builds |
 | --- | --- |
+| iOS 16 | 16.0 through 16.6.1 (KFD16; only validated device/build pairs) |
 | iOS 17 | 17.0 through 17.7 (kernel exploit) |
 | iOS 18 | 18.0 through 18.7.1 (kernel exploit) |
 | iOS 26 | 26.0 through 26.6.1 (ContainerManager/bad_query path) |
@@ -75,7 +76,7 @@ Compared with 1.1.1, version 2.0 turns 3105 from a collection of separate tools 
 | iOS 27 Developer Beta 3 / Public Beta 1 | `24A5380h` |
 | iOS 27 Developer Beta 4 / Public Beta 2 | `24A5390f` |
 
-Unlisted iOS 27 builds are marked unsupported rather than assumed compatible. The iOS 17–18 kernel exploit is opt-in (manual button) because a failed exploit attempt may restart the app.
+Unlisted iOS 27 builds are marked unsupported rather than assumed compatible. Each range uses its own native path: KFD16 on validated iOS 16 pairs, `kexploit_opa334` offsets on iOS 17–18, and ContainerManager `bad_query` on iOS 26–27. The iOS 16–18 kernel paths are opt-in (manual button) because a failed exploit attempt may restart the app.
 
 ## Installation notes
 
