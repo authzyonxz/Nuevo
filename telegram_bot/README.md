@@ -6,14 +6,14 @@ O bot administra os arquivos publicados para cada função. O fluxo atual public
 
 | Grupo | Função | Identificador |
 |---|---|---|
-| FUNÇÕES AIM | HS PESCOÇO | `aim.neck_hs` |
-| FUNÇÕES AIM | HS ALTO | `aim.high_hs` |
-| FUNÇÕES AIM | HS PESCOÇO + ANTENA | `aim.neck_antenna` |
-| FUNÇÕES AIM | HS PEITO | `aim.chest_hs` |
-| FUNÇÕES AIM · Cache_res | HS ALTO | `aim.cache_high_hs` |
-| FUNÇÕES AIM · Cache_res | HS PESCOÇO | `aim.cache_neck_hs` |
-| FUNÇÕES AIM · Cache_res | HS PEITO | `aim.cache_chest_hs` |
-| FUNÇÕES AIM · Cache_res | BALA MAGICA | `aim.cache_magic_bullet` |
+| AIM · AVATAR | HS PESCOÇO | `aim.neck_hs` |
+| AIM · AVATAR | HS ALTO | `aim.high_hs` |
+| AIM · AVATAR | HS PESCOÇO + ANTENA | `aim.neck_antenna` |
+| AIM · AVATAR | HS PEITO | `aim.chest_hs` |
+| AIM · CACHE_RES | HS ALTO | `aim.cache_high_hs` |
+| AIM · CACHE_RES | HS PESCOÇO | `aim.cache_neck_hs` |
+| AIM · CACHE_RES | HS PEITO | `aim.cache_chest_hs` |
+| AIM · CACHE_RES | BALA MAGICA | `aim.cache_magic_bullet` |
 | FUNÇÕES HOLOGRAMAS | HOLOGRAMA ARMAS | `hologram.weapons` |
 | ESP | ESP 3D + AIM SILIENT | `panel.ffh4x` |
 | CONFIG DO JOGO | RESET GUEST | `game.reset_guest` |

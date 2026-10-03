@@ -14,14 +14,14 @@ class FunctionDefinition:
 
 
 FUNCTIONS: Final[tuple[FunctionDefinition, ...]] = (
-    FunctionDefinition("aim.high_hs", "aim", "FUNÇÕES AIM", "HS ALTO", "Ajuste de mira para a região superior."),
-    FunctionDefinition("aim.neck_hs", "aim", "FUNÇÕES AIM", "HS PESCOÇO", "Ajuste de mira para a região do pescoço."),
-    FunctionDefinition("aim.neck_antenna", "aim", "FUNÇÕES AIM", "HS PESCOÇO + ANTENA", "Combinação de mira para pescoço e antena."),
-    FunctionDefinition("aim.chest_hs", "aim", "FUNÇÕES AIM", "HS PEITO", "Ajuste de mira para a região do peito."),
-    FunctionDefinition("aim.cache_high_hs", "aim", "FUNÇÕES AIM", "HS ALTO", "HS ACIMA DA CABEÇA DO INIMIGO."),
-    FunctionDefinition("aim.cache_neck_hs", "aim", "FUNÇÕES AIM", "HS PESCOÇO", "HS NO PESCOÇO DO INIMIGO."),
-    FunctionDefinition("aim.cache_chest_hs", "aim", "FUNÇÕES AIM", "HS PEITO", "HS NO PEITO DO INIMIGO."),
-    FunctionDefinition("aim.cache_magic_bullet", "aim", "FUNÇÕES AIM", "BALA MAGICA", "ACERTE BALAS MESMO A MIRA NÃO GRUDANDO."),
+    FunctionDefinition("aim.high_hs", "aim_avatar", "AIM · AVATAR", "HS ALTO", "Ajuste de mira para a região superior."),
+    FunctionDefinition("aim.neck_hs", "aim_avatar", "AIM · AVATAR", "HS PESCOÇO", "Ajuste de mira para a região do pescoço."),
+    FunctionDefinition("aim.neck_antenna", "aim_avatar", "AIM · AVATAR", "HS PESCOÇO + ANTENA", "Combinação de mira para pescoço e antena."),
+    FunctionDefinition("aim.chest_hs", "aim_avatar", "AIM · AVATAR", "HS PEITO", "Ajuste de mira para a região do peito."),
+    FunctionDefinition("aim.cache_high_hs", "aim_cache_res", "AIM · CACHE_RES", "HS ALTO", "HS ACIMA DA CABEÇA DO INIMIGO."),
+    FunctionDefinition("aim.cache_neck_hs", "aim_cache_res", "AIM · CACHE_RES", "HS PESCOÇO", "HS NO PESCOÇO DO INIMIGO."),
+    FunctionDefinition("aim.cache_chest_hs", "aim_cache_res", "AIM · CACHE_RES", "HS PEITO", "HS NO PEITO DO INIMIGO."),
+    FunctionDefinition("aim.cache_magic_bullet", "aim_cache_res", "AIM · CACHE_RES", "BALA MAGICA", "ACERTE BALAS MESMO A MIRA NÃO GRUDANDO."),
     FunctionDefinition("hologram.weapons", "hologram", "FUNÇÕES HOLOGRAMAS", "HOLOGRAMA ARMAS", "Habilita o holograma de armas."),
     # O ID antigo é preservado para não invalidar publicações existentes.
     FunctionDefinition("panel.ffh4x", "panel", "ESP", "ESP 3D + AIM SILIENT", "Painel ESP 3D combinado com AIM SILIENT."),
@@ -30,7 +30,8 @@ FUNCTIONS: Final[tuple[FunctionDefinition, ...]] = (
 
 FUNCTION_BY_ID: Final = {item.id: item for item in FUNCTIONS}
 GROUPS: Final = {
-    "aim": "FUNÇÕES AIM",
+    "aim_avatar": "AIM · AVATAR",
+    "aim_cache_res": "AIM · CACHE_RES",
     "hologram": "FUNÇÕES HOLOGRAMAS",
     "panel": "ESP",
     "game_config": "CONFIG DO JOGO",
