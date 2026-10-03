@@ -27,7 +27,7 @@ LOGGER = logging.getLogger("3105-telegram-bot")
 
 WAIT_DOCUMENT, WAIT_BUNDLE = range(2)
 _BUNDLE_ID_PATTERN = re.compile(r"^[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)+$")
-GROUP_MARKER = "▢"
+GROUP_MARKER = "▏"
 ROOT = Path(os.getenv("BOT_DATA_DIR", "./bot_data")).resolve()
 STORE = FunctionStore(ROOT)
 ADMIN_IDS = {int(item.strip()) for item in os.getenv("TELEGRAM_ADMIN_IDS", "").split(",") if item.strip().isdigit()}

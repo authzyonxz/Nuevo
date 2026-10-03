@@ -94,12 +94,19 @@ struct FeaturesView: View {
         rows: [(String, String, PublishedFunctionID, Binding<Bool>)]
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("▢  \(language.text(titleKey).uppercased())")
-                .font(.caption.weight(.bold))
-                .tracking(1.1)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-                .padding(.bottom, 9)
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(Color.white.opacity(0.78))
+                    .frame(width: 3, height: 14)
+                    .accessibilityHidden(true)
+
+                Text(language.text(titleKey).uppercased())
+                    .font(.caption.weight(.bold))
+                    .tracking(1.1)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 9)
 
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
