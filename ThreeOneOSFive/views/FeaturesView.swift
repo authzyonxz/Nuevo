@@ -140,6 +140,14 @@ struct FeaturesView: View {
             }
             .padding(.horizontal, 4)
             .padding(.bottom, 9)
+            if aimFileType == .cacheRes {
+                Text(language.text("feature.cache_warning"))
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 10)
+            }
 
             if aimFileType == .avatar {
                 featureRows([

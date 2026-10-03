@@ -738,6 +738,7 @@
 "feature.desc_cache_aim_neck" = "Cache_res: HS on the enemy neck.";
 "feature.desc_cache_aim_chest" = "Cache_res: HS on the enemy chest.";
 "feature.desc_cache_magic_bullet" = "Cache_res: Magic Bullet.";
+"feature.cache_warning" = "Cache_res functions may present risks. Use at your own risk.";
 
 "feature.aim_neck" = "HS NECK";
 

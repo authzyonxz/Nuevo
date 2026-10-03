@@ -717,10 +717,11 @@
 "feature.cache_aim_neck" = "HS PESCOÇO";
 "feature.cache_aim_chest" = "HS PEITO";
 "feature.cache_magic_bullet" = "BALA MAGICA";
-"feature.desc_cache_aim_high" = "Cache_res: HS ACIMA DA CABEÇA";
-"feature.desc_cache_aim_neck" = "Cache_res: HS NO PESCOÇO DO INIMIGO";
-"feature.desc_cache_aim_chest" = "Cache_res: HS NO PEITO DO INIMIGO";
-"feature.desc_cache_magic_bullet" = "Cache_res: BALA MAGICA";
+"feature.desc_cache_aim_high" = "HS ACIMA DA CABEÇA DO INIMIGO";
+"feature.desc_cache_aim_neck" = "HS NO PESCOÇO DO INIMIGO";
+"feature.desc_cache_aim_chest" = "HS NO PEITO DO INIMIGO";
+"feature.desc_cache_magic_bullet" = "ACERTE BALAS MESMO A MIRA NÃO GRUDANDO";
+"feature.cache_warning" = "As funções Cache_res podem apresentar riscos. Use por sua própria conta e risco.";
 
 "feature.aim_neck" = "HS PESCOÇO";
 

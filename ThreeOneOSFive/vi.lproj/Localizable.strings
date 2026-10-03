@@ -738,6 +738,7 @@
 "feature.desc_cache_aim_neck" = "Cache_res: HS vào cổ kẻ địch.";
 "feature.desc_cache_aim_chest" = "Cache_res: HS vào ngực kẻ địch.";
 "feature.desc_cache_magic_bullet" = "Cache_res: Bala Magica.";
+"feature.cache_warning" = "Các chức năng Cache_res có thể có rủi ro. Bạn tự chịu trách nhiệm khi sử dụng.";
 
 "feature.aim_neck" = "HS CỔ";
 

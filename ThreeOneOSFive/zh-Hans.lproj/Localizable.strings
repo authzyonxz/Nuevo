@@ -738,6 +738,7 @@
 "feature.desc_cache_aim_neck" = "Cache_res：敌人颈部 HS。";
 "feature.desc_cache_aim_chest" = "Cache_res：敌人胸部 HS。";
 "feature.desc_cache_magic_bullet" = "Cache_res：Bala Magica。";
+"feature.cache_warning" = "Cache_res 功能可能存在风险。请自行承担使用风险。";
 
 "feature.aim_neck" = "颈部 HS";
 
