@@ -94,7 +94,7 @@ struct FeaturesView: View {
         rows: [(String, String, PublishedFunctionID, Binding<Bool>)]
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(language.text(titleKey).uppercased())
+            Text("▢  \(language.text(titleKey).uppercased())")
                 .font(.caption.weight(.bold))
                 .tracking(1.1)
                 .foregroundStyle(.secondary)
