@@ -102,6 +102,7 @@ enum PatchTransaction {
         containerResolver: (String) throws -> URL,
         requireExistingTargets: Bool = false,
         requireExistingParents: Bool = false,
+        requireAbsentTargets: Bool = false,
         beforeWrite: ((Int) throws -> Void)? = nil,
         fileManager: FileManager = .default
     ) throws -> PatchTransactionReceipt {
@@ -187,6 +188,7 @@ enum PatchTransaction {
                 containerRoot: root,
                 allowMissingParents: !(requireExistingTargets || requireExistingParents),
                 requireExistingTarget: requireExistingTargets,
+                requireAbsentTarget: requireAbsentTargets,
                 fileManager: fileManager
             )
             resolvedRules.append(ResolvedRule(rule: rule, containerRoot: root, target: target))
@@ -289,6 +291,11 @@ enum PatchTransaction {
             }
             for (index, resolved) in resolvedRules.enumerated() {
                 try beforeWrite?(index)
+                if requireAbsentTargets, fileManager.fileExists(atPath: resolved.target.path) {
+                    throw PatchPackageError.targetOccupied(
+                        resolved.rule.bundleID + "/" + resolved.rule.relativePath
+                    )
+                }
                 try atomicWrite(
                     resolved.rule.replacementData,
                     to: resolved.target,
@@ -845,6 +852,7 @@ enum PatchTransaction {
         containerRoot: URL,
         allowMissingParents: Bool,
         requireExistingTarget: Bool = false,
+        requireAbsentTarget: Bool = false,
         fileManager: FileManager
     ) throws {
         let components = try PatchPathValidator.canonicalRelativePath(relativePath)
@@ -866,6 +874,9 @@ enum PatchTransaction {
             }
         }
         if fileManager.fileExists(atPath: target.path) {
+            if requireAbsentTarget {
+                throw PatchPackageError.targetOccupied(relativePath)
+            }
             let values = try target.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
             guard values.isSymbolicLink != true else {
                 throw PatchPackageError.symbolicLinkUnsupported

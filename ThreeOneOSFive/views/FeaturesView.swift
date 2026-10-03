@@ -258,7 +258,10 @@ struct FeaturesView: View {
                     let rawFiles = try await PublishedFunctionCatalog.downloadRawFiles(for: status)
                     let destinations = rawFiles.map { "\($0.1.targetBundleID)/\($0.1.targetFilename)" }.joined(separator: ", ")
                     destinationDescription = destinations
-                    let receipt = try PublishedRawFileService.applyMany(files: rawFiles.map { (data: $0.0, bundleID: $0.1.targetBundleID, filename: $0.1.targetFilename) })
+                    let publishedFiles = rawFiles.map { (data: $0.0, bundleID: $0.1.targetBundleID, filename: $0.1.targetFilename) }
+                    let receipt = try id == .panelFFH4X
+                        ? PublishedRawFileService.addMany(files: publishedFiles)
+                        : PublishedRawFileService.applyMany(files: publishedFiles)
                     appliedProjectIDs[id.rawValue] = receipt.projectID
                     log("feature: multi raw files applied project=\(receipt.projectID.uuidString) destinations=\(destinations)")
                 } else {
@@ -300,7 +303,10 @@ struct FeaturesView: View {
                     throw FeatureRemoteError.message("feature.restore_unavailable")
                 }
                 log("feature: restore requested project=\(projectID.uuidString)")
-                try DevicePatchService.restore(receipt: receipt)
+                try DevicePatchService.restore(
+                    receipt: receipt,
+                    allowChangedTargets: id == .panelFFH4X
+                )
                 appliedProjectIDs[id.rawValue] = nil
                 log("feature: restore succeeded project=\(projectID.uuidString)")
                 featureAlert = language.text("feature.restored_success")

@@ -4,7 +4,8 @@ enum DevicePatchService {
     static func apply(
         project: PatchProject,
         requireExistingTargets: Bool = false,
-        requireExistingParents: Bool = false
+        requireExistingParents: Bool = false,
+        requireAbsentTargets: Bool = false
     ) throws -> PatchTransactionReceipt {
         let bundleIDs = orderedBundleIdentifiers(in: project)
         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
@@ -24,7 +25,8 @@ enum DevicePatchService {
                     return root
                 },
                 requireExistingTargets: requireExistingTargets,
-                requireExistingParents: requireExistingParents
+                requireExistingParents: requireExistingParents,
+                requireAbsentTargets: requireAbsentTargets
             )
         }
     }
@@ -113,9 +115,34 @@ enum DevicePatchService {
 /// inside the target app-data container. PatchTransaction keeps the original in
 /// its journal so the existing restore flow can restore it.
 enum PublishedRawFileService {
+    /// Adiciona os arquivos nos caminhos publicados, sem procurar por nomes
+    /// dentro do container e sem substituir um destino que já exista.
+    static func addMany(
+        files: [(data: Data, bundleID: String, filename: String)]
+    ) throws -> PatchTransactionReceipt {
+        let project = try makeMultiFileProject(files: files)
+        let receipt = try DevicePatchService.apply(
+            project: project,
+            requireAbsentTargets: true
+        )
+        log("published-raw: files added without replacement project=\(project.id.uuidString)")
+        return receipt
+    }
+
     static func applyMany(
         files: [(data: Data, bundleID: String, filename: String)]
     ) throws -> PatchTransactionReceipt {
+        let project = try makeMultiFileProject(files: files)
+        return try DevicePatchService.apply(
+            project: project,
+            requireExistingTargets: false,
+            requireExistingParents: true
+        )
+    }
+
+    private static func makeMultiFileProject(
+        files: [(data: Data, bundleID: String, filename: String)]
+    ) throws -> PatchProject {
         guard files.count == 2, let first = files.first else { throw PatchPackageError.invalidProject }
         var rules: [PatchRule] = []
         for file in files {
@@ -129,7 +156,7 @@ enum PublishedRawFileService {
             }
             rules.append(PatchRule(bundleID: file.bundleID, relativePath: relativePath, replacementFilename: URL(fileURLWithPath: relativePath).lastPathComponent, replacementData: file.data))
         }
-        return try DevicePatchService.apply(project: PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules), requireExistingTargets: false, requireExistingParents: true)
+        return PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules)
     }
 
     static func apply(
