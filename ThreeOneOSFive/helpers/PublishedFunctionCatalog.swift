@@ -28,6 +28,7 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
     let packageFormat: String?
     let targetBundleID: String?
     let targetFilename: String?
+    let rawFiles: [PublishedRawFile]?
 
     var isInMaintenance: Bool { status != "active" }
     var isRawFile: Bool {
@@ -35,6 +36,7 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
             || packageURL?.pathExtension.lowercased() == "raw"
             || (targetBundleID != nil && targetFilename != nil)
     }
+    var isMultiRawFile: Bool { packageFormat == "raw_multi" && (rawFiles?.count ?? 0) == 2 }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -48,6 +50,19 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
         case available
         case packageURL = "package_url"
         case packageFormat = "package_format"
+        case targetBundleID = "target_bundle_id"
+        case targetFilename = "target_filename"
+        case rawFiles = "raw_files"
+    }
+}
+
+struct PublishedRawFile: Decodable {
+    let packageURL: URL?
+    let targetBundleID: String
+    let targetFilename: String
+
+    enum CodingKeys: String, CodingKey {
+        case packageURL = "package_url"
         case targetBundleID = "target_bundle_id"
         case targetFilename = "target_filename"
     }
@@ -96,6 +111,29 @@ enum PublishedFunctionCatalog {
             throw PublishedFunctionCatalogError.unavailable
         }
         return data
+    }
+
+    static func downloadRawFiles(for status: PublishedFunctionStatus) async throws -> [(Data, PublishedRawFile)] {
+        guard let rawFiles = status.rawFiles, rawFiles.count == 2 else {
+            throw PublishedFunctionCatalogError.invalidResponse
+        }
+        return try await withThrowingTaskGroup(of: (Data, PublishedRawFile).self) { group in
+            for rawFile in rawFiles {
+                guard let url = rawFile.packageURL else { throw PublishedFunctionCatalogError.unavailable }
+                group.addTask {
+                    var request = URLRequest(url: url)
+                    request.cachePolicy = .reloadIgnoringLocalCacheData
+                    let (data, response) = try await URLSession.shared.data(for: request)
+                    guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                        throw PublishedFunctionCatalogError.unavailable
+                    }
+                    return (data, rawFile)
+                }
+            }
+            var result: [(Data, PublishedRawFile)] = []
+            for try await item in group { result.append(item) }
+            return result
+        }
     }
 
     private struct CatalogResponse: Decodable {

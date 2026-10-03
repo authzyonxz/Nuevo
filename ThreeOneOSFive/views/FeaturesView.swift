@@ -251,9 +251,20 @@ struct FeaturesView: View {
                 guard !status.passwordProtected else {
                     throw FeatureRemoteError.message("feature.remote_password")
                 }
-                let data = try await PublishedFunctionCatalog.downloadPackage(for: status)
-                log("feature: package downloaded id=\(id.rawValue) bytes=\(data.count)")
-                if status.isRawFile {
+                if status.isMultiRawFile {
+                    guard id == .panelFFH4X || id == .resetGuest else {
+                        throw PublishedFunctionCatalogError.invalidResponse
+                    }
+                    let rawFiles = try await PublishedFunctionCatalog.downloadRawFiles(for: status)
+                    let destinations = rawFiles.map { "\($0.1.targetBundleID)/\($0.1.targetFilename)" }.joined(separator: ", ")
+                    destinationDescription = destinations
+                    let receipt = try PublishedRawFileService.applyMany(files: rawFiles.map { (data: $0.0, bundleID: $0.1.targetBundleID, filename: $0.1.targetFilename) })
+                    appliedProjectIDs[id.rawValue] = receipt.projectID
+                    log("feature: multi raw files applied project=\(receipt.projectID.uuidString) destinations=\(destinations)")
+                } else {
+                    let data = try await PublishedFunctionCatalog.downloadPackage(for: status)
+                    log("feature: package downloaded id=\(id.rawValue) bytes=\(data.count)")
+                    if status.isRawFile {
                     guard let bundleID = status.targetBundleID,
                           let filename = status.targetFilename,
                           !bundleID.isEmpty,
@@ -268,7 +279,7 @@ struct FeaturesView: View {
                     )
                     appliedProjectIDs[id.rawValue] = receipt.projectID
                     log("feature: raw file applied project=\(receipt.projectID.uuidString) destination=\(destinationDescription ?? "none")")
-                } else {
+                    } else {
                     let decoded = try PatchPackageCodec.decode(data, password: nil)
                     destinationDescription = decoded.project.rules
                         .map { "\($0.bundleID)/\($0.relativePath)" }
@@ -280,6 +291,7 @@ struct FeaturesView: View {
                     )
                     appliedProjectIDs[id.rawValue] = decoded.project.id
                     log("feature: apply succeeded project=\(decoded.project.id.uuidString)")
+                    }
                 }
                 featureAlert = language.text("feature.injected_success")
             } else {

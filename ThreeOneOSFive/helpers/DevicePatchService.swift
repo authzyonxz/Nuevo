@@ -111,6 +111,21 @@ enum DevicePatchService {
 /// inside the target app-data container. PatchTransaction keeps the original in
 /// its journal so the existing restore flow can restore it.
 enum PublishedRawFileService {
+    static func applyMany(
+        files: [(data: Data, bundleID: String, filename: String)]
+    ) throws -> PatchTransactionReceipt {
+        guard files.count == 2, let first = files.first else { throw PatchPackageError.invalidProject }
+        var rules: [PatchRule] = []
+        for file in files {
+            guard file.bundleID == first.bundleID,
+                  let relativePath = resolveTargetPath(file.filename, under: file.bundleID) else {
+                throw PatchPackageError.targetPathMissing("\(file.bundleID)/\(file.filename)")
+            }
+            rules.append(PatchRule(bundleID: file.bundleID, relativePath: relativePath, replacementFilename: URL(fileURLWithPath: file.filename).lastPathComponent, replacementData: file.data))
+        }
+        return try DevicePatchService.apply(project: PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules), requireExistingTargets: true)
+    }
+
     static func apply(
         data: Data,
         bundleID: String,
@@ -173,5 +188,17 @@ enum PublishedRawFileService {
             if matches.count > 1 { return nil }
         }
         return matches.first
+    }
+
+    private static func resolveTargetPath(_ filename: String, under bundleID: String) -> String? {
+        guard !filename.isEmpty, !filename.contains("\\"), !filename.hasPrefix("/"), !filename.split(separator: "/").contains(".."),
+              let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bundleID) else { return nil }
+        let root = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: rootPath, isDirectory: true))
+        if filename.contains("/") {
+            let url = PatchPathValidator.canonicalFileURL(root.appendingPathComponent(filename))
+            guard url.path.hasPrefix(root.path + "/"), FileManager.default.fileExists(atPath: url.path) else { return nil }
+            return String(url.path.dropFirst(root.path.count + 1))
+        }
+        return findExactFile(named: filename, under: root)
     }
 }

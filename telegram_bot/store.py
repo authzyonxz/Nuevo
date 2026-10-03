@@ -144,6 +144,40 @@ class FunctionStore:
                 previous_path.unlink()
             return entry
 
+    def publish_multi_raw(
+        self,
+        function_id: str,
+        files: list[dict[str, Any]],
+        *,
+        target_bundle_id: str,
+    ) -> dict[str, Any]:
+        """Publica exatamente dois arquivos puros com caminhos independentes."""
+        item = validate_function_id(function_id)
+        if function_id not in {"panel.ffh4x", "game.reset_guest"}:
+            raise ValueError("Multi-arquivo permitido somente para ESP e RESET GUEST")
+        if not target_bundle_id or len(files) != 2:
+            raise ValueError("São necessários exatamente dois arquivos e um Bundle ID")
+        if any(not f.get("data") or not f.get("target_filename") for f in files):
+            raise ValueError("Cada arquivo precisa ter dados e caminho de destino")
+        with self._lock:
+            entry = self.get(function_id)
+            old_paths = [self._package_path(f.get("package")) for f in entry.get("raw_files", [])]
+            raw_files = []
+            for index, file in enumerate(files, start=1):
+                filename = f"{function_id.replace('.', '_')}_{index}.raw"
+                destination = self.package_dir / filename
+                temporary = self.package_dir / f".{filename}.{os.getpid()}.tmp"
+                temporary.write_bytes(file["data"])
+                os.replace(temporary, destination)
+                raw_files.append({"package": f"packages/{filename}", "target_bundle_id": target_bundle_id, "target_filename": file["target_filename"]})
+            entry.update({"package": raw_files[0]["package"], "raw_files": raw_files, "package_format": "raw_multi", "target_bundle_id": target_bundle_id, "target_filename": None, "password_protected": False, "version": int(entry.get("version", 0)) + 1, "status": "active", "name": item.name, "group_id": item.group_id, "group_name": item.group_name, "description": item.description})
+            self._save()
+            new_paths = {self._package_path(f["package"]) for f in raw_files}
+            for old in old_paths:
+                if old and old not in new_paths and old.is_file():
+                    old.unlink()
+            return entry
+
     def delete_package(self, function_id: str) -> dict[str, Any]:
         with self._lock:
             entry = self.get(function_id)
@@ -166,3 +200,7 @@ class FunctionStore:
             entry = self.get(function_id)
             path = self._package_path(entry.get("package"))
             return path if path and path.is_file() else None
+
+    def package_path_for_name(self, package_name: str) -> Path | None:
+        path = self._package_path(f"packages/{package_name}")
+        return path if path and path.is_file() else None

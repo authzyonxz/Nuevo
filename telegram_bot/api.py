@@ -29,6 +29,10 @@ def create_app(store: FunctionStore) -> FastAPI:
                 if item["available"] and public_base_url
                 else None
             )
+            item["raw_files"] = [
+                {**raw, "package_url": f"{public_base_url}/{raw['package']}" if public_base_url else None}
+                for raw in item.get("raw_files", [])
+            ]
             entries.append(item)
         return {"version": 1, "functions": entries}
 
@@ -46,6 +50,10 @@ def create_app(store: FunctionStore) -> FastAPI:
             if entry["available"] and public_base_url
             else None
         )
+        entry["raw_files"] = [
+            {**raw, "package_url": f"{public_base_url}/{raw['package']}" if public_base_url else None}
+            for raw in entry.get("raw_files", [])
+        ]
         return entry
 
     @app.get("/packages/{package_name}")
@@ -56,6 +64,7 @@ def create_app(store: FunctionStore) -> FastAPI:
                 item
                 for item in store.all_public()
                 if item.get("package") == package_path
+                or any(raw.get("package") == package_path for raw in item.get("raw_files", []))
             ),
             None,
         )
@@ -63,7 +72,7 @@ def create_app(store: FunctionStore) -> FastAPI:
             raise HTTPException(status_code=404, detail="Package not found")
         if entry.get("status") != "active":
             raise HTTPException(status_code=423, detail="Function under maintenance")
-        path = store.package_path(entry["id"])
+        path = store.package_path_for_name(package_name)
         if path is None:
             raise HTTPException(status_code=404, detail="Package not published")
         return FileResponse(
