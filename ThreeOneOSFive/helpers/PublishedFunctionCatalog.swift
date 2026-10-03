@@ -66,6 +66,15 @@ struct PublishedRawFile: Decodable {
         case targetBundleID = "target_bundle_id"
         case targetFilename = "target_filename"
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        packageURL = try container.decodeIfPresent(URL.self, forKey: .packageURL)
+        targetBundleID = try container.decode(String.self, forKey: .targetBundleID)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        targetFilename = try container.decode(String.self, forKey: .targetFilename)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 enum PublishedFunctionCatalogError: Error {
