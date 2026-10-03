@@ -36,9 +36,11 @@ class FunctionStore:
         for item in FUNCTIONS:
             entry = data["functions"].setdefault(item.id, {})
             entry.setdefault("id", item.id)
-            entry.setdefault("group_id", item.group_id)
-            entry.setdefault("group_name", item.group_name)
-            entry.setdefault("name", item.name)
+            # Nomes e descrições são metadados editáveis; os IDs e pacotes permanecem estáveis.
+            entry["group_id"] = item.group_id
+            entry["group_name"] = item.group_name
+            entry["name"] = item.name
+            entry["description"] = item.description
             entry.setdefault("status", "maintenance")
             entry.setdefault("version", 0)
             entry.setdefault("package", None)
@@ -135,6 +137,7 @@ class FunctionStore:
                 "name": item.name,
                 "group_id": item.group_id,
                 "group_name": item.group_name,
+                "description": item.description,
             })
             self._save()
             if previous_path and previous_path != destination and previous_path.is_file():

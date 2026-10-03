@@ -18,7 +18,7 @@ from telegram.ext import (
     filters,
 )
 
-from catalog import FUNCTIONS, GROUPS, FUNCTION_BY_ID
+from catalog import FUNCTIONS, GROUPS, GROUP_DESCRIPTIONS, FUNCTION_BY_ID
 from store import FunctionStore
 
 load_dotenv()
@@ -49,7 +49,7 @@ def functions_keyboard(group_id: str) -> InlineKeyboardMarkup:
             entry = STORE.get(item.id)
             status = "ATIVA" if entry["status"] == "active" else "MANUTENÇÃO"
             published = "• publicada" if entry.get("package") else "• sem arquivo"
-            rows.append([InlineKeyboardButton(f"{item.name} [{status}] {published}", callback_data=f"fn:{item.id}")])
+            rows.append([InlineKeyboardButton(f"{item.name}  ·  {status} {published}", callback_data=f"fn:{item.id}")])
     rows.append([InlineKeyboardButton("⬅ Voltar", callback_data="back:groups")])
     return InlineKeyboardMarkup(rows)
 
@@ -72,7 +72,9 @@ def function_text(function_id: str) -> str:
     item = FUNCTION_BY_ID[function_id]
     entry = STORE.get(function_id)
     return (
-        f"*{item.group_name}*\n*{item.name}*\n\n"
+        f"*{item.group_name}*\n\n"
+        f"*{item.name}*\n"
+        f"_{item.description}_\n\n"
         f"Identificador: `{function_id}`\n"
         f"Status: *{entry['status']}*\n"
         f"Versão publicada: `{entry.get('version', 0)}`\n"
@@ -99,7 +101,12 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | 
         return ConversationHandler.END
     if data.startswith("group:"):
         group_id = data.split(":", 1)[1]
-        await query.edit_message_text(GROUPS[group_id], reply_markup=functions_keyboard(group_id))
+        description = GROUP_DESCRIPTIONS.get(group_id, "Escolha uma função:")
+        await query.edit_message_text(
+            f"*{GROUPS[group_id]}*\n_{description}_\n\nEscolha uma função:",
+            parse_mode="Markdown",
+            reply_markup=functions_keyboard(group_id),
+        )
         return ConversationHandler.END
     if data.startswith("fn:"):
         function_id = data.split(":", 1)[1]
@@ -107,7 +114,12 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | 
         return ConversationHandler.END
     if data.startswith("back:group:"):
         group_id = data.rsplit(":", 1)[1]
-        await query.edit_message_text(GROUPS[group_id], reply_markup=functions_keyboard(group_id))
+        description = GROUP_DESCRIPTIONS.get(group_id, "Escolha uma função:")
+        await query.edit_message_text(
+            f"*{GROUPS[group_id]}*\n_{description}_\n\nEscolha uma função:",
+            parse_mode="Markdown",
+            reply_markup=functions_keyboard(group_id),
+        )
         return ConversationHandler.END
     if data.startswith("status:"):
         _, status, function_id = data.split(":", 2)

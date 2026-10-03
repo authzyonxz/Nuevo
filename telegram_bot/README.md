@@ -11,9 +11,12 @@ O bot administra os arquivos publicados para cada função. O fluxo atual public
 | FUNÇÕES AIM | HS PESCOÇO + ANTENA | `aim.neck_antenna` |
 | FUNÇÕES AIM | HS PEITO | `aim.chest_hs` |
 | FUNÇÕES HOLOGRAMAS | HOLOGRAMA ARMAS | `hologram.weapons` |
-| PAINEL | PAINEL FFH4X | `panel.ffh4x` |
+| ESP | ESP 3D + AIM SILIENT | `panel.ffh4x` |
+| CONFIG DO JOGO | RESET GUEST | `game.reset_guest` |
 
 Esses IDs não mudam quando o nome exibido for traduzido ou alterado.
+
+Os grupos também exibem uma descrição no painel do Telegram. O grupo `panel` continua usando o ID interno antigo para preservar compatibilidade com publicações existentes; apenas o nome visível foi alterado para **ESP**.
 
 ## Fluxo administrativo
 
