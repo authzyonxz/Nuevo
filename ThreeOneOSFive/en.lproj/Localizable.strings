@@ -741,9 +741,15 @@
 
 "feature.hologram_weapons" = "WEAPON HOLOGRAM";
 
-"feature.panel_group" = "PANEL";
+"feature.panel_group" = "ESP";
 
-"feature.panel_ffh4x" = "FFH4X PANEL";
+"feature.panel_ffh4x" = "ESP 3D + AIM SILIENT";
+
+"feature.game_config_group" = "GAME CONFIG";
+
+"feature.reset_guest" = "RESET GUEST";
+
+"feature.desc_reset_guest" = "Restores the game's guest configuration.";
 
 "feature.remote_maintenance" = "This function is under maintenance.";
 
@@ -757,7 +763,7 @@
 
 "feature.group_hologram_subtitle" = "Visual overlay functions";
 
-"feature.group_panel_subtitle" = "Panel and control functions";
+"feature.group_panel_subtitle" = "ESP and visual assistance functions";
 
 "feature.alert_title" = "Function status";
 

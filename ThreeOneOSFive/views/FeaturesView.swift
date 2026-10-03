@@ -11,6 +11,7 @@ struct FeaturesView: View {
     @State private var aimChestEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
+    @State private var resetGuestEnabled = false
     @State private var appliedProjectIDs: [String: UUID] = [:]
     @State private var busyIDs = Set<String>()
     @State private var ignoredChanges = Set<String>()
@@ -56,6 +57,13 @@ struct FeaturesView: View {
                         titleKey: "feature.panel_group",
                         rows: [
                             ("feature.panel_ffh4x", "feature.desc_panel_ffh4x", PublishedFunctionID.panelFFH4X, $panelFFH4XEnabled)
+                        ]
+                    )
+
+                    featureGroup(
+                        titleKey: "feature.game_config_group",
+                        rows: [
+                            ("feature.reset_guest", "feature.desc_reset_guest", PublishedFunctionID.resetGuest, $resetGuestEnabled)
                         ]
                     )
                 }

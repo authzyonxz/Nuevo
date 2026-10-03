@@ -741,9 +741,15 @@
 
 "feature.hologram_weapons" = "武器全息";
 
-"feature.panel_group" = "面板";
+"feature.panel_group" = "ESP";
 
-"feature.panel_ffh4x" = "FFH4X 面板";
+"feature.panel_ffh4x" = "ESP 3D + AIM SILIENT";
+
+"feature.game_config_group" = "CONFIG DO JOGO";
+
+"feature.reset_guest" = "RESET GUEST";
+
+"feature.desc_reset_guest" = "恢复游戏的访客配置。";
 
 "feature.remote_maintenance" = "此功能正在维护中。";
 
@@ -757,7 +763,7 @@
 
 "feature.group_hologram_subtitle" = "视觉叠加功能";
 
-"feature.group_panel_subtitle" = "面板与控制功能";
+"feature.group_panel_subtitle" = "ESP 与视觉辅助功能";
 
 "feature.alert_title" = "功能状态";
 
