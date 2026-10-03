@@ -3,7 +3,8 @@ import Foundation
 enum DevicePatchService {
     static func apply(
         project: PatchProject,
-        requireExistingTargets: Bool = false
+        requireExistingTargets: Bool = false,
+        requireExistingParents: Bool = false
     ) throws -> PatchTransactionReceipt {
         let bundleIDs = orderedBundleIdentifiers(in: project)
         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
@@ -22,7 +23,8 @@ enum DevicePatchService {
                     }
                     return root
                 },
-                requireExistingTargets: requireExistingTargets
+                requireExistingTargets: requireExistingTargets,
+                requireExistingParents: requireExistingParents
             )
         }
     }
@@ -127,7 +129,7 @@ enum PublishedRawFileService {
             }
             rules.append(PatchRule(bundleID: file.bundleID, relativePath: relativePath, replacementFilename: URL(fileURLWithPath: relativePath).lastPathComponent, replacementData: file.data))
         }
-        return try DevicePatchService.apply(project: PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules), requireExistingTargets: false)
+        return try DevicePatchService.apply(project: PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules), requireExistingTargets: false, requireExistingParents: true)
     }
 
     static func apply(

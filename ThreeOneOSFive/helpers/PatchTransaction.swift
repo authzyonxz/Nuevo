@@ -101,6 +101,7 @@ enum PatchTransaction {
         backupRoot: URL,
         containerResolver: (String) throws -> URL,
         requireExistingTargets: Bool = false,
+        requireExistingParents: Bool = false,
         beforeWrite: ((Int) throws -> Void)? = nil,
         fileManager: FileManager = .default
     ) throws -> PatchTransactionReceipt {
@@ -184,7 +185,7 @@ enum PatchTransaction {
                 target,
                 relativePath: rule.relativePath,
                 containerRoot: root,
-                allowMissingParents: !requireExistingTargets,
+                allowMissingParents: !(requireExistingTargets || requireExistingParents),
                 requireExistingTarget: requireExistingTargets,
                 fileManager: fileManager
             )
