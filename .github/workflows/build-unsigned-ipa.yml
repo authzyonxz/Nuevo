@@ -1,0 +1,67 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ThreeOneOSFive/**'
+      - 'ThreeOneOSFive.xcodeproj/**'
+      - '.github/workflows/build-unsigned-ipa.yml'
+
+permissions:
+  contents: read
+
+env:
+  APP_NAME: 3105
+  PROJECT: ThreeOneOSFive.xcodeproj
+  TARGET: 3105
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build for device without signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build
+          xcodebuild \
+            -project "$PROJECT" \
+            -target "$TARGET" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$PWD/build/DerivedData" \
+            CONFIGURATION_BUILD_DIR="$PWD/build/Products/Release" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build | tee build/xcodebuild.log
+
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find "$PWD/build/Products/Release" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
+          test -f "$APP_PATH/Info.plist"
+          mkdir -p build/Payload
+          ditto "$APP_PATH" "build/Payload/$APP_NAME.app"
+          (cd build && /usr/bin/zip -qry "${APP_NAME}-unsigned.ipa" Payload)
+          /usr/bin/shasum -a 256 "build/${APP_NAME}-unsigned.ipa" | tee "build/${APP_NAME}-unsigned.ipa.sha256"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 3105-unsigned-ipa
+          path: |
+            build/3105-unsigned.ipa
+            build/3105-unsigned.ipa.sha256
+            build/xcodebuild.log
+          if-no-files-found: error
+          retention-days: 14
