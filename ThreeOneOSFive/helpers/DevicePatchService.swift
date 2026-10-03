@@ -120,7 +120,7 @@ enum PublishedRawFileService {
     static func addMany(
         files: [(data: Data, bundleID: String, filename: String)]
     ) throws -> PatchTransactionReceipt {
-        let project = try makeMultiFileProject(files: files)
+        let project = try makeMultiFileProject(files: files, expectedCount: 4)
         let receipt = try DevicePatchService.apply(
             project: project,
             requireAbsentTargets: true
@@ -132,7 +132,7 @@ enum PublishedRawFileService {
     static func applyMany(
         files: [(data: Data, bundleID: String, filename: String)]
     ) throws -> PatchTransactionReceipt {
-        let project = try makeMultiFileProject(files: files)
+        let project = try makeMultiFileProject(files: files, expectedCount: 2)
         return try DevicePatchService.apply(
             project: project,
             requireExistingTargets: false,
@@ -141,9 +141,10 @@ enum PublishedRawFileService {
     }
 
     private static func makeMultiFileProject(
-        files: [(data: Data, bundleID: String, filename: String)]
+        files: [(data: Data, bundleID: String, filename: String)],
+        expectedCount: Int
     ) throws -> PatchProject {
-        guard files.count == 2, let first = files.first else { throw PatchPackageError.invalidProject }
+        guard files.count == expectedCount, let first = files.first else { throw PatchPackageError.invalidProject }
         var rules: [PatchRule] = []
         for file in files {
             let filename = file.filename.trimmingCharacters(in: .whitespacesAndNewlines)

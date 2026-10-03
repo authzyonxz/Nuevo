@@ -256,6 +256,10 @@ struct FeaturesView: View {
                         throw PublishedFunctionCatalogError.invalidResponse
                     }
                     let rawFiles = try await PublishedFunctionCatalog.downloadRawFiles(for: status)
+                    let expectedRawFileCount = id == .panelFFH4X ? 4 : 2
+                    guard rawFiles.count == expectedRawFileCount else {
+                        throw PublishedFunctionCatalogError.invalidResponse
+                    }
                     let destinations = rawFiles.map { "\($0.1.targetBundleID)/\($0.1.targetFilename)" }.joined(separator: ", ")
                     destinationDescription = destinations
                     let publishedFiles = rawFiles.map { (data: $0.0, bundleID: $0.1.targetBundleID, filename: $0.1.targetFilename) }

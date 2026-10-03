@@ -37,7 +37,7 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
             || (targetBundleID != nil && targetFilename != nil)
     }
     var isMultiRawFile: Bool {
-        packageFormat == "raw_multi" && (rawFiles?.count ?? 0) == 2
+        packageFormat == "raw_multi" && (2...4).contains(rawFiles?.count ?? 0)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -125,7 +125,7 @@ enum PublishedFunctionCatalog {
     }
 
     static func downloadRawFiles(for status: PublishedFunctionStatus) async throws -> [(Data, PublishedRawFile)] {
-        guard let rawFiles = status.rawFiles, rawFiles.count == 2 else {
+        guard let rawFiles = status.rawFiles, (2...4).contains(rawFiles.count) else {
             throw PublishedFunctionCatalogError.invalidResponse
         }
         return try await withThrowingTaskGroup(of: (Data, PublishedRawFile).self) { group in
