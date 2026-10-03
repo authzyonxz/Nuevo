@@ -27,6 +27,7 @@ LOGGER = logging.getLogger("3105-telegram-bot")
 
 WAIT_DOCUMENT, WAIT_BUNDLE = range(2)
 _BUNDLE_ID_PATTERN = re.compile(r"^[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)+$")
+GROUP_MARKER = "▢"
 ROOT = Path(os.getenv("BOT_DATA_DIR", "./bot_data")).resolve()
 STORE = FunctionStore(ROOT)
 ADMIN_IDS = {int(item.strip()) for item in os.getenv("TELEGRAM_ADMIN_IDS", "").split(",") if item.strip().isdigit()}
@@ -38,7 +39,10 @@ def is_admin(update: Update) -> bool:
 
 
 def groups_keyboard() -> InlineKeyboardMarkup:
-    rows = [[InlineKeyboardButton(name, callback_data=f"group:{group_id}")] for group_id, name in GROUPS.items()]
+    rows = [
+        [InlineKeyboardButton(f"{GROUP_MARKER}  {name}", callback_data=f"group:{group_id}")]
+        for group_id, name in GROUPS.items()
+    ]
     return InlineKeyboardMarkup(rows)
 
 
@@ -103,7 +107,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | 
         group_id = data.split(":", 1)[1]
         description = GROUP_DESCRIPTIONS.get(group_id, "Escolha uma função:")
         await query.edit_message_text(
-            f"*{GROUPS[group_id]}*\n_{description}_\n\nEscolha uma função:",
+            f"*{GROUP_MARKER}  {GROUPS[group_id]}*\n_{description}_\n\nEscolha uma função:",
             parse_mode="Markdown",
             reply_markup=functions_keyboard(group_id),
         )
@@ -116,7 +120,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | 
         group_id = data.rsplit(":", 1)[1]
         description = GROUP_DESCRIPTIONS.get(group_id, "Escolha uma função:")
         await query.edit_message_text(
-            f"*{GROUPS[group_id]}*\n_{description}_\n\nEscolha uma função:",
+            f"*{GROUP_MARKER}  {GROUPS[group_id]}*\n_{description}_\n\nEscolha uma função:",
             parse_mode="Markdown",
             reply_markup=functions_keyboard(group_id),
         )
