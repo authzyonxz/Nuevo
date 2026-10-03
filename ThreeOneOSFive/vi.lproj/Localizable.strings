@@ -60,14 +60,14 @@
 "dashboard.device_name" = "Tên thiết bị";
 "dashboard.hardware_model" = "Model phần cứng";
 "dashboard.access_footer" = "App chỉ báo thành công sau khi tệp hệ thống thực sự mở được ở chế độ đọc và ghi.";
-"dashboard.unsupported_footer" = "iOS %@ (%@) nằm ngoài phạm vi đã xác minh. Hỗ trợ: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.1, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
+"dashboard.unsupported_footer" = "iOS %@ (%@) nằm ngoài phạm vi đã xác minh. Hỗ trợ: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.2, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
 "dashboard.app_browser" = "Duyệt dữ liệu ứng dụng";
 "dashboard.browser" = "Trình duyệt file";
 "dashboard.open_browser" = "Mở trình duyệt file";
 "dashboard.browser_footer" = "Duyệt và đọc dữ liệu từ mọi ứng dụng và system container trên thiết bị.";
 "dashboard.device_actions_warning" = "Hãy lưu thay đổi trước khi khởi động lại thiết bị.";
 "dashboard.unsupported_device" = "Thiết bị không được hỗ trợ";
-"dashboard.unsupported_message" = "iOS %@ chưa được hỗ trợ.\n\nCác phiên bản hiện được hỗ trợ:\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.1\n• iOS 27.0 Developer Beta 1–4\n• iOS 27.0 Public Beta 1–2";
+"dashboard.unsupported_message" = "iOS %@ chưa được hỗ trợ.\n\nCác phiên bản hiện được hỗ trợ:\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.2\n• iOS 27.0 Developer Beta 1–4\n• iOS 27.0 Public Beta 1–2";
 "dashboard.installation" = "Cài đặt ứng dụng";
 "dashboard.kernel_status" = "Trạng thái kernel";
 "dashboard.kernel_running" = "Đang kích hoạt…";
@@ -264,7 +264,7 @@
 "settings.beta_build" = "Beta %lld · %@";
 "settings.developer_beta_build" = "Developer Beta %lld · %@";
 "settings.developer_public_beta_build" = "Developer Beta %lld / Public Beta %lld · %@";
-"settings.supported_range_summary" = "Đã xác minh: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.1, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
+"settings.supported_range_summary" = "Đã xác minh: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.2, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
 
 "kernel.section_title" = "Kernel Exploit";
 "kernel.run_exploit" = "Chạy Kernel Exploit";
@@ -704,15 +704,25 @@
 
 "login.test_note" = "Chế độ thử nghiệm: mọi nội dung không trống đều được chấp nhận.";
 
-"login.success_title" = "Login Successfully";
+"login.success_title" = "Giấy phép đã được cấp";
 
-"login.success_message" = "Key thử nghiệm của bạn đã được xác thực thành công.";
+"login.success_message" = "Giấy phép của bạn đang hoạt động trên thiết bị này.";
 
 "login.example_duration" = "30 ngày";
 
 "login.example_package" = "Package mẫu";
 
 "login.enter_app" = "Vào ứng dụng";
+
+"license.authorized.status" = "Trạng thái";
+"license.authorized.active" = "Đã cấp quyền";
+"license.authorized.udid" = "UDID đã đăng ký";
+"license.authorized.device_fallback" = "iPhone này đã được đăng ký";
+"license.authorized.activated" = "Đã kích hoạt";
+"license.authorized.expires" = "Hết hạn";
+"license.authorized.days" = "%lld ngày";
+"license.checking" = "Đang kiểm tra giấy phép…";
+"license.inactive" = "Giấy phép không còn hoạt động. Nhập key hợp lệ để tiếp tục.";
 
 "feature.group_title" = "TÍNH NĂNG";
 "feature.exploit_required" = "Hãy khởi động exploit ở tab Trang chủ và chờ Hệ thống sẵn sàng trước khi bật tính năng.";

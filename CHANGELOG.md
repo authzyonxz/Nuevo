@@ -4,6 +4,10 @@ All notable user-facing changes are documented in this file.
 
 ## [1.0.1] - 2026-08-15
 
+### Compatibility update
+
+- Added verified support for iOS 26.6.2 build 23G90.
+
 ### Added
 
 - Bundle-tree Patch workspace v2 under `On My iPhone/3105/Patches`, synchronized automatically when applying or exporting.

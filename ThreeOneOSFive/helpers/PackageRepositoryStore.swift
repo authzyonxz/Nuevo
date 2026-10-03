@@ -361,7 +361,7 @@ final class PackageRepositoryStore: ObservableObject {
         let source = RepositorySource(manifestURL: sourceURL)
         let ranges = [
             PackageOSRange(minimum: "17.0", maximum: "18.7.1", builds: nil),
-            PackageOSRange(minimum: "26.0", maximum: "26.6.1", builds: nil),
+            PackageOSRange(minimum: "26.0", maximum: "26.6.2", builds: nil),
             PackageOSRange(minimum: "27.0", maximum: "27.0", builds: ["24A5390f"])
         ]
         let previewPackages = [
@@ -450,7 +450,7 @@ final class PackageRepositoryStore: ObservableObject {
         let source = RepositorySource(manifestURL: sourceURL)
         let ranges = [
             PackageOSRange(minimum: "17.0", maximum: "18.7.1", builds: nil),
-            PackageOSRange(minimum: "26.0", maximum: "26.6.1", builds: nil),
+            PackageOSRange(minimum: "26.0", maximum: "26.6.2", builds: nil),
             PackageOSRange(
                 minimum: "27.0",
                 maximum: "27.0",

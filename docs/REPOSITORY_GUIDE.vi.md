@@ -80,7 +80,7 @@ HTTPS và kiểm tra manifest như nguồn được thêm thủ công.
         },
         {
           "minimum": "26.0",
-          "maximum": "26.6.1"
+          "maximum": "26.6.2"
         },
         {
           "minimum": "27.0",
