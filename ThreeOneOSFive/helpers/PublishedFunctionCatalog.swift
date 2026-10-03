@@ -36,7 +36,9 @@ struct PublishedFunctionStatus: Decodable, Identifiable {
             || packageURL?.pathExtension.lowercased() == "raw"
             || (targetBundleID != nil && targetFilename != nil)
     }
-    var isMultiRawFile: Bool { packageFormat == "raw_multi" && (rawFiles?.count ?? 0) == 2 }
+    var isMultiRawFile: Bool {
+        packageFormat == "raw_multi" && (rawFiles?.count ?? 0) == 2
+    }
 
     enum CodingKeys: String, CodingKey {
         case id

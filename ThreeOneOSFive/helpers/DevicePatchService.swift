@@ -117,14 +117,15 @@ enum PublishedRawFileService {
         guard files.count == 2, let first = files.first else { throw PatchPackageError.invalidProject }
         var rules: [PatchRule] = []
         for file in files {
-            guard isValidFilePath(file.filename) else {
+            let filename = file.filename.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard isValidFilePath(filename),
+                  let relativePath = try? PatchPathValidator.canonicalRelativePath(filename) else {
                 throw PatchPackageError.targetPathMissing("\(file.bundleID)/\(file.filename) — informe o caminho completo incluindo o nome do arquivo")
             }
-            guard file.bundleID == first.bundleID,
-                  let relativePath = resolveTargetPath(file.filename, under: file.bundleID) else {
+            guard file.bundleID == first.bundleID else {
                 throw PatchPackageError.targetPathMissing("\(file.bundleID)/\(file.filename)")
             }
-            rules.append(PatchRule(bundleID: file.bundleID, relativePath: relativePath, replacementFilename: URL(fileURLWithPath: file.filename).lastPathComponent, replacementData: file.data))
+            rules.append(PatchRule(bundleID: file.bundleID, relativePath: relativePath, replacementFilename: URL(fileURLWithPath: relativePath).lastPathComponent, replacementData: file.data))
         }
         return try DevicePatchService.apply(project: PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules), requireExistingTargets: false)
     }
