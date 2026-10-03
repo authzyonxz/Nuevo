@@ -179,15 +179,15 @@ async def receive_bundle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     context.user_data["bundle_id"]=bundle_id
     if context.user_data.get("function_id") in MULTI_RAW_IDS:
         context.user_data["multi_paths"]=[]
-        await update.message.reply_text("Informe o caminho relativo completo do arquivo 1 dentro do container, incluindo o nome.", parse_mode="Markdown"); return WAIT_PATH
+        await update.message.reply_text("Informe a pasta relativa de destino do arquivo 1, por exemplo: `Documents/`. O nome original será anexado automaticamente.", parse_mode="Markdown"); return WAIT_PATH
     return await finalize_publish(update, context)
 async def receive_path(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update) or not update.message: return ConversationHandler.END
     path=update.message.text.strip()
-    if not path or path.endswith("/") or path.startswith("/") or "\\" in path or ".." in path.split("/"):
-        await update.message.reply_text("Caminho inválido. Informe o caminho completo incluindo o nome do arquivo, por exemplo: Documents/config.dat"); return WAIT_PATH
+    if not path or path.startswith("/") or "\\" in path or ".." in path.split("/"):
+        await update.message.reply_text("Pasta inválida. Use uma pasta relativa, por exemplo: Documents/"); return WAIT_PATH
     paths=context.user_data.setdefault("multi_paths",[]); paths.append(path)
-    if len(paths)==1: await update.message.reply_text("Informe o caminho relativo completo do arquivo 2 dentro do container."); return WAIT_PATH
+    if len(paths)==1: await update.message.reply_text("Informe agora a pasta relativa de destino do arquivo 2, por exemplo: Documents/"); return WAIT_PATH
     return await finalize_publish(update, context)
 async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     function_id = context.user_data.get("function_id")
@@ -198,7 +198,7 @@ async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         if function_id in MULTI_RAW_IDS:
             files=context.user_data.get("multi_files",[]); paths=context.user_data.get("multi_paths",[])
             if len(files)!=2 or len(paths)!=2: raise ValueError("São necessários dois arquivos e dois caminhos")
-            payload=[{"data":Path(f["upload_path"]).read_bytes(),"target_filename":path} for f,path in zip(files,paths)]
+            payload=[{"data":Path(f["upload_path"]).read_bytes(),"target_filename":path.rstrip("/") + "/" + f["original_name"]} for f,path in zip(files,paths)]
             entry=STORE.publish_multi_raw(function_id,payload,target_bundle_id=context.user_data["bundle_id"])
             for f in files: Path(f["upload_path"]).unlink(missing_ok=True)
             item=FUNCTION_BY_ID[function_id]

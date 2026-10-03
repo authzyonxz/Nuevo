@@ -126,7 +126,7 @@ enum PublishedRawFileService {
             }
             rules.append(PatchRule(bundleID: file.bundleID, relativePath: relativePath, replacementFilename: URL(fileURLWithPath: file.filename).lastPathComponent, replacementData: file.data))
         }
-        return try DevicePatchService.apply(project: PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules), requireExistingTargets: true)
+        return try DevicePatchService.apply(project: PatchProject(name: "Published multi-file", author: "Published Function", bundleIdentifiers: [first.bundleID], rules: rules), requireExistingTargets: false)
     }
 
     static func apply(
@@ -199,9 +199,11 @@ enum PublishedRawFileService {
         let root = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: rootPath, isDirectory: true))
         if filename.contains("/") {
             let url = PatchPathValidator.canonicalFileURL(root.appendingPathComponent(filename))
-            guard url.path.hasPrefix(root.path + "/"),
-                  let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]),
-                  values.isRegularFile == true, values.isDirectory != true, values.isSymbolicLink != true else { return nil }
+            guard url.path.hasPrefix(root.path + "/"), !url.path.hasSuffix("/") else { return nil }
+            if FileManager.default.fileExists(atPath: url.path) {
+                guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]),
+                      values.isRegularFile == true, values.isDirectory != true, values.isSymbolicLink != true else { return nil }
+            }
             return String(url.path.dropFirst(root.path.count + 1))
         }
         return findExactFile(named: filename, under: root)
