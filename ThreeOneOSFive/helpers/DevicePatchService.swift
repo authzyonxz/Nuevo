@@ -117,6 +117,9 @@ enum PublishedRawFileService {
         guard files.count == 2, let first = files.first else { throw PatchPackageError.invalidProject }
         var rules: [PatchRule] = []
         for file in files {
+            guard isValidFilePath(file.filename) else {
+                throw PatchPackageError.targetPathMissing("\(file.bundleID)/\(file.filename) — informe o caminho completo incluindo o nome do arquivo")
+            }
             guard file.bundleID == first.bundleID,
                   let relativePath = resolveTargetPath(file.filename, under: file.bundleID) else {
                 throw PatchPackageError.targetPathMissing("\(file.bundleID)/\(file.filename)")
@@ -191,14 +194,23 @@ enum PublishedRawFileService {
     }
 
     private static func resolveTargetPath(_ filename: String, under bundleID: String) -> String? {
-        guard !filename.isEmpty, !filename.contains("\\"), !filename.hasPrefix("/"), !filename.split(separator: "/").contains(".."),
+        guard isValidFilePath(filename),
               let rootPath = ContainerStore.resolveAppContainerPath(bundleID: bundleID) else { return nil }
         let root = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: rootPath, isDirectory: true))
         if filename.contains("/") {
             let url = PatchPathValidator.canonicalFileURL(root.appendingPathComponent(filename))
-            guard url.path.hasPrefix(root.path + "/"), FileManager.default.fileExists(atPath: url.path) else { return nil }
+            guard url.path.hasPrefix(root.path + "/"),
+                  let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]),
+                  values.isRegularFile == true, values.isDirectory != true, values.isSymbolicLink != true else { return nil }
             return String(url.path.dropFirst(root.path.count + 1))
         }
         return findExactFile(named: filename, under: root)
+    }
+
+    private static func isValidFilePath(_ filename: String) -> Bool {
+        guard !filename.isEmpty, !filename.hasSuffix("/"), !filename.contains("\\"),
+              !filename.hasPrefix("/"), !filename.split(separator: "/").contains(".."),
+              let last = filename.split(separator: "/").last, !last.isEmpty else { return false }
+        return true
     }
 }

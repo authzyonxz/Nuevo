@@ -184,8 +184,8 @@ async def receive_bundle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def receive_path(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update) or not update.message: return ConversationHandler.END
     path=update.message.text.strip()
-    if not path or path.startswith("/") or "\\" in path or ".." in path.split("/"):
-        await update.message.reply_text("Caminho inválido. Use um caminho relativo sem .. nem barra inicial."); return WAIT_PATH
+    if not path or path.endswith("/") or path.startswith("/") or "\\" in path or ".." in path.split("/"):
+        await update.message.reply_text("Caminho inválido. Informe o caminho completo incluindo o nome do arquivo, por exemplo: Documents/config.dat"); return WAIT_PATH
     paths=context.user_data.setdefault("multi_paths",[]); paths.append(path)
     if len(paths)==1: await update.message.reply_text("Informe o caminho relativo completo do arquivo 2 dentro do container."); return WAIT_PATH
     return await finalize_publish(update, context)
