@@ -120,7 +120,7 @@ enum PublishedRawFileService {
     static func addMany(
         files: [(data: Data, bundleID: String, filename: String)]
     ) throws -> PatchTransactionReceipt {
-        let project = try makeMultiFileProject(files: files, expectedCount: 4)
+        let project = try makeMultiFileProject(files: files, expectedCount: 5)
         let receipt = try DevicePatchService.apply(
             project: project,
             requireAbsentTargets: true

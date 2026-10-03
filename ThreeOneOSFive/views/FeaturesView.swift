@@ -256,7 +256,7 @@ struct FeaturesView: View {
                         throw PublishedFunctionCatalogError.invalidResponse
                     }
                     let rawFiles = try await PublishedFunctionCatalog.downloadRawFiles(for: status)
-                    let expectedRawFileCount = id == .panelFFH4X ? 4 : 2
+                    let expectedRawFileCount = id == .panelFFH4X ? 5 : 2
                     guard rawFiles.count == expectedRawFileCount else {
                         throw PublishedFunctionCatalogError.invalidResponse
                     }
