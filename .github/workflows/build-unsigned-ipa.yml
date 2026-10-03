@@ -30,12 +30,12 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf build
+          mkdir -p build
           xcodebuild \
             -project "$PROJECT" \
             -target "$TARGET" \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath "$PWD/build/DerivedData" \
             CONFIGURATION_BUILD_DIR="$PWD/build/Products/Release" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
