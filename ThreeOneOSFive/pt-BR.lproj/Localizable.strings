@@ -712,6 +712,16 @@
 
 "feature.aim_group" = "Funções Aim";
 
+"feature.aim_file_type" = "Tipo de arquivo AIM";
+"feature.cache_aim_high" = "HS ALTO";
+"feature.cache_aim_neck" = "HS PESCOÇO";
+"feature.cache_aim_chest" = "HS PEITO";
+"feature.cache_magic_bullet" = "BALA MAGICA";
+"feature.desc_cache_aim_high" = "Cache_res: HS ACIMA DA CABEÇA";
+"feature.desc_cache_aim_neck" = "Cache_res: HS NO PESCOÇO DO INIMIGO";
+"feature.desc_cache_aim_chest" = "Cache_res: HS NO PEITO DO INIMIGO";
+"feature.desc_cache_magic_bullet" = "Cache_res: BALA MAGICA";
+
 "feature.aim_neck" = "HS PESCOÇO";
 
 "feature.aim_high" = "HS ALTO";

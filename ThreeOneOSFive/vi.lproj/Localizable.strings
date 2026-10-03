@@ -729,6 +729,16 @@
 
 "feature.aim_group" = "Chức năng Aim";
 
+"feature.aim_file_type" = "Loại tệp AIM";
+"feature.cache_aim_high" = "HS CAO";
+"feature.cache_aim_neck" = "HS CỔ";
+"feature.cache_aim_chest" = "HS NGỰC";
+"feature.cache_magic_bullet" = "BALA MAGICA";
+"feature.desc_cache_aim_high" = "Cache_res: HS phía trên đầu.";
+"feature.desc_cache_aim_neck" = "Cache_res: HS vào cổ kẻ địch.";
+"feature.desc_cache_aim_chest" = "Cache_res: HS vào ngực kẻ địch.";
+"feature.desc_cache_magic_bullet" = "Cache_res: Bala Magica.";
+
 "feature.aim_neck" = "HS CỔ";
 
 "feature.aim_high" = "HS CAO";

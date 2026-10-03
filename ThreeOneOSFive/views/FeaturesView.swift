@@ -5,10 +5,15 @@ struct FeaturesView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var licenseManager: LicenseManager
 
+    @State private var aimFileType: AimFileType = .avatar
     @State private var aimHighEnabled = false
     @State private var aimNeckEnabled = false
     @State private var aimNeckAntennaEnabled = false
     @State private var aimChestEnabled = false
+    @State private var aimCacheHighEnabled = false
+    @State private var aimCacheNeckEnabled = false
+    @State private var aimCacheChestEnabled = false
+    @State private var aimCacheMagicBulletEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
     @State private var resetGuestEnabled = false
@@ -36,15 +41,7 @@ struct FeaturesView: View {
                         .padding(.horizontal, 4)
                     }
 
-                    featureGroup(
-                        titleKey: "feature.aim_group",
-                        rows: [
-                            ("feature.aim_high", "feature.desc_aim_high", PublishedFunctionID.aimHighHS, $aimHighEnabled),
-                            ("feature.aim_neck", "feature.desc_aim_neck", PublishedFunctionID.aimNeckHS, $aimNeckEnabled),
-                            ("feature.aim_neck_antenna", "feature.desc_aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled),
-                            ("feature.aim_chest", "feature.desc_aim_chest", PublishedFunctionID.aimChestHS, $aimChestEnabled)
-                        ]
-                    )
+                    aimFunctionsSection()
 
                     featureGroup(
                         titleKey: "feature.hologram_group",
@@ -121,6 +118,62 @@ struct FeaturesView: View {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .stroke(Color.white.opacity(0.07), lineWidth: 0.7)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func aimFunctionsSection() -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("▏  \(language.text("feature.aim_group").uppercased())")
+                    .font(.caption.weight(.bold))
+                    .tracking(1.1)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker(language.text("feature.aim_file_type"), selection: $aimFileType) {
+                    ForEach(AimFileType.allCases) { type in
+                        Text(type.displayName).tag(type)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 170)
+            }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 9)
+
+            if aimFileType == .avatar {
+                featureRows([
+                    ("feature.aim_high", "feature.desc_aim_high", PublishedFunctionID.aimHighHS, $aimHighEnabled),
+                    ("feature.aim_neck", "feature.desc_aim_neck", PublishedFunctionID.aimNeckHS, $aimNeckEnabled),
+                    ("feature.aim_neck_antenna", "feature.desc_aim_neck_antenna", PublishedFunctionID.aimNeckAntenna, $aimNeckAntennaEnabled),
+                    ("feature.aim_chest", "feature.desc_aim_chest", PublishedFunctionID.aimChestHS, $aimChestEnabled)
+                ])
+            } else {
+                featureRows([
+                    ("feature.cache_aim_high", "feature.desc_cache_aim_high", PublishedFunctionID.aimCacheHighHS, $aimCacheHighEnabled),
+                    ("feature.cache_aim_neck", "feature.desc_cache_aim_neck", PublishedFunctionID.aimCacheNeckHS, $aimCacheNeckEnabled),
+                    ("feature.cache_aim_chest", "feature.desc_cache_aim_chest", PublishedFunctionID.aimCacheChestHS, $aimCacheChestEnabled),
+                    ("feature.cache_magic_bullet", "feature.desc_cache_magic_bullet", PublishedFunctionID.aimCacheMagicBullet, $aimCacheMagicBulletEnabled)
+                ])
+            }
+        }
+    }
+
+    private func featureRows(
+        _ rows: [(String, String, PublishedFunctionID, Binding<Bool>)]
+    ) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                featureToggleRow(row.0, descriptionKey: row.1, id: row.2, isOn: row.3)
+                if index < rows.count - 1 {
+                    Divider().background(Color.white.opacity(0.1)).padding(.leading, 16)
+                }
+            }
+        }
+        .background(Color(white: 0.075), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.7)
         }
     }
 
@@ -265,6 +318,20 @@ private enum FeatureRemoteError: Error {
     var key: String {
         switch self {
         case .message(let key): return key
+        }
+    }
+}
+
+private enum AimFileType: String, CaseIterable, Identifiable {
+    case avatar
+    case cacheRes = "cache_res"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .avatar: return "Avatar"
+        case .cacheRes: return "Cache_res"
         }
     }
 }

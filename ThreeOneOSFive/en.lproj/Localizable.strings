@@ -729,6 +729,16 @@
 
 "feature.aim_group" = "Aim functions";
 
+"feature.aim_file_type" = "AIM file type";
+"feature.cache_aim_high" = "HS ALTO";
+"feature.cache_aim_neck" = "HS NECK";
+"feature.cache_aim_chest" = "HS CHEST";
+"feature.cache_magic_bullet" = "MAGIC BULLET";
+"feature.desc_cache_aim_high" = "Cache_res: HS above the head.";
+"feature.desc_cache_aim_neck" = "Cache_res: HS on the enemy neck.";
+"feature.desc_cache_aim_chest" = "Cache_res: HS on the enemy chest.";
+"feature.desc_cache_magic_bullet" = "Cache_res: Magic Bullet.";
+
 "feature.aim_neck" = "HS NECK";
 
 "feature.aim_high" = "HS ALTO";

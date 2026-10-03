@@ -10,6 +10,10 @@ O bot administra os arquivos publicados para cada função. O fluxo atual public
 | FUNÇÕES AIM | HS ALTO | `aim.high_hs` |
 | FUNÇÕES AIM | HS PESCOÇO + ANTENA | `aim.neck_antenna` |
 | FUNÇÕES AIM | HS PEITO | `aim.chest_hs` |
+| FUNÇÕES AIM · Cache_res | HS ALTO | `aim.cache_high_hs` |
+| FUNÇÕES AIM · Cache_res | HS PESCOÇO | `aim.cache_neck_hs` |
+| FUNÇÕES AIM · Cache_res | HS PEITO | `aim.cache_chest_hs` |
+| FUNÇÕES AIM · Cache_res | BALA MAGICA | `aim.cache_magic_bullet` |
 | FUNÇÕES HOLOGRAMAS | HOLOGRAMA ARMAS | `hologram.weapons` |
 | ESP | ESP 3D + AIM SILIENT | `panel.ffh4x` |
 | CONFIG DO JOGO | RESET GUEST | `game.reset_guest` |
