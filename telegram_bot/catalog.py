@@ -21,11 +21,9 @@ FUNCTIONS: Final[tuple[FunctionDefinition, ...]] = (
     FunctionDefinition("aim.cache_high_hs", "aim_cache_res", "AIM · CACHE_RES", "HS ALTO", "HS ACIMA DA CABEÇA DO INIMIGO."),
     FunctionDefinition("aim.cache_neck_hs", "aim_cache_res", "AIM · CACHE_RES", "HS PESCOÇO", "HS NO PESCOÇO DO INIMIGO."),
     FunctionDefinition("aim.cache_chest_hs", "aim_cache_res", "AIM · CACHE_RES", "HS PEITO", "HS NO PEITO DO INIMIGO."),
-    FunctionDefinition("aim.cache_magic_bullet", "aim_cache_res", "AIM · CACHE_RES", "BALA MAGICA", "ACERTE BALAS MESMO A MIRA NÃO GRUDANDO."),
     FunctionDefinition("hologram.weapons", "hologram", "FUNÇÕES HOLOGRAMAS", "HOLOGRAMA ARMAS", "Habilita o holograma de armas."),
     # O ID antigo é preservado para não invalidar publicações existentes.
     FunctionDefinition("panel.ffh4x", "panel", "ESP", "ESP 3D + AIM SILIENT", "Painel ESP 3D combinado com AIM SILIENT."),
-    FunctionDefinition("game.reset_guest", "game_config", "CONFIG DO JOGO", "RESET GUEST", "Restaura a configuração de convidado do jogo."),
 )
 
 FUNCTION_BY_ID: Final = {item.id: item for item in FUNCTIONS}
@@ -34,14 +32,12 @@ GROUPS: Final = {
     "aim_cache_res": "AIM · CACHE_RES",
     "hologram": "FUNÇÕES HOLOGRAMAS",
     "panel": "ESP",
-    "game_config": "CONFIG DO JOGO",
 }
 
 GROUP_DESCRIPTIONS: Final = {
     "aim": "Funções de assistência de mira.",
     "hologram": "Recursos visuais para armas e equipamentos.",
     "panel": "Recursos ESP e assistência visual.",
-    "game_config": "Configurações gerais e ajustes do jogo.",
 }
 
 

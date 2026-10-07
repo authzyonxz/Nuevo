@@ -733,11 +733,9 @@
 "feature.cache_aim_high" = "HS ALTO";
 "feature.cache_aim_neck" = "HS NECK";
 "feature.cache_aim_chest" = "HS CHEST";
-"feature.cache_magic_bullet" = "MAGIC BULLET";
 "feature.desc_cache_aim_high" = "Cache_res: HS above the head.";
 "feature.desc_cache_aim_neck" = "Cache_res: HS on the enemy neck.";
 "feature.desc_cache_aim_chest" = "Cache_res: HS on the enemy chest.";
-"feature.desc_cache_magic_bullet" = "Cache_res: Magic Bullet.";
 "feature.cache_warning" = "Cache_res functions may present risks. Use at your own risk.";
 
 "feature.aim_neck" = "HS NECK";
@@ -755,12 +753,6 @@
 "feature.panel_group" = "ESP";
 
 "feature.panel_ffh4x" = "ESP 3D + AIM SILIENT";
-
-"feature.game_config_group" = "GAME CONFIG";
-
-"feature.reset_guest" = "RESET GUEST";
-
-"feature.desc_reset_guest" = "Restores the game's guest configuration.";
 
 "feature.remote_maintenance" = "This function is under maintenance.";
 

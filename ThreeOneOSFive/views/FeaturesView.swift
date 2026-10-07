@@ -13,10 +13,8 @@ struct FeaturesView: View {
     @State private var aimCacheHighEnabled = false
     @State private var aimCacheNeckEnabled = false
     @State private var aimCacheChestEnabled = false
-    @State private var aimCacheMagicBulletEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
-    @State private var resetGuestEnabled = false
     @State private var appliedProjectIDs: [String: UUID] = [:]
     @State private var busyIDs = Set<String>()
     @State private var ignoredChanges = Set<String>()
@@ -57,12 +55,6 @@ struct FeaturesView: View {
                         ]
                     )
 
-                    featureGroup(
-                        titleKey: "feature.game_config_group",
-                        rows: [
-                            ("feature.reset_guest", "feature.desc_reset_guest", PublishedFunctionID.resetGuest, $resetGuestEnabled)
-                        ]
-                    )
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
@@ -160,8 +152,7 @@ struct FeaturesView: View {
                 featureRows([
                     ("feature.cache_aim_high", "feature.desc_cache_aim_high", PublishedFunctionID.aimCacheHighHS, $aimCacheHighEnabled),
                     ("feature.cache_aim_neck", "feature.desc_cache_aim_neck", PublishedFunctionID.aimCacheNeckHS, $aimCacheNeckEnabled),
-                    ("feature.cache_aim_chest", "feature.desc_cache_aim_chest", PublishedFunctionID.aimCacheChestHS, $aimCacheChestEnabled),
-                    ("feature.cache_magic_bullet", "feature.desc_cache_magic_bullet", PublishedFunctionID.aimCacheMagicBullet, $aimCacheMagicBulletEnabled)
+                    ("feature.cache_aim_chest", "feature.desc_cache_aim_chest", PublishedFunctionID.aimCacheChestHS, $aimCacheChestEnabled)
                 ])
             }
         }
@@ -252,20 +243,17 @@ struct FeaturesView: View {
                     throw FeatureRemoteError.message("feature.remote_password")
                 }
                 if status.isMultiRawFile {
-                    guard id == .panelFFH4X || id == .resetGuest else {
+                    guard id == .panelFFH4X else {
                         throw PublishedFunctionCatalogError.invalidResponse
                     }
                     let rawFiles = try await PublishedFunctionCatalog.downloadRawFiles(for: status)
-                    let expectedRawFileCount = id == .panelFFH4X ? 5 : 2
-                    guard rawFiles.count == expectedRawFileCount else {
+                    guard !rawFiles.isEmpty else {
                         throw PublishedFunctionCatalogError.invalidResponse
                     }
                     let destinations = rawFiles.map { "\($0.1.targetBundleID)/\($0.1.targetFilename)" }.joined(separator: ", ")
                     destinationDescription = destinations
                     let publishedFiles = rawFiles.map { (data: $0.0, bundleID: $0.1.targetBundleID, filename: $0.1.targetFilename) }
-                    let receipt = try id == .panelFFH4X
-                        ? PublishedRawFileService.addMany(files: publishedFiles)
-                        : PublishedRawFileService.applyMany(files: publishedFiles)
+                    let receipt = try PublishedRawFileService.addMany(files: publishedFiles)
                     appliedProjectIDs[id.rawValue] = receipt.projectID
                     log("feature: multi raw files applied project=\(receipt.projectID.uuidString) destinations=\(destinations)")
                 } else {

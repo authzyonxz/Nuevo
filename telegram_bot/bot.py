@@ -26,7 +26,8 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger("3105-telegram-bot")
 
 WAIT_DOCUMENT, WAIT_BUNDLE, WAIT_PATH = range(3)
-MULTI_RAW_IDS = {"panel.ffh4x", "game.reset_guest"}
+MULTI_RAW_IDS = {"panel.ffh4x"}
+VARIABLE_RAW_IDS = {"panel.ffh4x"}
 _BUNDLE_ID_PATTERN = re.compile(r"^[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)+$")
 GROUP_MARKER = "▏"
 ROOT = Path(os.getenv("BOT_DATA_DIR", "./bot_data")).resolve()
@@ -63,8 +64,15 @@ def function_keyboard(function_id: str) -> InlineKeyboardMarkup:
     entry = STORE.get(function_id)
     status_action = "maintenance" if entry["status"] == "active" else "active"
     status_label = "Colocar em manutenção" if entry["status"] == "active" else "Ativar função"
+    publish_label = (
+        "Publicar vários arquivos"
+        if function_id in VARIABLE_RAW_IDS
+        else "Publicar 2 arquivos puros"
+        if function_id in MULTI_RAW_IDS
+        else "Publicar arquivo puro"
+    )
     rows = [
-        [InlineKeyboardButton("Publicar 2 arquivos puros" if function_id in MULTI_RAW_IDS else "Publicar arquivo puro", callback_data=f"publish:{function_id}")],
+        [InlineKeyboardButton(publish_label, callback_data=f"publish:{function_id}")],
         [InlineKeyboardButton(status_label, callback_data=f"status:{status_action}:{function_id}")],
     ]
     if entry.get("package"):
@@ -149,12 +157,41 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int | 
         function_id = data.split(":", 1)[1]
         context.user_data.clear()
         context.user_data["function_id"] = function_id
-        if function_id in MULTI_RAW_IDS:
+        if function_id in VARIABLE_RAW_IDS:
+            await query.edit_message_text(
+                f"Envie os arquivos puros para *{FUNCTION_BY_ID[function_id].name}*, um por vez. "
+                "Quando terminar, toque em *Finalizar envio*. Depois informarei o Bundle ID "
+                "e os caminhos relativos. Não é pacote .3105 nem ZIP.",
+                parse_mode="Markdown",
+            )
+        elif function_id in MULTI_RAW_IDS:
             await query.edit_message_text(f"Envie os 2 arquivos puros para *{FUNCTION_BY_ID[function_id].name}*, um por vez.\nDepois informarei o Bundle ID e os caminhos relativos.\nNão é pacote .3105 nem ZIP.", parse_mode="Markdown")
         else:
             await query.edit_message_text(f"Envie agora o arquivo puro para *{FUNCTION_BY_ID[function_id].name}*.\nO nome original será preservado e usado na busca exata dentro do container.", parse_mode="Markdown")
         return WAIT_DOCUMENT
     return ConversationHandler.END
+
+
+async def finish_multi_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        await query.edit_message_text("Acesso restrito ao administrador configurado.")
+        return ConversationHandler.END
+
+    function_id = context.user_data.get("function_id")
+    files = context.user_data.get("multi_files", [])
+    if function_id not in VARIABLE_RAW_IDS or not files:
+        await query.edit_message_text("Envie pelo menos um arquivo antes de finalizar.")
+        return WAIT_DOCUMENT
+
+    context.user_data["multi_paths"] = []
+    await query.edit_message_text(
+        f"Recebi {len(files)} arquivo(s). Agora informe o Bundle ID, por exemplo: "
+        "`com.dts.freefireth`",
+        parse_mode="Markdown",
+    )
+    return WAIT_BUNDLE
 
 
 async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -168,6 +205,15 @@ async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await (await document.get_file()).download_to_drive(destination)
     if function_id in MULTI_RAW_IDS:
         files=context.user_data.setdefault("multi_files", []); files.append({"upload_path":str(destination),"original_name":original_name})
+        if function_id in VARIABLE_RAW_IDS:
+            keyboard = InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Finalizar envio", callback_data="finish_multi")]]
+            )
+            await update.message.reply_text(
+                f"Arquivo {len(files)} recebido. Envie outro ou toque em “Finalizar envio”.",
+                reply_markup=keyboard,
+            )
+            return WAIT_DOCUMENT
         if len(files)==1: await update.message.reply_text("Arquivo 1 recebido. Agora envie o arquivo 2."); return WAIT_DOCUMENT
         await update.message.reply_text("Dois arquivos recebidos. Informe o Bundle ID, por exemplo: `com.dts.freefireth`", parse_mode="Markdown"); return WAIT_BUNDLE
     context.user_data["upload_path"]=str(destination); context.user_data["target_filename"]=original_name
@@ -184,10 +230,18 @@ async def receive_bundle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def receive_path(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update) or not update.message: return ConversationHandler.END
     path=update.message.text.strip()
-    if not path or path.startswith("/") or "\\" in path or ".." in path.split("/"):
+    path_parts = path.rstrip("/").split("/")
+    if not path or path.startswith("/") or "\\" in path or any(part in {"", ".", ".."} for part in path_parts):
         await update.message.reply_text("Pasta inválida. Use uma pasta relativa, por exemplo: Documents/"); return WAIT_PATH
     paths=context.user_data.setdefault("multi_paths",[]); paths.append(path)
-    if len(paths)==1: await update.message.reply_text("Informe agora a pasta relativa de destino do arquivo 2, por exemplo: Documents/"); return WAIT_PATH
+    files = context.user_data.get("multi_files", [])
+    if len(paths) < len(files):
+        await update.message.reply_text(
+            f"Informe a pasta relativa de destino do arquivo {len(paths) + 1}, "
+            "por exemplo: `Documents/`",
+            parse_mode="Markdown",
+        )
+        return WAIT_PATH
     return await finalize_publish(update, context)
 async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     function_id = context.user_data.get("function_id")
@@ -197,12 +251,21 @@ async def finalize_publish(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     try:
         if function_id in MULTI_RAW_IDS:
             files=context.user_data.get("multi_files",[]); paths=context.user_data.get("multi_paths",[])
-            if len(files)!=2 or len(paths)!=2: raise ValueError("São necessários dois arquivos e dois caminhos")
+            expected_count = len(files)
+            if expected_count < 1 or len(files) != expected_count or len(paths) != expected_count:
+                raise ValueError("É necessário informar um caminho de destino para cada arquivo")
             payload=[{"data":Path(f["upload_path"]).read_bytes(),"target_filename":path.rstrip("/") + "/" + f["original_name"]} for f,path in zip(files,paths)]
             entry=STORE.publish_multi_raw(function_id,payload,target_bundle_id=context.user_data["bundle_id"])
             for f in files: Path(f["upload_path"]).unlink(missing_ok=True)
             item=FUNCTION_BY_ID[function_id]
-            await update.effective_message.reply_text(f"Publicado com sucesso.\n\nFunção: {item.name}\nID: `{function_id}`\nVersão: `{entry['version']}`\nArquivos puros: 2\nCaminhos: `{paths[0]}`, `{paths[1]}`", parse_mode="Markdown", reply_markup=function_keyboard(function_id))
+            published_paths = "\n".join(f"• `{item['target_filename']}`" for item in payload)
+            await update.effective_message.reply_text(
+                f"Publicado com sucesso.\n\nFunção: {item.name}\nID: `{function_id}`\n"
+                f"Versão: `{entry['version']}`\nArquivos puros: {len(payload)}\n"
+                f"Caminhos:\n{published_paths}",
+                parse_mode="Markdown",
+                reply_markup=function_keyboard(function_id),
+            )
             context.user_data.clear(); return ConversationHandler.END
         upload_path = Path(context.user_data["upload_path"])
         bundle_id = context.user_data["bundle_id"]
@@ -243,7 +306,10 @@ def build_application() -> Application:
     conversation = ConversationHandler(
         entry_points=[CallbackQueryHandler(callback, pattern=r"^publish:")],
         states={
-            WAIT_DOCUMENT: [MessageHandler(filters.Document.ALL, receive_document)],
+            WAIT_DOCUMENT: [
+                MessageHandler(filters.Document.ALL, receive_document),
+                CallbackQueryHandler(finish_multi_upload, pattern=r"^finish_multi$"),
+            ],
             WAIT_BUNDLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_bundle)],
             WAIT_PATH: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_path)],
         },

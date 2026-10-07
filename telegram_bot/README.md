@@ -13,10 +13,8 @@ O bot administra os arquivos publicados para cada função. O fluxo atual public
 | AIM · CACHE_RES | HS ALTO | `aim.cache_high_hs` |
 | AIM · CACHE_RES | HS PESCOÇO | `aim.cache_neck_hs` |
 | AIM · CACHE_RES | HS PEITO | `aim.cache_chest_hs` |
-| AIM · CACHE_RES | BALA MAGICA | `aim.cache_magic_bullet` |
 | FUNÇÕES HOLOGRAMAS | HOLOGRAMA ARMAS | `hologram.weapons` |
 | ESP | ESP 3D + AIM SILIENT | `panel.ffh4x` |
-| CONFIG DO JOGO | RESET GUEST | `game.reset_guest` |
 
 Esses IDs não mudam quando o nome exibido for traduzido ou alterado.
 
@@ -26,11 +24,11 @@ Os grupos também exibem uma descrição no painel do Telegram. O grupo `panel` 
 
 1. `/start` abre os grupos.
 2. O administrador escolhe o grupo e a função.
-3. `Publicar/substituir arquivo normal` recebe o arquivo.
-4. O bot pergunta o Bundle ID; o nome original do arquivo é preservado.
-5. O arquivo normal é publicado como `.raw`; o aplicativo procura o mesmo nome exato dentro do container do app.
-6. A nova versão substitui a anterior e o manifesto é atualizado.
-7. O administrador pode ativar, colocar em manutenção ou excluir o arquivo.
+3. Para ESP, escolha `Publicar vários arquivos` e envie um ou mais arquivos, um por vez. Depois do último, toque em **Finalizar envio**; somente os arquivos recebidos nessa sessão serão publicados.
+4. O bot pergunta o Bundle ID e, para cada arquivo, a pasta relativa de destino; o nome original de cada arquivo é preservado.
+5. Os arquivos são publicados como `.raw`; o aplicativo baixa e aplica a quantidade informada no catálogo.
+6. A nova versão substitui a anterior e o manifesto é atualizado, removendo arquivos antigos que não fazem parte da nova publicação.
+7. O administrador pode ativar, colocar em manutenção ou excluir a publicação.
 
 Quando uma função está em manutenção, a API bloqueia a entrega do pacote com HTTP 423.
 

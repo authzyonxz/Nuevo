@@ -123,7 +123,7 @@ class FunctionStore:
         temporary = self.package_dir / f".{filename}.{os.getpid()}.tmp"
         with self._lock:
             entry = self.get(function_id)
-            previous_path = self._package_path(entry.get("package"))
+            previous_paths = self._entry_package_paths(entry)
             temporary.write_bytes(package_bytes)
             os.replace(temporary, destination)
             entry.update({
@@ -132,6 +132,7 @@ class FunctionStore:
                 "package_format": package_format,
                 "target_bundle_id": target_bundle_id,
                 "target_filename": target_filename,
+                "raw_files": [],
                 "version": int(entry.get("version", 0)) + 1,
                 "status": "active",
                 "name": item.name,
@@ -140,8 +141,9 @@ class FunctionStore:
                 "description": item.description,
             })
             self._save()
-            if previous_path and previous_path != destination and previous_path.is_file():
-                previous_path.unlink()
+            for previous_path in previous_paths:
+                if previous_path != destination and previous_path.is_file():
+                    previous_path.unlink()
             return entry
 
     def publish_multi_raw(
@@ -151,17 +153,17 @@ class FunctionStore:
         *,
         target_bundle_id: str,
     ) -> dict[str, Any]:
-        """Publica exatamente dois arquivos puros com caminhos independentes."""
+        """Publica arquivos puros com caminhos independentes."""
         item = validate_function_id(function_id)
-        if function_id not in {"panel.ffh4x", "game.reset_guest"}:
-            raise ValueError("Multi-arquivo permitido somente para ESP e RESET GUEST")
-        if not target_bundle_id or len(files) != 2:
-            raise ValueError("São necessários exatamente dois arquivos e um Bundle ID")
-        if any(not f.get("data") or not f.get("target_filename") for f in files):
+        if function_id != "panel.ffh4x":
+            raise ValueError("Multi-arquivo permitido somente para ESP")
+        if not target_bundle_id or not files:
+            raise ValueError("ESP exige pelo menos um arquivo e um Bundle ID")
+        if any(not f.get("data") or not self._is_safe_target_path(f.get("target_filename")) for f in files):
             raise ValueError("Cada arquivo precisa ter dados e caminho de destino")
         with self._lock:
             entry = self.get(function_id)
-            old_paths = [self._package_path(f.get("package")) for f in entry.get("raw_files", [])]
+            old_paths = self._entry_package_paths(entry)
             raw_files = []
             for index, file in enumerate(files, start=1):
                 filename = f"{function_id.replace('.', '_')}_{index}.raw"
@@ -178,14 +180,36 @@ class FunctionStore:
                     old.unlink()
             return entry
 
+    @staticmethod
+    def _is_safe_target_path(value: Any) -> bool:
+        if not isinstance(value, str) or not value or value.startswith("/") or "\\" in value:
+            return False
+        parts = value.split("/")
+        return all(part not in {"", ".", ".."} for part in parts)
+
+    def _entry_package_paths(self, entry: dict[str, Any]) -> set[Path]:
+        values = [entry.get("package")]
+        values.extend(
+            item.get("package")
+            for item in entry.get("raw_files", [])
+            if isinstance(item, dict)
+        )
+        return {
+            path
+            for value in values
+            if (path := self._package_path(value)) is not None
+        }
+
     def delete_package(self, function_id: str) -> dict[str, Any]:
         with self._lock:
             entry = self.get(function_id)
-            path = self._package_path(entry.get("package"))
-            if path and path.is_file():
-                path.unlink()
+            package_paths = self._entry_package_paths(entry)
+            for path in package_paths:
+                if path.is_file():
+                    path.unlink()
             entry.update({
                 "package": None,
+                "raw_files": [],
                 "password_protected": False,
                 "package_format": "raw",
                 "target_bundle_id": None,
