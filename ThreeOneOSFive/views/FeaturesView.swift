@@ -1,6 +1,12 @@
 import SwiftUI
 
 struct FeaturesView: View {
+    let screen: FeatureScreen
+
+    init(screen: FeatureScreen = .functions) {
+        self.screen = screen
+    }
+
     @Environment(\.appLanguage) private var language
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var licenseManager: LicenseManager
@@ -15,6 +21,7 @@ struct FeaturesView: View {
     @State private var aimCacheChestEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
+    @State private var texturaToguroEnabled = false
     @State private var appliedProjectIDs: [String: UUID] = [:]
     @State private var busyIDs = Set<String>()
     @State private var ignoredChanges = Set<String>()
@@ -24,7 +31,7 @@ struct FeaturesView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text(language.text("feature.group_title"))
+                    Text(language.text(screen == .textura ? "tab.textura" : "feature.group_title"))
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
                         .padding(.horizontal, 4)
@@ -39,21 +46,25 @@ struct FeaturesView: View {
                         .padding(.horizontal, 4)
                     }
 
-                    aimFunctionsSection()
+                    if screen == .textura {
+                        texturaToguroCard()
+                    } else {
+                        aimFunctionsSection()
 
-                    featureGroup(
-                        titleKey: "feature.hologram_group",
-                        rows: [
-                            ("feature.hologram_weapons", "feature.desc_hologram_weapons", PublishedFunctionID.hologramWeapons, $hologramWeaponsEnabled)
-                        ]
-                    )
+                        featureGroup(
+                            titleKey: "feature.hologram_group",
+                            rows: [
+                                ("feature.hologram_weapons", "feature.desc_hologram_weapons", PublishedFunctionID.hologramWeapons, $hologramWeaponsEnabled)
+                            ]
+                        )
 
-                    featureGroup(
-                        titleKey: "feature.panel_group",
-                        rows: [
-                            ("feature.panel_ffh4x", "feature.desc_panel_ffh4x", PublishedFunctionID.panelFFH4X, $panelFFH4XEnabled)
-                        ]
-                    )
+                        featureGroup(
+                            titleKey: "feature.panel_group",
+                            rows: [
+                                ("feature.panel_ffh4x", "feature.desc_panel_ffh4x", PublishedFunctionID.panelFFH4X, $panelFFH4XEnabled)
+                            ]
+                        )
+                    }
 
                 }
                 .padding(.horizontal, 16)
@@ -76,6 +87,72 @@ struct FeaturesView: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func texturaToguroCard() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(AppTheme.accent)
+                    .frame(width: 3, height: 14)
+                    .accessibilityHidden(true)
+                Text(language.text("feature.texture_group").uppercased())
+                    .font(.caption.weight(.bold))
+                    .tracking(1.1)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+
+            HStack(spacing: 13) {
+                Image("TexturaToguro")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 82, height: 124)
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    }
+                    .accessibilityLabel(language.text("feature.texture_toguro"))
+
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(language.text("feature.texture_toguro"))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(language.text("feature.desc_texture_toguro"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Label(language.text("feature.patch_switch"), systemImage: "arrow.triangle.2.circlepath")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.68))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Toggle("", isOn: $texturaToguroEnabled)
+                    .labelsHidden()
+                    .tint(AppTheme.accent)
+                    .disabled(
+                        busyIDs.contains(PublishedFunctionID.textureToguro.rawValue)
+                            || !appState.canUseFeatures
+                            || !licenseManager.isAuthorized
+                            || licenseManager.isRecheckingSession
+                    )
+                    .accessibilityLabel(language.text("feature.texture_toguro"))
+                    .accessibilityIdentifier(PublishedFunctionID.textureToguro.rawValue)
+                    .onChange(of: texturaToguroEnabled) { enabled in
+                        let id = PublishedFunctionID.textureToguro
+                        if ignoredChanges.remove(id.rawValue) != nil { return }
+                        Task { await handleToggle(id, enabled: enabled, binding: $texturaToguroEnabled) }
+                    }
+            }
+            .padding(13)
+            .background(Color(white: 0.075), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
+            }
+        }
     }
 
     private func featureGroup(
@@ -352,4 +429,9 @@ private enum AimFileType: String, CaseIterable, Identifiable {
         case .cacheRes: return "Cache_res"
         }
     }
+}
+
+enum FeatureScreen: Equatable {
+    case functions
+    case textura
 }

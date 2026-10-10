@@ -10,6 +10,7 @@ enum PublishedFunctionID: String, CaseIterable, Codable {
     case aimCacheChestHS = "aim.cache_chest_hs"
     case hologramWeapons = "hologram.weapons"
     case panelFFH4X = "panel.ffh4x"
+    case textureToguro = "textura.toguro"
 }
 
 struct PublishedFunctionStatus: Decodable, Identifiable {

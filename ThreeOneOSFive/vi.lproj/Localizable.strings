@@ -674,6 +674,7 @@
 "wallpaper.package_files" = "%lld tệp";
 
 "tab.features" = "Chức năng";
+"tab.textura" = "TEXTURA";
 "tab.logs" = "Nhật ký";
 "home.account" = "Thông tin khách hàng";
 "home.key" = "Key";
@@ -725,6 +726,10 @@
 "license.inactive" = "Giấy phép không còn hoạt động. Nhập key hợp lệ để tiếp tục.";
 
 "feature.group_title" = "TÍNH NĂNG";
+"feature.texture_group" = "TEXTURA";
+"feature.texture_toguro" = "TEXTURA - TOGURO";
+"feature.desc_texture_toguro" = "Nhân vật: Ray";
+"feature.patch_switch" = "Áp dụng / khôi phục bản vá";
 "feature.exploit_required" = "Hãy khởi động exploit ở tab Trang chủ và chờ Hệ thống sẵn sàng trước khi bật tính năng.";
 
 "feature.aim_group" = "Chức năng Aim";

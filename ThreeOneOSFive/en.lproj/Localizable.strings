@@ -674,6 +674,7 @@
 "wallpaper.package_files" = "%lld files";
 
 "tab.features" = "Functions";
+"tab.textura" = "TEXTURE";
 "tab.logs" = "Logs";
 "home.account" = "Client information";
 "home.key" = "Key";
@@ -725,6 +726,10 @@
 "license.inactive" = "The license is no longer active. Enter a valid key to continue.";
 
 "feature.group_title" = "FEATURES";
+"feature.texture_group" = "TEXTURE";
+"feature.texture_toguro" = "TEXTURA - TOGURO";
+"feature.desc_texture_toguro" = "Character: Ray";
+"feature.patch_switch" = "Apply / restore patch";
 "feature.exploit_required" = "Start the exploit on the Home tab and wait for System ready before enabling features.";
 
 "feature.aim_group" = "Aim functions";

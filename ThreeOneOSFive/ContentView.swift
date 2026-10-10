@@ -18,6 +18,12 @@ struct ContentView: View {
                 }
                 .tag(AppSection.features.rawValue)
 
+            FeaturesView(screen: .textura)
+                .tabItem {
+                    Label(language.text("tab.textura"), systemImage: "person.fill")
+                }
+                .tag(AppSection.textura.rawValue)
+
             LogView()
                 .tabItem {
                     Label(language.text("tab.logs"), systemImage: "text.alignleft")

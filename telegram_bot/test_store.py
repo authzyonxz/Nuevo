@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from catalog import validate_function_id
 from store import FunctionStore
 
 
@@ -15,6 +16,11 @@ class FunctionStoreTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
+
+    def test_textura_toguro_has_stable_function_id(self) -> None:
+        definition = validate_function_id("textura.toguro")
+        self.assertEqual(definition.name, "TEXTURA - TOGURO")
+        self.assertEqual(definition.group_id, "texture")
 
     @staticmethod
     def files(count: int) -> list[dict[str, object]]:
