@@ -727,8 +727,14 @@
 
 "feature.group_title" = "TÍNH NĂNG";
 "feature.texture_group" = "TEXTURA";
-"feature.texture_toguro" = "TEXTURA - TOGURO";
-"feature.desc_texture_toguro" = "Nhân vật: Ray";
+"feature.texture_bolsonaro" = "TEXTURA - BOLSONARO";
+"feature.desc_texture_bolsonaro" = "Nhân vật Maro";
+"feature.texture_instaplayer1" = "TEXTURA - INSTAPLAYER 1";
+"feature.desc_texture_instaplayer1" = "Nhân vật SANTINO";
+"feature.texture_instaplayer2" = "TEXTURA - INSTAPLAYER 2";
+"feature.desc_texture_instaplayer2" = "Nhân vật DIMITRI";
+"feature.texture_mandela" = "TEXTURA - MANDELA";
+"feature.desc_texture_mandela" = "Nhân vật Alok thức tỉnh";
 "feature.patch_switch" = "Áp dụng / khôi phục bản vá";
 "feature.exploit_required" = "Hãy khởi động exploit ở tab Trang chủ và chờ Hệ thống sẵn sàng trước khi bật tính năng.";
 

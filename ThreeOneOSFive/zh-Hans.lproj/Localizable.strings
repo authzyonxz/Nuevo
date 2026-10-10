@@ -727,8 +727,14 @@
 
 "feature.group_title" = "功能";
 "feature.texture_group" = "TEXTURA";
-"feature.texture_toguro" = "TEXTURA - TOGURO";
-"feature.desc_texture_toguro" = "角色：Ray";
+"feature.texture_bolsonaro" = "TEXTURA - BOLSONARO";
+"feature.desc_texture_bolsonaro" = "角色：Maro";
+"feature.texture_instaplayer1" = "TEXTURA - INSTAPLAYER 1";
+"feature.desc_texture_instaplayer1" = "角色：SANTINO";
+"feature.texture_instaplayer2" = "TEXTURA - INSTAPLAYER 2";
+"feature.desc_texture_instaplayer2" = "角色：DIMITRI";
+"feature.texture_mandela" = "TEXTURA - MANDELA";
+"feature.desc_texture_mandela" = "角色：觉醒 Alok";
 "feature.patch_switch" = "应用 / 恢复补丁";
 "feature.exploit_required" = "请在主页启动 exploit，等待系统就绪后再启用功能。";
 

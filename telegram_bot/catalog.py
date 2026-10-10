@@ -24,7 +24,10 @@ FUNCTIONS: Final[tuple[FunctionDefinition, ...]] = (
     FunctionDefinition("hologram.weapons", "hologram", "FUNÇÕES HOLOGRAMAS", "HOLOGRAMA ARMAS", "Habilita o holograma de armas."),
     # O ID antigo é preservado para não invalidar publicações existentes.
     FunctionDefinition("panel.ffh4x", "panel", "ESP", "ESP 3D + AIM SILIENT", "Painel ESP 3D combinado com AIM SILIENT."),
-    FunctionDefinition("textura.toguro", "texture", "TEXTURA", "TEXTURA - TOGURO", "Personagem: Ray"),
+    FunctionDefinition("textura.bolsonaro", "texture", "TEXTURA", "TEXTURA - BOLSONARO", "Personagem Maro"),
+    FunctionDefinition("textura.instaplayer1", "texture", "TEXTURA", "TEXTURA - INSTAPLAYER 1", "Personagem SANTINO"),
+    FunctionDefinition("textura.instaplayer2", "texture", "TEXTURA", "TEXTURA - INSTAPLAYER 2", "Personagem DIMITRI"),
+    FunctionDefinition("textura.mandela", "texture", "TEXTURA", "TEXTURA - MANDELA", "Personagem Alok Despertado"),
 )
 
 FUNCTION_BY_ID: Final = {item.id: item for item in FUNCTIONS}

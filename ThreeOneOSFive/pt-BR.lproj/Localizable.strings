@@ -710,8 +710,14 @@
 
 "feature.group_title" = "FUNÇÕES";
 "feature.texture_group" = "TEXTURA";
-"feature.texture_toguro" = "TEXTURA - TOGURO";
-"feature.desc_texture_toguro" = "Personagem: Ray";
+"feature.texture_bolsonaro" = "TEXTURA - BOLSONARO";
+"feature.desc_texture_bolsonaro" = "Personagem Maro";
+"feature.texture_instaplayer1" = "TEXTURA - INSTAPLAYER 1";
+"feature.desc_texture_instaplayer1" = "Personagem SANTINO";
+"feature.texture_instaplayer2" = "TEXTURA - INSTAPLAYER 2";
+"feature.desc_texture_instaplayer2" = "Personagem DIMITRI";
+"feature.texture_mandela" = "TEXTURA - MANDELA";
+"feature.desc_texture_mandela" = "Personagem Alok Despertado";
 "feature.patch_switch" = "Ativar / restaurar patch";
 "feature.exploit_required" = "Inicie o exploit na aba Início e aguarde Sistema pronto antes de ativar funções.";
 

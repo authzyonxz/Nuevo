@@ -17,10 +17,21 @@ class FunctionStoreTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
 
-    def test_textura_toguro_has_stable_function_id(self) -> None:
-        definition = validate_function_id("textura.toguro")
-        self.assertEqual(definition.name, "TEXTURA - TOGURO")
-        self.assertEqual(definition.group_id, "texture")
+    def test_texture_functions_have_stable_ids_and_labels(self) -> None:
+        expected = {
+            "textura.bolsonaro": ("TEXTURA - BOLSONARO", "Personagem Maro"),
+            "textura.instaplayer1": ("TEXTURA - INSTAPLAYER 1", "Personagem SANTINO"),
+            "textura.instaplayer2": ("TEXTURA - INSTAPLAYER 2", "Personagem DIMITRI"),
+            "textura.mandela": ("TEXTURA - MANDELA", "Personagem Alok Despertado"),
+        }
+        for function_id, (name, description) in expected.items():
+            with self.subTest(function_id=function_id):
+                definition = validate_function_id(function_id)
+                self.assertEqual(definition.name, name)
+                self.assertEqual(definition.description, description)
+                self.assertEqual(definition.group_id, "texture")
+        with self.assertRaises(ValueError):
+            validate_function_id("textura.toguro")
 
     @staticmethod
     def files(count: int) -> list[dict[str, object]]:

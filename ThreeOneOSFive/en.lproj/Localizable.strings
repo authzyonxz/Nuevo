@@ -727,8 +727,14 @@
 
 "feature.group_title" = "FEATURES";
 "feature.texture_group" = "TEXTURE";
-"feature.texture_toguro" = "TEXTURA - TOGURO";
-"feature.desc_texture_toguro" = "Character: Ray";
+"feature.texture_bolsonaro" = "TEXTURA - BOLSONARO";
+"feature.desc_texture_bolsonaro" = "Character: Maro";
+"feature.texture_instaplayer1" = "TEXTURA - INSTAPLAYER 1";
+"feature.desc_texture_instaplayer1" = "Character: SANTINO";
+"feature.texture_instaplayer2" = "TEXTURA - INSTAPLAYER 2";
+"feature.desc_texture_instaplayer2" = "Character: DIMITRI";
+"feature.texture_mandela" = "TEXTURA - MANDELA";
+"feature.desc_texture_mandela" = "Character: Awakened Alok";
 "feature.patch_switch" = "Apply / restore patch";
 "feature.exploit_required" = "Start the exploit on the Home tab and wait for System ready before enabling features.";
 

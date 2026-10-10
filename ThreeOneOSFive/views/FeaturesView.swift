@@ -21,7 +21,10 @@ struct FeaturesView: View {
     @State private var aimCacheChestEnabled = false
     @State private var hologramWeaponsEnabled = false
     @State private var panelFFH4XEnabled = false
-    @State private var texturaToguroEnabled = false
+    @State private var texturaBolsonaroEnabled = false
+    @State private var texturaInstaplayer1Enabled = false
+    @State private var texturaInstaplayer2Enabled = false
+    @State private var texturaMandelaEnabled = false
     @State private var appliedProjectIDs: [String: UUID] = [:]
     @State private var busyIDs = Set<String>()
     @State private var ignoredChanges = Set<String>()
@@ -47,7 +50,36 @@ struct FeaturesView: View {
                     }
 
                     if screen == .textura {
-                        texturaToguroCard()
+                        VStack(spacing: 12) {
+                            textureCard(
+                                titleKey: "feature.texture_bolsonaro",
+                                descriptionKey: "feature.desc_texture_bolsonaro",
+                                imageName: "TextureBolsonaro",
+                                id: .textureBolsonaro,
+                                isOn: $texturaBolsonaroEnabled
+                            )
+                            textureCard(
+                                titleKey: "feature.texture_instaplayer1",
+                                descriptionKey: "feature.desc_texture_instaplayer1",
+                                imageName: "TextureInstaplayer1",
+                                id: .textureInstaplayer1,
+                                isOn: $texturaInstaplayer1Enabled
+                            )
+                            textureCard(
+                                titleKey: "feature.texture_instaplayer2",
+                                descriptionKey: "feature.desc_texture_instaplayer2",
+                                imageName: "TextureInstaplayer2",
+                                id: .textureInstaplayer2,
+                                isOn: $texturaInstaplayer2Enabled
+                            )
+                            textureCard(
+                                titleKey: "feature.texture_mandela",
+                                descriptionKey: "feature.desc_texture_mandela",
+                                imageName: "TextureMandela",
+                                id: .textureMandela,
+                                isOn: $texturaMandelaEnabled
+                            )
+                        }
                     } else {
                         aimFunctionsSection()
 
@@ -89,69 +121,60 @@ struct FeaturesView: View {
         .preferredColorScheme(.dark)
     }
 
-    private func texturaToguroCard() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 7) {
-                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                    .fill(AppTheme.accent)
-                    .frame(width: 3, height: 14)
-                    .accessibilityHidden(true)
-                Text(language.text("feature.texture_group").uppercased())
-                    .font(.caption.weight(.bold))
-                    .tracking(1.1)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 4)
-
-            HStack(spacing: 13) {
-                Image("TexturaToguro")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 82, height: 124)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    }
-                    .accessibilityLabel(language.text("feature.texture_toguro"))
-
-                VStack(alignment: .leading, spacing: 7) {
-                    Text(language.text("feature.texture_toguro"))
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(language.text("feature.desc_texture_toguro"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Label(language.text("feature.patch_switch"), systemImage: "arrow.triangle.2.circlepath")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.68))
+    private func textureCard(
+        titleKey: String,
+        descriptionKey: String,
+        imageName: String,
+        id: PublishedFunctionID,
+        isOn: Binding<Bool>
+    ) -> some View {
+        HStack(spacing: 13) {
+            Image(imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 82, height: 124)
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel(language.text(titleKey))
 
-                Toggle("", isOn: $texturaToguroEnabled)
-                    .labelsHidden()
-                    .tint(AppTheme.accent)
-                    .disabled(
-                        busyIDs.contains(PublishedFunctionID.textureToguro.rawValue)
-                            || !appState.canUseFeatures
-                            || !licenseManager.isAuthorized
-                            || licenseManager.isRecheckingSession
-                    )
-                    .accessibilityLabel(language.text("feature.texture_toguro"))
-                    .accessibilityIdentifier(PublishedFunctionID.textureToguro.rawValue)
-                    .onChange(of: texturaToguroEnabled) { enabled in
-                        let id = PublishedFunctionID.textureToguro
-                        if ignoredChanges.remove(id.rawValue) != nil { return }
-                        Task { await handleToggle(id, enabled: enabled, binding: $texturaToguroEnabled) }
-                    }
+            VStack(alignment: .leading, spacing: 7) {
+                Text(language.text(titleKey))
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(language.text(descriptionKey))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Label(language.text("feature.patch_switch"), systemImage: "arrow.triangle.2.circlepath")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.68))
             }
-            .padding(13)
-            .background(Color(white: 0.075), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(AppTheme.accent)
+                .disabled(
+                    busyIDs.contains(id.rawValue)
+                        || !appState.canUseFeatures
+                        || !licenseManager.isAuthorized
+                        || licenseManager.isRecheckingSession
+                )
+                .accessibilityLabel(language.text(titleKey))
+                .accessibilityIdentifier(id.rawValue)
+                .onChange(of: isOn.wrappedValue) { enabled in
+                    if ignoredChanges.remove(id.rawValue) != nil { return }
+                    Task { await handleToggle(id, enabled: enabled, binding: isOn) }
+                }
+        }
+        .padding(13)
+        .background(Color(white: 0.075), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
         }
     }
 

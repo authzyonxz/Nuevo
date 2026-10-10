@@ -15,7 +15,10 @@ O bot administra os arquivos publicados para cada função. O fluxo atual public
 | AIM · CACHE_RES | HS PEITO | `aim.cache_chest_hs` |
 | FUNÇÕES HOLOGRAMAS | HOLOGRAMA ARMAS | `hologram.weapons` |
 | ESP | ESP 3D + AIM SILIENT | `panel.ffh4x` |
-| TEXTURA | TEXTURA - TOGURO | `textura.toguro` |
+| TEXTURA | TEXTURA - BOLSONARO | `textura.bolsonaro` |
+| TEXTURA | TEXTURA - INSTAPLAYER 1 | `textura.instaplayer1` |
+| TEXTURA | TEXTURA - INSTAPLAYER 2 | `textura.instaplayer2` |
+| TEXTURA | TEXTURA - MANDELA | `textura.mandela` |
 
 Esses IDs não mudam quando o nome exibido for traduzido ou alterado.
 
