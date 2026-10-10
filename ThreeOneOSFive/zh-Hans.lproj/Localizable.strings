@@ -674,6 +674,7 @@
 "wallpaper.package_files" = "%lld 个文件";
 
 "tab.features" = "功能";
+"tab.textura" = "TEXTURA";
 "tab.logs" = "日志";
 "home.account" = "客户信息";
 "home.key" = "Key";
@@ -725,6 +726,10 @@
 "license.inactive" = "许可证已失效。请输入有效密钥以继续。";
 
 "feature.group_title" = "功能";
+"feature.texture_group" = "TEXTURA";
+"feature.texture_toguro" = "TEXTURA - TOGURO";
+"feature.desc_texture_toguro" = "角色：Ray";
+"feature.patch_switch" = "应用 / 恢复补丁";
 "feature.exploit_required" = "请在主页启动 exploit，等待系统就绪后再启用功能。";
 
 "feature.aim_group" = "Aim 功能";

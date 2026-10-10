@@ -657,6 +657,7 @@
 "wallpaper.package_details" = "Detalhes do pacote";
 "wallpaper.package_files" = "%lld arquivos";
 "tab.features" = "FUNÇÕES";
+"tab.textura" = "TEXTURA";
 "tab.logs" = "LOGS";
 "home.account" = "Informações do cliente";
 "home.key" = "Chave";
@@ -708,6 +709,10 @@
 "license.inactive" = "A licença não está mais ativa. Informe uma key válida para continuar.";
 
 "feature.group_title" = "FUNÇÕES";
+"feature.texture_group" = "TEXTURA";
+"feature.texture_toguro" = "TEXTURA - TOGURO";
+"feature.desc_texture_toguro" = "Personagem: Ray";
+"feature.patch_switch" = "Ativar / restaurar patch";
 "feature.exploit_required" = "Inicie o exploit na aba Início e aguarde Sistema pronto antes de ativar funções.";
 
 "feature.aim_group" = "Funções Aim";
