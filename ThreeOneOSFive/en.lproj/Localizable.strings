@@ -231,6 +231,7 @@
 "patch.error.symlink" = "Patch targets cannot pass through symbolic links.";
 "patch.error.apply" = "The patch could not be applied. Any earlier writes were rolled back.";
 "patch.error.target_missing" = "The target file does not exist in the current container:\n%@\nNo new folder was created.";
+"patch.error.target_ambiguous" = "More than one file with this name exists in the container:\n%@\nUse the full path to identify the intended file.";
 "patch.error.restore" = "The originals could not be restored safely. No unverified target was overwritten.";
 "patch.error.reset" = "The files could not be reset to the applied package state. Any partial writes were rolled back.";
 "patch.error.invalid_import_link" = "This patch import link is invalid. Use a secure HTTPS link to a .3105 package.";
