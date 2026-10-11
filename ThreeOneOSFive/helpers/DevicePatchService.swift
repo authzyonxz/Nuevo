@@ -115,6 +115,12 @@ enum DevicePatchService {
 /// inside the target app-data container. PatchTransaction keeps the original in
 /// its journal so the existing restore flow can restore it.
 enum PublishedRawFileService {
+    private enum ExactFileSearchResult {
+        case found(String)
+        case missing
+        case ambiguous
+    }
+
     /// Adiciona os arquivos nos caminhos publicados, sem procurar por nomes
     /// dentro do container e sem substituir um destino que já exista.
     static func addMany(
@@ -167,9 +173,16 @@ enum PublishedRawFileService {
         let root = PatchPathValidator.canonicalFileURL(
             URL(fileURLWithPath: rootPath, isDirectory: true)
         )
-        guard let relativePath = findExactFile(named: filename, under: root) else {
+        let relativePath: String
+        switch findExactFile(named: filename, under: root) {
+        case .found(let path):
+            relativePath = path
+        case .missing:
             log("published-raw: exact file not found bundle=\(bundleID) filename=\(filename) root=\(root.path)")
             throw PatchPackageError.targetPathMissing("\(bundleID)/\(filename)")
+        case .ambiguous:
+            log("published-raw: exact filename is ambiguous bundle=\(bundleID) filename=\(filename) root=\(root.path)")
+            throw PatchPackageError.targetPathAmbiguous("\(bundleID)/\(filename)")
         }
         log("published-raw: exact file found bundle=\(bundleID) relativePath=\(relativePath) root=\(root.path)")
         let project = PatchProject(
@@ -191,13 +204,13 @@ enum PublishedRawFileService {
         return receipt
     }
 
-    private static func findExactFile(named filename: String, under root: URL) -> String? {
+    private static func findExactFile(named filename: String, under root: URL) -> ExactFileSearchResult {
         let fileManager = FileManager.default
         guard let enumerator = fileManager.enumerator(
             at: root,
             includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey],
-            options: [.skipsHiddenFiles]
-        ) else { return nil }
+            options: []
+        ) else { return .missing }
         var matches: [String] = []
         for case let url as URL in enumerator {
             guard url.lastPathComponent == filename else { continue }
@@ -209,9 +222,10 @@ enum PublishedRawFileService {
             let canonical = PatchPathValidator.canonicalFileURL(url)
             guard canonical.path.hasPrefix(root.path + "/") else { continue }
             matches.append(String(canonical.path.dropFirst(root.path.count + 1)))
-            if matches.count > 1 { return nil }
+            if matches.count > 1 { return .ambiguous }
         }
-        return matches.first
+        guard let match = matches.first else { return .missing }
+        return .found(match)
     }
 
     private static func resolveTargetPath(_ filename: String, under bundleID: String) -> String? {
@@ -227,7 +241,10 @@ enum PublishedRawFileService {
             }
             return String(url.path.dropFirst(root.path.count + 1))
         }
-        return findExactFile(named: filename, under: root)
+        guard case .found(let relativePath) = findExactFile(named: filename, under: root) else {
+            return nil
+        }
+        return relativePath
     }
 
     private static func isValidFilePath(_ filename: String) -> Bool {
