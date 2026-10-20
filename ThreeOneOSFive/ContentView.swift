@@ -135,14 +135,21 @@ private struct ParticleNetworkBackground: View {
     }
 
     private static func makeNodes(for size: CGSize) -> [ParticleNode] {
-        let count = min(110, max(1, Int((size.width * size.height) / 17_000)))
+        let count = min(110, max(1, Int((size.width * size.height) / 13_000)))
         let width = max(1, Int(size.width.rounded()))
         let height = max(1, Int(size.height.rounded()))
+        let horizontalInset = size.width * 0.10
+        let verticalInset = size.height * 0.12
+        let contentWidth = max(1, size.width - horizontalInset * 2)
+        let contentHeight = max(1, size.height - verticalInset * 2)
         var random = StableRandom(seed: UInt64(width) &* 73_856_093 ^ UInt64(height) &* 19_349_663)
 
         return (0..<count).map { _ in
             ParticleNode(
-                origin: CGPoint(x: random.nextUnit() * size.width, y: random.nextUnit() * size.height),
+                origin: CGPoint(
+                    x: horizontalInset + random.nextUnit() * contentWidth,
+                    y: verticalInset + random.nextUnit() * contentHeight
+                ),
                 velocity: CGPoint(
                     x: (random.nextUnit() - 0.5) * 13.5,
                     y: (random.nextUnit() - 0.5) * 13.5
@@ -153,18 +160,28 @@ private struct ParticleNetworkBackground: View {
 
     private static func reflectedPosition(of node: ParticleNode, in size: CGSize, time: TimeInterval) -> CGPoint {
         let elapsed = CGFloat(time)
+        let horizontalInset = size.width * 0.10
+        let verticalInset = size.height * 0.12
         return CGPoint(
-            x: reflected(node.origin.x + node.velocity.x * elapsed, limit: size.width),
-            y: reflected(node.origin.y + node.velocity.y * elapsed, limit: size.height)
+            x: reflected(
+                node.origin.x + node.velocity.x * elapsed,
+                between: horizontalInset,
+                and: size.width - horizontalInset
+            ),
+            y: reflected(
+                node.origin.y + node.velocity.y * elapsed,
+                between: verticalInset,
+                and: size.height - verticalInset
+            )
         )
     }
 
-    private static func reflected(_ value: CGFloat, limit: CGFloat) -> CGFloat {
-        guard limit > 0 else { return 0 }
-        let period = Double(limit) * 2
-        var position = Double(value).truncatingRemainder(dividingBy: period)
+    private static func reflected(_ value: CGFloat, between lowerBound: CGFloat, and upperBound: CGFloat) -> CGFloat {
+        let range = max(1, upperBound - lowerBound)
+        let period = Double(range) * 2
+        var position = Double(value - lowerBound).truncatingRemainder(dividingBy: period)
         if position < 0 { position += period }
-        return CGFloat(position <= Double(limit) ? position : period - position)
+        return lowerBound + CGFloat(position <= Double(range) ? position : period - position)
     }
 
     private struct ParticleNode {
