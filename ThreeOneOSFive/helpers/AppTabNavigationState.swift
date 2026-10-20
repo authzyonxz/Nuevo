@@ -2,8 +2,11 @@ import Foundation
 
 enum AppSection: Int, CaseIterable, Identifiable {
     case home
-    case features
-    case logs
+    case new
+    case sources
+    case installed
+    case files
+    case search
 
     var id: Int { rawValue }
 }
@@ -29,10 +32,28 @@ struct OneShotPresentationGate: Equatable {
     }
 }
 
-// Kept for settings and legacy feature modules that remain in the target.
 struct FeatureVisibility: Equatable {
     static let cleanerStorageKey = "feature.cleaner.enabled"
     static let developerModeStorageKey = "feature.developer_mode.enabled"
+
+    let developerModeEnabled: Bool
+
+    init(developerModeEnabled: Bool) {
+        self.developerModeEnabled = developerModeEnabled
+    }
+
+    var visibleSections: [AppSection] {
+        AppSection.allCases.filter(isVisible)
+    }
+
+    func isVisible(_ section: AppSection) -> Bool {
+        switch section {
+        case .files:
+            return developerModeEnabled
+        default:
+            return true
+        }
+    }
 }
 
 struct AppTabNavigationState: Equatable {
@@ -40,7 +61,7 @@ struct AppTabNavigationState: Equatable {
     private(set) var filesTabs: FilesTabSession
 
     init(
-        selectedTab: Int = AppSection.home.rawValue,
+        selectedTab: Int = 0,
         filesNavigationPath: [FileBrowserDestination] = []
     ) {
         self.selectedTab = selectedTab
@@ -50,7 +71,6 @@ struct AppTabNavigationState: Equatable {
     }
 
     mutating func select(_ tab: Int) {
-        guard AppSection(rawValue: tab) != nil else { return }
         selectedTab = tab
     }
 
@@ -66,8 +86,9 @@ struct AppTabNavigationState: Equatable {
         filesTabs = session
     }
 
-    mutating func reconcileSelection() {
-        guard AppSection(rawValue: selectedTab) != nil else {
+    mutating func reconcileSelection(with visibility: FeatureVisibility) {
+        guard let selectedSection = AppSection(rawValue: selectedTab),
+              visibility.isVisible(selectedSection) else {
             selectedTab = AppSection.home.rawValue
             return
         }

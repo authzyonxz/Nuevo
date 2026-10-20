@@ -60,14 +60,14 @@
 "dashboard.device_name" = "Device name";
 "dashboard.hardware_model" = "Hardware model";
 "dashboard.access_footer" = "Access is reported as successful only after the system file opens for reading and writing.";
-"dashboard.unsupported_footer" = "iOS %@ (%@) is outside the verified range. Supported: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.2, iOS 27.0 Developer Beta 1–4 and Public Beta 1–2.";
+"dashboard.unsupported_footer" = "iOS %@ (%@) is outside the verified range. Supported: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.1, iOS 27.0 Developer Beta 1–4 and Public Beta 1–2.";
 "dashboard.app_browser" = "App Data Browser";
 "dashboard.browser" = "File Browser";
 "dashboard.open_browser" = "Open File Browser";
 "dashboard.browser_footer" = "Browse and read data from every app and system container on this device.";
 "dashboard.device_actions_warning" = "Save pending changes before restarting the device.";
 "dashboard.unsupported_device" = "Unsupported Device";
-"dashboard.unsupported_message" = "iOS %@ is not yet supported.\n\nCurrently supported:\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.2\n• iOS 27.0 Developer Beta 1–4\n• iOS 27.0 Public Beta 1–2";
+"dashboard.unsupported_message" = "iOS %@ is not yet supported.\n\nCurrently supported:\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.1\n• iOS 27.0 Developer Beta 1–4\n• iOS 27.0 Public Beta 1–2";
 "dashboard.installation" = "Installation";
 "dashboard.kernel_status" = "Kernel status";
 "dashboard.kernel_running" = "Activating…";
@@ -230,7 +230,6 @@
 "patch.error.active_delete" = "This patch is still active. Restore its original files before deleting the package.";
 "patch.error.symlink" = "Patch targets cannot pass through symbolic links.";
 "patch.error.apply" = "The patch could not be applied. Any earlier writes were rolled back.";
-"patch.error.target_missing" = "The target file does not exist in the current container:\n%@\nNo new folder was created.";
 "patch.error.restore" = "The originals could not be restored safely. No unverified target was overwritten.";
 "patch.error.reset" = "The files could not be reset to the applied package state. Any partial writes were rolled back.";
 "patch.error.invalid_import_link" = "This patch import link is invalid. Use a secure HTTPS link to a .3105 package.";
@@ -264,7 +263,7 @@
 "settings.beta_build" = "Beta %lld · %@";
 "settings.developer_beta_build" = "Developer Beta %lld · %@";
 "settings.developer_public_beta_build" = "Developer Beta %lld / Public Beta %lld · %@";
-"settings.supported_range_summary" = "Verified: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.2, iOS 27.0 Developer Beta 1–4 and Public Beta 1–2.";
+"settings.supported_range_summary" = "Verified: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.1, iOS 27.0 Developer Beta 1–4 and Public Beta 1–2.";
 
 "kernel.section_title" = "Kernel Exploit";
 "kernel.run_exploit" = "Run Kernel Exploit";
@@ -354,11 +353,7 @@
 "logs.copy" = "Copy log";
 "logs.share" = "Share log";
 "logs.empty_title" = "No Log Entries";
-"logs.empty_message" = "Exploit starts, successes, failures, and container access will appear here.";
-"logs.event_starting" = "Exploit started";
-"logs.event_success" = "Success / access granted";
-"logs.event_failure" = "Failure";
-"logs.event_container" = "Container access";
+"logs.empty_message" = "Exploit and editor activity will appear here during this session.";
 
 "browser.title" = "App Data Browser";
 "browser.workspace" = "3105 Workspace";
@@ -672,116 +667,3 @@
 "settings.developer_mode_footer" = "Developer Mode adds Files to the main navigation. Files can browse and modify application containers.";
 "wallpaper.package_details" = "Package Details";
 "wallpaper.package_files" = "%lld files";
-
-"tab.features" = "Functions";
-"tab.logs" = "Logs";
-"home.account" = "Client information";
-"home.key" = "Key";
-"home.duration" = "Duration";
-"home.package" = "Package";
-"home.device_information" = "Device information";
-"home.ios_version" = "iOS version";
-"home.device" = "Device";
-"home.build" = "Build";
-"home.language" = "Language";
-"home.exploit" = "System access";
-"home.start_exploit" = "Start Exploit";
-"home.starting_exploit" = "Starting exploit";
-"home.exploit_active" = "Exploit active";
-"home.exploit_inactive" = "Exploit inactive";
-"home.system_ready" = "System ready";
-"home.exploit_footer" = "Start it manually while the app is in the foreground. Leaving the app invalidates access and requires starting again.";
-
-"login.title" = "Key login";
-
-"login.subtitle" = "Enter a key to continue";
-
-"login.key" = "Key";
-
-"login.key_placeholder" = "Enter any test key";
-
-"login.validate" = "Validate key";
-
-"login.test_note" = "Test mode: any non-empty text is accepted.";
-
-"login.success_title" = "License authorized";
-
-"login.success_message" = "Your license is active for this device.";
-
-"login.example_duration" = "30 days";
-
-"login.example_package" = "Example package";
-
-"login.enter_app" = "Enter app";
-
-"license.authorized.status" = "Status";
-"license.authorized.active" = "Authorized";
-"license.authorized.udid" = "Registered UDID";
-"license.authorized.device_fallback" = "This iPhone is registered";
-"license.authorized.activated" = "Activated";
-"license.authorized.expires" = "Expires";
-"license.authorized.days" = "%lld days";
-"license.checking" = "Checking license…";
-"license.inactive" = "The license is no longer active. Enter a valid key to continue.";
-
-"feature.group_title" = "FEATURES";
-"feature.exploit_required" = "Start the exploit on the Home tab and wait for System ready before enabling features.";
-
-"feature.aim_group" = "Aim functions";
-
-"feature.aim_file_type" = "AIM file type";
-"feature.cache_aim_high" = "HS ALTO";
-"feature.cache_aim_neck" = "HS NECK";
-"feature.cache_aim_chest" = "HS CHEST";
-"feature.desc_cache_aim_high" = "Cache_res: HS above the head.";
-"feature.desc_cache_aim_neck" = "Cache_res: HS on the enemy neck.";
-"feature.desc_cache_aim_chest" = "Cache_res: HS on the enemy chest.";
-"feature.cache_warning" = "Cache_res functions may present risks. Use at your own risk.";
-
-"feature.aim_neck" = "HS NECK";
-
-"feature.aim_high" = "HS ALTO";
-
-"feature.aim_neck_antenna" = "HS NECK + ANTENNA";
-"feature.aim_chest" = "HS CHEST";
-"feature.desc_aim_chest" = "HS on the enemy chest.";
-
-"feature.hologram_group" = "HOLOGRAM FUNCTIONS";
-
-"feature.hologram_weapons" = "WEAPON HOLOGRAM";
-
-"feature.panel_group" = "ESP";
-
-"feature.panel_ffh4x" = "ESP 3D + AIM SILIENT";
-
-"feature.remote_maintenance" = "This function is under maintenance.";
-
-"feature.remote_unavailable" = "No published package is available for this function.";
-
-"feature.remote_password" = "This package requires a password and cannot be activated automatically.";
-
-"feature.remote_not_configured" = "The remote function catalog is not configured.";
-
-"feature.group_aim_subtitle" = "Aim assistance functions";
-
-"feature.group_hologram_subtitle" = "Visual overlay functions";
-
-"feature.group_panel_subtitle" = "ESP and visual assistance functions";
-
-"feature.alert_title" = "Function status";
-
-"feature.injected_success" = "Injected successfully.";
-
-"feature.restored_success" = "Restored successfully.";
-
-"feature.restore_unavailable" = "This function cannot be restored because no active patch was found.";
-
-"feature.desc_aim_high" = "HS above the enemy head.";
-
-"feature.desc_aim_neck_antenna" = "HS on the neck with antenna.";
-
-"feature.desc_aim_neck" = "HS on the enemy neck.";
-
-"feature.desc_hologram_weapons" = "Weapon hologram. Use the standard graphics setting to work.";
-
-"feature.desc_panel_ffh4x" = "External panel with ESP and silent aim.";

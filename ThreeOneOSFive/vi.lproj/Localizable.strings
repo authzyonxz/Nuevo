@@ -60,14 +60,14 @@
 "dashboard.device_name" = "Tên thiết bị";
 "dashboard.hardware_model" = "Model phần cứng";
 "dashboard.access_footer" = "App chỉ báo thành công sau khi tệp hệ thống thực sự mở được ở chế độ đọc và ghi.";
-"dashboard.unsupported_footer" = "iOS %@ (%@) nằm ngoài phạm vi đã xác minh. Hỗ trợ: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.2, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
+"dashboard.unsupported_footer" = "iOS %@ (%@) nằm ngoài phạm vi đã xác minh. Hỗ trợ: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.1, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
 "dashboard.app_browser" = "Duyệt dữ liệu ứng dụng";
 "dashboard.browser" = "Trình duyệt file";
 "dashboard.open_browser" = "Mở trình duyệt file";
 "dashboard.browser_footer" = "Duyệt và đọc dữ liệu từ mọi ứng dụng và system container trên thiết bị.";
 "dashboard.device_actions_warning" = "Hãy lưu thay đổi trước khi khởi động lại thiết bị.";
 "dashboard.unsupported_device" = "Thiết bị không được hỗ trợ";
-"dashboard.unsupported_message" = "iOS %@ chưa được hỗ trợ.\n\nCác phiên bản hiện được hỗ trợ:\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.2\n• iOS 27.0 Developer Beta 1–4\n• iOS 27.0 Public Beta 1–2";
+"dashboard.unsupported_message" = "iOS %@ chưa được hỗ trợ.\n\nCác phiên bản hiện được hỗ trợ:\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.1\n• iOS 27.0 Developer Beta 1–4\n• iOS 27.0 Public Beta 1–2";
 "dashboard.installation" = "Cài đặt ứng dụng";
 "dashboard.kernel_status" = "Trạng thái kernel";
 "dashboard.kernel_running" = "Đang kích hoạt…";
@@ -230,7 +230,6 @@
 "patch.error.active_delete" = "Patch này vẫn đang hoạt động. Hãy khôi phục file gốc trước khi xóa gói.";
 "patch.error.symlink" = "Đường dẫn patch không được đi qua liên kết tượng trưng.";
 "patch.error.apply" = "Không thể áp dụng patch. Mọi file đã ghi trước đó đã được rollback.";
-"patch.error.target_missing" = "Tệp đích không tồn tại trong container hiện tại:\n%@\nKhông tạo thư mục mới.";
 "patch.error.restore" = "Không thể khôi phục file gốc an toàn. App không ghi đè đích chưa được xác minh.";
 "patch.error.reset" = "Không thể đặt lại file theo trạng thái của gói. Mọi thay đổi dở dang đã được rollback.";
 "patch.error.invalid_import_link" = "Liên kết nhập patch không hợp lệ. Hãy dùng liên kết HTTPS an toàn tới gói .3105.";
@@ -264,7 +263,7 @@
 "settings.beta_build" = "Beta %lld · %@";
 "settings.developer_beta_build" = "Developer Beta %lld · %@";
 "settings.developer_public_beta_build" = "Developer Beta %lld / Public Beta %lld · %@";
-"settings.supported_range_summary" = "Đã xác minh: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.2, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
+"settings.supported_range_summary" = "Đã xác minh: iOS 17.0–17.7.x, iOS 18.0–18.7.1, iOS 26.0–26.6.1, iOS 27.0 Developer Beta 1–4 và Public Beta 1–2.";
 
 "kernel.section_title" = "Kernel Exploit";
 "kernel.run_exploit" = "Chạy Kernel Exploit";
@@ -354,11 +353,7 @@
 "logs.copy" = "Sao chép nhật ký";
 "logs.share" = "Chia sẻ nhật ký";
 "logs.empty_title" = "Chưa có nhật ký";
-"logs.empty_message" = "Lần khởi động, thành công, lỗi exploit và quyền truy cập container sẽ xuất hiện tại đây.";
-"logs.event_starting" = "Đã bắt đầu exploit";
-"logs.event_success" = "Thành công / đã cấp quyền";
-"logs.event_failure" = "Lỗi";
-"logs.event_container" = "Quyền truy cập container";
+"logs.empty_message" = "Hoạt động exploit và chỉnh sửa sẽ xuất hiện tại đây trong phiên này.";
 
 "browser.title" = "Duyệt dữ liệu ứng dụng";
 "browser.workspace" = "Workspace 3105";
@@ -672,116 +667,3 @@
 "settings.developer_mode_footer" = "Chế độ nhà phát triển thêm mục Tệp vào thanh điều hướng chính. Tệp có thể duyệt và chỉnh sửa container ứng dụng.";
 "wallpaper.package_details" = "Chi tiết gói";
 "wallpaper.package_files" = "%lld tệp";
-
-"tab.features" = "Chức năng";
-"tab.logs" = "Nhật ký";
-"home.account" = "Thông tin khách hàng";
-"home.key" = "Key";
-"home.duration" = "Thời hạn";
-"home.package" = "Package";
-"home.device_information" = "Thông tin thiết bị";
-"home.ios_version" = "Phiên bản iOS";
-"home.device" = "Thiết bị";
-"home.build" = "Build";
-"home.language" = "Ngôn ngữ";
-"home.exploit" = "Quyền hệ thống";
-"home.start_exploit" = "Khởi động Exploit";
-"home.starting_exploit" = "Đang khởi động exploit";
-"home.exploit_active" = "Exploit đang hoạt động";
-"home.exploit_inactive" = "Exploit không hoạt động";
-"home.system_ready" = "Hệ thống sẵn sàng";
-"home.exploit_footer" = "Hãy khởi động thủ công khi ứng dụng ở phía trước. Khi rời ứng dụng, quyền truy cập bị vô hiệu hóa và cần khởi động lại.";
-
-"login.title" = "Đăng nhập bằng key";
-
-"login.subtitle" = "Nhập key để tiếp tục";
-
-"login.key" = "Key";
-
-"login.key_placeholder" = "Nhập key thử nghiệm bất kỳ";
-
-"login.validate" = "Xác thực key";
-
-"login.test_note" = "Chế độ thử nghiệm: mọi nội dung không trống đều được chấp nhận.";
-
-"login.success_title" = "Giấy phép đã được cấp";
-
-"login.success_message" = "Giấy phép của bạn đang hoạt động trên thiết bị này.";
-
-"login.example_duration" = "30 ngày";
-
-"login.example_package" = "Package mẫu";
-
-"login.enter_app" = "Vào ứng dụng";
-
-"license.authorized.status" = "Trạng thái";
-"license.authorized.active" = "Đã cấp quyền";
-"license.authorized.udid" = "UDID đã đăng ký";
-"license.authorized.device_fallback" = "iPhone này đã được đăng ký";
-"license.authorized.activated" = "Đã kích hoạt";
-"license.authorized.expires" = "Hết hạn";
-"license.authorized.days" = "%lld ngày";
-"license.checking" = "Đang kiểm tra giấy phép…";
-"license.inactive" = "Giấy phép không còn hoạt động. Nhập key hợp lệ để tiếp tục.";
-
-"feature.group_title" = "TÍNH NĂNG";
-"feature.exploit_required" = "Hãy khởi động exploit ở tab Trang chủ và chờ Hệ thống sẵn sàng trước khi bật tính năng.";
-
-"feature.aim_group" = "Chức năng Aim";
-
-"feature.aim_file_type" = "Loại tệp AIM";
-"feature.cache_aim_high" = "HS CAO";
-"feature.cache_aim_neck" = "HS CỔ";
-"feature.cache_aim_chest" = "HS NGỰC";
-"feature.desc_cache_aim_high" = "Cache_res: HS phía trên đầu.";
-"feature.desc_cache_aim_neck" = "Cache_res: HS vào cổ kẻ địch.";
-"feature.desc_cache_aim_chest" = "Cache_res: HS vào ngực kẻ địch.";
-"feature.cache_warning" = "Các chức năng Cache_res có thể có rủi ro. Bạn tự chịu trách nhiệm khi sử dụng.";
-
-"feature.aim_neck" = "HS CỔ";
-
-"feature.aim_high" = "HS CAO";
-
-"feature.aim_neck_antenna" = "HS CỔ + ĂNG-TEN";
-"feature.aim_chest" = "HS NGỰC";
-"feature.desc_aim_chest" = "HS vào ngực kẻ địch.";
-
-"feature.hologram_group" = "CHỨC NĂNG HOLOGRAM";
-
-"feature.hologram_weapons" = "HOLOGRAM VŨ KHÍ";
-
-"feature.panel_group" = "ESP";
-
-"feature.panel_ffh4x" = "ESP 3D + AIM SILIENT";
-
-"feature.remote_maintenance" = "Chức năng này đang được bảo trì.";
-
-"feature.remote_unavailable" = "Chưa có gói được phát hành cho chức năng này.";
-
-"feature.remote_password" = "Gói này yêu cầu mật khẩu và không thể tự động kích hoạt.";
-
-"feature.remote_not_configured" = "Danh mục chức năng từ xa chưa được cấu hình.";
-
-"feature.group_aim_subtitle" = "Chức năng hỗ trợ ngắm";
-
-"feature.group_hologram_subtitle" = "Chức năng lớp phủ hình ảnh";
-
-"feature.group_panel_subtitle" = "Chức năng ESP và hỗ trợ hình ảnh";
-
-"feature.alert_title" = "Trạng thái chức năng";
-
-"feature.injected_success" = "Đã inject thành công.";
-
-"feature.restored_success" = "Đã khôi phục thành công.";
-
-"feature.restore_unavailable" = "Không thể khôi phục vì không có bản vá đang hoạt động.";
-
-"feature.desc_aim_high" = "HS phía trên đầu kẻ địch.";
-
-"feature.desc_aim_neck_antenna" = "HS vào cổ với ăng-ten.";
-
-"feature.desc_aim_neck" = "HS vào cổ kẻ địch.";
-
-"feature.desc_hologram_weapons" = "Hologram trên vũ khí, dùng đồ họa mặc định.";
-
-"feature.desc_panel_ffh4x" = "Bảng bên ngoài với ESP và aim silent.";

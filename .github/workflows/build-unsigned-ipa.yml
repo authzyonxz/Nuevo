@@ -19,18 +19,29 @@ env:
 
 jobs:
   build:
-    name: Build unsigned IPA
+    name: Build unsigned iOS IPA
     runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build for device without signing
+      - name: Show Xcode environment
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build device app without code signing
         shell: bash
         run: |
           set -euo pipefail
           rm -rf build
-          mkdir -p build
+          mkdir -p build/Products/Release
           xcodebuild \
             -project "$PROJECT" \
             -target "$TARGET" \
@@ -50,10 +61,17 @@ jobs:
           APP_PATH="$(find "$PWD/build/Products/Release" -maxdepth 1 -type d -name '*.app' -print -quit)"
           test -n "$APP_PATH"
           test -f "$APP_PATH/Info.plist"
+          APP_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP_PATH/Info.plist")
+          test -n "$APP_BUNDLE_ID"
+          rm -rf "$APP_PATH/_CodeSignature"
+          find "$APP_PATH" -name '*.mobileprovision' -delete
           mkdir -p build/Payload
-          ditto "$APP_PATH" "build/Payload/$APP_NAME.app"
-          (cd build && /usr/bin/zip -qry "${APP_NAME}-unsigned.ipa" Payload)
+          ditto "$APP_PATH" "build/Payload/${APP_NAME}.app"
+          (cd build && /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload "${APP_NAME}-unsigned.ipa")
+          test -s "build/${APP_NAME}-unsigned.ipa"
+          unzip -t "build/${APP_NAME}-unsigned.ipa"
           /usr/bin/shasum -a 256 "build/${APP_NAME}-unsigned.ipa" | tee "build/${APP_NAME}-unsigned.ipa.sha256"
+          echo "Bundled app identifier: $APP_BUNDLE_ID"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4

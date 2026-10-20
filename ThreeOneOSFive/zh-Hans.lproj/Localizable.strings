@@ -60,14 +60,14 @@
 "dashboard.device_name" = "设备名称";
 "dashboard.hardware_model" = "硬件型号";
 "dashboard.access_footer" = "只有成功以读写模式打开系统文件后，才会报告权限获取成功。";
-"dashboard.unsupported_footer" = "iOS %@（%@）不在已验证范围内。支持：iOS 17.0–17.7.x、iOS 18.0–18.7.1、iOS 26.0–26.6.2、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
+"dashboard.unsupported_footer" = "iOS %@（%@）不在已验证范围内。支持：iOS 17.0–17.7.x、iOS 18.0–18.7.1、iOS 26.0–26.6.1、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
 "dashboard.app_browser" = "应用数据浏览器";
 "dashboard.browser" = "文件浏览器";
 "dashboard.open_browser" = "打开文件浏览器";
 "dashboard.browser_footer" = "浏览并读取此设备上所有应用和系统容器中的数据。";
 "dashboard.device_actions_warning" = "重新启动设备前，请先保存尚未应用的更改。";
 "dashboard.unsupported_device" = "不支持的设备";
-"dashboard.unsupported_message" = "暂不支持 iOS %@。\n\n当前支持：\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.2\n• iOS 27.0 开发者 Beta 1–4\n• iOS 27.0 公开 Beta 1–2";
+"dashboard.unsupported_message" = "暂不支持 iOS %@。\n\n当前支持：\n• iOS 17.0–17.7.x\n• iOS 18.0–18.7.1\n• iOS 26.0–26.6.1\n• iOS 27.0 开发者 Beta 1–4\n• iOS 27.0 公开 Beta 1–2";
 "dashboard.installation" = "应用安装";
 "dashboard.kernel_status" = "内核状态";
 "dashboard.kernel_running" = "正在激活…";
@@ -230,7 +230,6 @@
 "patch.error.active_delete" = "此补丁仍处于生效状态。删除软件包前，请先恢复原始文件。";
 "patch.error.symlink" = "补丁目标路径不能经过符号链接。";
 "patch.error.apply" = "无法应用补丁。之前的所有写入均已回滚。";
-"patch.error.target_missing" = "当前容器中不存在目标文件：\n%@\n未创建新文件夹。";
 "patch.error.restore" = "无法安全恢复原始文件。未覆盖任何未经验证的目标。";
 "patch.error.reset" = "无法将文件重置为应用时的软件包状态。所有部分写入均已回滚。";
 "patch.error.invalid_import_link" = "补丁导入链接无效。请使用指向 .3105 软件包的安全 HTTPS 链接。";
@@ -264,7 +263,7 @@
 "settings.beta_build" = "Beta %lld · %@";
 "settings.developer_beta_build" = "开发者 Beta %lld · %@";
 "settings.developer_public_beta_build" = "开发者 Beta %lld / 公开 Beta %lld · %@";
-"settings.supported_range_summary" = "已验证：iOS 17.0–17.7.x、iOS 18.0–18.7.1、iOS 26.0–26.6.2、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
+"settings.supported_range_summary" = "已验证：iOS 17.0–17.7.x、iOS 18.0–18.7.1、iOS 26.0–26.6.1、iOS 27.0 开发者 Beta 1–4 和公开 Beta 1–2。";
 
 "kernel.section_title" = "内核漏洞利用";
 "kernel.run_exploit" = "运行内核漏洞利用";
@@ -354,11 +353,7 @@
 "logs.copy" = "复制日志";
 "logs.share" = "分享日志";
 "logs.empty_title" = "没有日志条目";
-"logs.empty_message" = "漏洞利用启动、成功、失败和容器访问将显示在这里。";
-"logs.event_starting" = "漏洞利用已启动";
-"logs.event_success" = "成功 / 已获得访问权限";
-"logs.event_failure" = "失败";
-"logs.event_container" = "容器访问";
+"logs.empty_message" = "本次会话中的漏洞利用和编辑器活动将显示在这里。";
 
 "browser.title" = "应用数据浏览器";
 "browser.workspace" = "3105 工作区";
@@ -672,116 +667,3 @@
 "settings.developer_mode_footer" = "开发者模式会在主导航中添加“文件”。“文件”可以浏览和修改应用容器。";
 "wallpaper.package_details" = "软件包详情";
 "wallpaper.package_files" = "%lld 个文件";
-
-"tab.features" = "功能";
-"tab.logs" = "日志";
-"home.account" = "客户信息";
-"home.key" = "Key";
-"home.duration" = "有效期";
-"home.package" = "Package";
-"home.device_information" = "设备信息";
-"home.ios_version" = "iOS 版本";
-"home.device" = "设备";
-"home.build" = "Build";
-"home.language" = "语言";
-"home.exploit" = "系统访问";
-"home.start_exploit" = "启动 Exploit";
-"home.starting_exploit" = "正在启动 exploit";
-"home.exploit_active" = "漏洞利用已激活";
-"home.exploit_inactive" = "漏洞利用未激活";
-"home.system_ready" = "系统就绪";
-"home.exploit_footer" = "请在应用处于前台时手动启动。离开应用后访问权限会失效，需要重新启动。";
-
-"login.title" = "Key 登录";
-
-"login.subtitle" = "输入 Key 以继续";
-
-"login.key" = "Key";
-
-"login.key_placeholder" = "输入任意测试 Key";
-
-"login.validate" = "验证 Key";
-
-"login.test_note" = "测试模式：接受任何非空文本。";
-
-"login.success_title" = "许可证已授权";
-
-"login.success_message" = "您的许可证已在此设备上激活。";
-
-"login.example_duration" = "30 天";
-
-"login.example_package" = "示例 Package";
-
-"login.enter_app" = "进入应用";
-
-"license.authorized.status" = "状态";
-"license.authorized.active" = "已授权";
-"license.authorized.udid" = "已注册 UDID";
-"license.authorized.device_fallback" = "此 iPhone 已注册";
-"license.authorized.activated" = "激活时间";
-"license.authorized.expires" = "到期时间";
-"license.authorized.days" = "%lld 天";
-"license.checking" = "正在验证许可证…";
-"license.inactive" = "许可证已失效。请输入有效密钥以继续。";
-
-"feature.group_title" = "功能";
-"feature.exploit_required" = "请在主页启动 exploit，等待系统就绪后再启用功能。";
-
-"feature.aim_group" = "Aim 功能";
-
-"feature.aim_file_type" = "AIM 文件类型";
-"feature.cache_aim_high" = "高位 HS";
-"feature.cache_aim_neck" = "颈部 HS";
-"feature.cache_aim_chest" = "胸部 HS";
-"feature.desc_cache_aim_high" = "Cache_res：头部上方 HS。";
-"feature.desc_cache_aim_neck" = "Cache_res：敌人颈部 HS。";
-"feature.desc_cache_aim_chest" = "Cache_res：敌人胸部 HS。";
-"feature.cache_warning" = "Cache_res 功能可能存在风险。请自行承担使用风险。";
-
-"feature.aim_neck" = "颈部 HS";
-
-"feature.aim_high" = "高位 HS";
-
-"feature.aim_neck_antenna" = "颈部 HS + 天线";
-"feature.aim_chest" = "胸部 HS";
-"feature.desc_aim_chest" = "瞄准敌人胸部 HS。";
-
-"feature.hologram_group" = "全息功能";
-
-"feature.hologram_weapons" = "武器全息";
-
-"feature.panel_group" = "ESP";
-
-"feature.panel_ffh4x" = "ESP 3D + AIM SILIENT";
-
-"feature.remote_maintenance" = "此功能正在维护中。";
-
-"feature.remote_unavailable" = "此功能没有可用的已发布包。";
-
-"feature.remote_password" = "此包需要密码，无法自动激活。";
-
-"feature.remote_not_configured" = "远程功能目录尚未配置。";
-
-"feature.group_aim_subtitle" = "瞄准辅助功能";
-
-"feature.group_hologram_subtitle" = "视觉叠加功能";
-
-"feature.group_panel_subtitle" = "ESP 与视觉辅助功能";
-
-"feature.alert_title" = "功能状态";
-
-"feature.injected_success" = "注入成功。";
-
-"feature.restored_success" = "恢复成功。";
-
-"feature.restore_unavailable" = "没有活动补丁，无法恢复。";
-
-"feature.desc_aim_high" = "敌人头部上方 HS。";
-
-"feature.desc_aim_neck_antenna" = "带天线的颈部 HS。";
-
-"feature.desc_aim_neck" = "瞄准敌人颈部 HS。";
-
-"feature.desc_hologram_weapons" = "武器全息，使用标准图形设置。";
-
-"feature.desc_panel_ffh4x" = "带 ESP 和静默瞄准的外部面板。";

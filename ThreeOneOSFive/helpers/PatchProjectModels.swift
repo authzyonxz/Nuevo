@@ -186,7 +186,6 @@ enum PatchPackageError: Error, Equatable {
     case activePatchCannotBeDeleted
     case privatePatchRequiresPassword
     case privateOperationFailed
-    case targetPathMissing(String)
     case applyFailed
     case restoreFailed
     case resetFailed
@@ -214,7 +213,6 @@ extension PatchPackageError: LocalizedError {
         case .symbolicLinkUnsupported: return "patch.error.symlink"
         case .privatePatchRequiresPassword: return "patch.error.private_password"
         case .privateOperationFailed: return "patch.error.private_operation"
-        case .targetPathMissing: return "patch.error.target_missing"
         case .applyFailed: return "patch.error.apply"
         case .restoreFailed: return "patch.error.restore"
         case .resetFailed: return "patch.error.reset"
@@ -233,7 +231,7 @@ extension PatchPackageError: LocalizedError {
 
     var localizationArgument: String? {
         switch self {
-        case .targetAppUnavailable(let bundleID), .targetOccupied(let bundleID), .targetPathMissing(let bundleID):
+        case .targetAppUnavailable(let bundleID), .targetOccupied(let bundleID):
             return bundleID
         case .restoreTargetsChanged(let paths):
             return paths.joined(separator: "\n")

@@ -7,35 +7,8 @@ import Combine
 class AppLog: ObservableObject {
     static let shared = AppLog()
     @Published var entries: [String] = []
-    private let logURL: URL
-
-    private init() {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        logURL = support.appendingPathComponent("3105", isDirectory: true)
-            .appendingPathComponent("system.log", isDirectory: false)
-        try? FileManager.default.createDirectory(at: logURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if let data = try? Data(contentsOf: logURL),
-           let text = String(data: data, encoding: .utf8) {
-            entries = Array(text.split(separator: "\n", omittingEmptySubsequences: true).map(String.init).suffix(2000))
-        }
-    }
-
     func append(_ msg: String) {
-        DispatchQueue.main.async {
-            let timestamp = ISO8601DateFormatter().string(from: Date())
-            self.entries.append("\(timestamp) \(msg)")
-            if self.entries.count > 2000 {
-                self.entries.removeFirst(self.entries.count - 2000)
-            }
-            try? self.entries.joined(separator: "\n").appending("\n")
-                .write(to: self.logURL, atomically: true, encoding: .utf8)
-        }
-    }
-
-    func clear() {
-        entries.removeAll()
-        try? FileManager.default.removeItem(at: logURL)
+        DispatchQueue.main.async { self.entries.append(msg) }
     }
 }
 func log(_ msg: String) { AppLog.shared.append("[3105] \(msg)") }
@@ -59,19 +32,15 @@ func setupLogCapture() {
         return
     }
 
-    // FileHandle.readabilityHandler installs a run-loop source. On some
-    // iOS builds that source emits an invalid kCFRunLoopCommonModes warning.
-    // A dedicated reader queue captures the same output without CFRunLoop.
-    DispatchQueue(label: "com.3105.log-capture", qos: .utility).async {
-        let reader = pipe.fileHandleForReading
-        while true {
-            let data = reader.readData(ofLength: 4 * 1024)
-            guard !data.isEmpty else { break }
-            guard let text = String(data: data, encoding: .utf8) else { continue }
+    pipe.fileHandleForReading.readabilityHandler = { handle in
+        let data = handle.availableData
+        guard !data.isEmpty else { return }
+        if let text = String(data: data, encoding: .utf8) {
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { continue }
-            DispatchQueue.main.async {
-                AppLog.shared.append(trimmed)
+            if !trimmed.isEmpty {
+                DispatchQueue.main.async {
+                    AppLog.shared.append(trimmed)
+                }
             }
         }
     }
