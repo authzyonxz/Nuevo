@@ -115,8 +115,8 @@ struct ContentView: View {
                 case .cpp:
                     TabPlaceholderView(
                         title: "C++",
-                        symbol: "chevron.left.forwardslash.chevron.right",
-                        detail: "Este módulo ainda não está conectado neste build."
+                        symbol: "chevron.left.forwardslash.forwardslash.forwardslash.forwardslash",
+                        detail: "Funções C++ em fase de desenvolvimento."
                     )
                 case .profile:
                     if let access = authorizedAccess {
