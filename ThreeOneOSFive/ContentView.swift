@@ -70,10 +70,26 @@ struct ContentView: View {
 
     private var mainTabs: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 0)
-            Color.clear
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityHidden(true)
+            Group {
+                switch selectedTab {
+                case .aim:
+                    AimView()
+                case .cpp:
+                    TabPlaceholderView(
+                        title: "C++",
+                        symbol: "chevron.left.forwardslash.chevron.right",
+                        detail: "Este módulo ainda não está conectado neste build."
+                    )
+                case .profile:
+                    TabPlaceholderView(
+                        title: "Profile",
+                        symbol: "person.crop.circle",
+                        detail: "Perfil e licença continuam no login por enquanto."
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
             tabNavigation
         }
     }
@@ -112,6 +128,30 @@ struct ContentView: View {
         .padding(.horizontal, 28)
         .padding(.top, 8)
         .padding(.bottom, 3)
+    }
+}
+
+private struct TabPlaceholderView: View {
+    let title: String
+    let symbol: String
+    let detail: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 30, weight: .light))
+                .foregroundStyle(.white.opacity(0.35))
+            Text(title)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .tracking(1.4)
+                .foregroundStyle(.white.opacity(0.75))
+            Text(detail)
+                .font(.system(size: 12))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.4))
+                .padding(.horizontal, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

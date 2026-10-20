@@ -76,6 +76,13 @@
     <string>1.1.1</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>3105 connects to your aim payload server on the local network.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>3105 needs access to photos for wallpaper customization.</string>
     <key>NSDocumentsFolderUsageDescription</key>
