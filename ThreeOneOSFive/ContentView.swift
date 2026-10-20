@@ -81,11 +81,15 @@ struct ContentView: View {
                         detail: "Este módulo ainda não está conectado neste build."
                     )
                 case .profile:
-                    TabPlaceholderView(
-                        title: "Profile",
-                        symbol: "person.crop.circle",
-                        detail: "Perfil e licença continuam no login por enquanto."
-                    )
+                    if let access = authorizedAccess {
+                        ProfileTabView(access: access)
+                    } else {
+                        TabPlaceholderView(
+                            title: "Profile",
+                            symbol: "person.crop.circle",
+                            detail: "Entre com sua key para ver as informações do perfil."
+                        )
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -152,6 +156,113 @@ private struct TabPlaceholderView: View {
                 .padding(.horizontal, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct ProfileTabView: View {
+    let access: KeyAuthAccess
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("MEU PROFILE")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("Informações da licença e do dispositivo")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.56))
+                }
+                .padding(.top, 12)
+
+                profileCard(title: "INFORMAÇÕES DA KEY", symbol: "key.fill") {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let remaining = max(0, Int(access.authorizationExpiresAt.timeIntervalSince(context.date)))
+                        ProfileInfoRow(
+                            title: "DURAÇÃO DA KEY",
+                            value: String(format: "%02d:%02d restantes", remaining / 60, remaining % 60),
+                            detail: "Autorização atual até \(access.authorizationExpiresAt.formatted(date: .abbreviated, time: .shortened)). A validade total da licença não é fornecida pela API.",
+                            symbol: "clock"
+                        )
+                    }
+                    profileDivider
+                    ProfileInfoRow(title: "PACOTE", value: access.packageName, symbol: "shippingbox.fill")
+                    profileDivider
+                    ProfileInfoRow(title: "KEY MASCARADA", value: access.keyPreview, symbol: "key.horizontal")
+                }
+
+                profileCard(title: "DISPOSITIVO", symbol: "iphone") {
+                    ProfileInfoRow(title: "VERSÃO DO iOS", value: AppInfo.osVersion, symbol: "gearshape")
+                    profileDivider
+                    ProfileInfoRow(title: "BUILD DO iOS", value: AppInfo.osBuild, symbol: "number")
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+            .frame(maxWidth: 560, alignment: .leading)
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var profileDivider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.09))
+            .frame(height: 1)
+            .padding(.leading, 42)
+    }
+
+    private func profileCard<Content: View>(
+        title: String,
+        symbol: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label(title, systemImage: symbol)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .tracking(1.1)
+                .foregroundStyle(.white.opacity(0.55))
+            content()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.10), lineWidth: 1))
+    }
+}
+
+private struct ProfileInfoRow: View {
+    let title: String
+    let value: String
+    var detail: String? = nil
+    let symbol: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.white.opacity(0.72))
+                .frame(width: 30, height: 30)
+                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .tracking(0.9)
+                    .foregroundStyle(.white.opacity(0.46))
+                Text(value)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .textSelection(.enabled)
+                if let detail {
+                    Text(detail)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.42))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 

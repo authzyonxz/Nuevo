@@ -54,9 +54,6 @@ struct KeyLoginView: View {
             Color.clear.ignoresSafeArea()
             VStack(spacing: 24) {
                 Spacer()
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 44, weight: .medium))
-                    .foregroundStyle(.white)
                 VStack(spacing: 8) {
                     Text("EXTERNAL - iOS")
                         .font(.title2.bold())
