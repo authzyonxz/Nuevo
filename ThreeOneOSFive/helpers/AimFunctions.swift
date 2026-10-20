@@ -18,8 +18,8 @@ enum AimFunctionConfig {
     static let serverURLKey = "aim.serverBaseURL"
     static let bundleIDKey = "aim.targetBundleID"
 
-    /// Troque aqui (ou no próprio app, campo "Servidor") quando o site subir.
-    static let defaultServerURL = "http://127.0.0.1:8080"
+    /// Endpoint de produção do painel 3105.
+    static let defaultServerURL = "https://keyauthv2.org/3105"
 }
 
 enum AimFunctionCatalog {
