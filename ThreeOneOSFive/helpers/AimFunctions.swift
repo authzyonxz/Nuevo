@@ -52,6 +52,13 @@ enum AimFunctionCatalog {
             symbol: "scope",
             statusLabel: "Safe"
         ),
+        AimFunctionDefinition(
+            id: "bala-magica-antena",
+            title: "BALA MAGICA + ANTENA",
+            summary: "Bala Mágica + Antena",
+            symbol: "scope",
+            statusLabel: "Safe"
+        ),
     ]
 
     static func function(id: String) -> AimFunctionDefinition? {
