@@ -27,7 +27,6 @@ final class AimViewModel: ObservableObject {
             feedback = nil
         } catch {
             serverOnline = false
-            feedback = (error as? LocalizedError)?.errorDescription ?? "Falha ao consultar o site."
         }
     }
 
@@ -39,10 +38,9 @@ final class AimViewModel: ObservableObject {
     ) async {
         guard busyFunction == nil else { return }
         let typed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
-        // O bundle ID digitado no app vence; senão usa o que foi publicado no site.
         let target = typed.isEmpty ? (fallbackBundleID ?? "") : typed
         guard !target.isEmpty else {
-            feedback = "Digite o bundle ID alvo antes de aplicar (ex: com.dts.freefireth)."
+            feedback = "O site ainda não publicou o bundle ID desta função."
             return
         }
         busyFunction = function.id
@@ -61,16 +59,15 @@ final class AimViewModel: ObservableObject {
                 )
             }.value
             receipts[function.id] = receipt
-            feedback = "\(function.title) aplicado (v\(payload.version)) — "
-                + "\(receipt.fileCount) arquivo(s) substituído(s) em \(receipt.bundleID)."
+            feedback = "\(function.title) ativado."
         } catch let error as FunctionPatchError {
             feedback = error.errorDescription
         } catch {
-            feedback = "Falha inesperada ao aplicar \(function.title)."
+            feedback = "Não foi possível ativar \(function.title)."
         }
     }
 
-    func restore(_ function: AimFunctionDefinition, force: Bool) async {
+    func restore(_ function: AimFunctionDefinition, force: Bool = false) async {
         guard let receipt = receipts[function.id], busyFunction == nil else { return }
         busyFunction = function.id
         feedback = nil
@@ -81,20 +78,21 @@ final class AimViewModel: ObservableObject {
                 try FunctionPatchStore.restore(receipt: receipt, allowChangedTargets: force)
             }.value
             receipts.removeValue(forKey: function.id)
-            feedback = "\(function.title) restaurado — o arquivo original voltou."
+            feedback = "\(function.title) desativado; arquivo original restaurado."
         } catch let error as FunctionPatchError {
             feedback = error.errorDescription
         } catch {
-            feedback = "Falha inesperada ao restaurar \(function.title)."
+            feedback = "Não foi possível restaurar \(function.title)."
         }
     }
 }
 
 struct AimView: View {
     @StateObject private var model = AimViewModel()
+    // Mantém a configuração atual intacta; o endereço poderá ser definido internamente depois.
     @AppStorage(AimFunctionConfig.serverURLKey) private var serverURL = AimFunctionConfig.defaultServerURL
-    @AppStorage(AimFunctionConfig.bundleIDKey) private var bundleID = ""
-    @State private var showServerField = false
+    @State private var showActivationAlert = false
+    @State private var activationAlertMessage = ""
 
     private var baseURL: URL? { FunctionPatchClient.normalizedBaseURL(serverURL) }
 
@@ -102,348 +100,167 @@ struct AimView: View {
         ScrollView {
             VStack(spacing: 12) {
                 header
-                serverCard
-                bundleCard
                 ForEach(AimFunctionCatalog.all) { function in
                     functionCard(function)
                 }
                 footer
             }
             .padding(.horizontal, 16)
-            .padding(.top, 6)
+            .padding(.top, 8)
             .padding(.bottom, 20)
         }
         .scrollIndicators(.hidden)
+        .background(AppTheme.pageBackground)
         .task {
             model.loadLocalState()
             if let baseURL {
                 await model.refresh(baseURL: baseURL)
             }
         }
-        .onChange(of: model.manifests) { manifests in
-            guard bundleID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-            let published = AimFunctionCatalog.all
-                .compactMap { manifests[$0.id]?.bundleID }
-                .first { !$0.isEmpty }
-            if let published {
-                bundleID = published
-            }
+        .alert("Desative a outra função", isPresented: $showActivationAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(activationAlertMessage)
         }
     }
-
-    // MARK: - header
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("AIM")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .tracking(3)
-                    .foregroundStyle(.white)
-                Text("Payloads do site aplicados direto no container")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.5))
-            }
-            Spacer(minLength: 8)
+        HStack(spacing: 12) {
+            Text("AIM")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .tracking(2.5)
+                .foregroundStyle(.primary)
+            Spacer()
             HStack(spacing: 6) {
                 Circle()
-                    .fill(model.serverOnline ? Color(red: 0.44, green: 0.92, blue: 0.62) : Color.white.opacity(0.3))
-                    .frame(width: 6, height: 6)
-                Text(model.serverOnline ? "SITE ON" : "SITE OFF")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .tracking(1)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .fill(model.serverOnline ? Color.green : Color.secondary.opacity(0.45))
+                    .frame(width: 7, height: 7)
+                Text(model.serverOnline ? "ONLINE" : "OFFLINE")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .tracking(0.8)
+                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.07), in: Capsule())
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
         }
-        .padding(.top, 6)
+        .padding(.bottom, 3)
     }
-
-    // MARK: - servidor
-
-    private var serverCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: "globe")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.accent)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Servidor")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.85))
-                    Text(showServerField ? "endereço do site que guarda os payloads" : (baseURL?.absoluteString ?? "não configurado"))
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.45))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                Spacer(minLength: 8)
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { showServerField.toggle() }
-                } label: {
-                    Image(systemName: showServerField ? "checkmark" : "pencil")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.75))
-                        .frame(width: 30, height: 30)
-                        .background(Color.white.opacity(0.08), in: Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(showServerField ? "Concluir edição do servidor" : "Editar servidor")
-
-                Button {
-                    guard let baseURL else {
-                        model.feedback = FunctionPatchError.invalidServerURL.errorDescription
-                        return
-                    }
-                    Task { await model.refresh(baseURL: baseURL) }
-                } label: {
-                    Group {
-                        if model.isRefreshing {
-                            ProgressView().tint(.black).scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.black)
-                        }
-                    }
-                    .frame(width: 30, height: 30)
-                    .background(AppTheme.accent, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .disabled(model.isRefreshing)
-                .accessibilityLabel("Atualizar funções do site")
-            }
-
-            if showServerField {
-                TextField("https://aim.seudominio.com", text: $serverURL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .keyboardType(.URL)
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundStyle(.white)
-                    .tint(AppTheme.accent)
-                    .padding(.horizontal, 11)
-                    .frame(height: 38)
-                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
-                    .onSubmit {
-                        guard let baseURL else { return }
-                        Task { await model.refresh(baseURL: baseURL) }
-                    }
-            }
-        }
-        .padding(13)
-        .background(cardBackground)
-    }
-
-    // MARK: - bundle id
-
-    private var bundleCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "app.badge")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.55))
-                Text("Bundle ID alvo")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.85))
-                Spacer()
-                Text("aplicado no container desse app")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.35))
-            }
-            TextField("com.dts.freefireth", text: $bundleID)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .keyboardType(.URL)
-                .font(.system(size: 13, design: .monospaced))
-                .foregroundStyle(.white)
-                .tint(AppTheme.accent)
-                .padding(.horizontal, 11)
-                .frame(height: 38)
-                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
-        }
-        .padding(13)
-        .background(cardBackground)
-    }
-
-    // MARK: - função
 
     private func functionCard(_ function: AimFunctionDefinition) -> some View {
-        let manifest = model.manifests[function.id]
         let receipt = model.receipts[function.id]
+        let isActive = receipt != nil
         let busy = model.busyFunction == function.id
 
-        return VStack(alignment: .leading, spacing: 11) {
-            HStack(alignment: .top, spacing: 11) {
-                AppRowIcon(systemName: function.symbol, tint: AppTheme.accent, symbolSize: 17, frameSize: 36)
-                VStack(alignment: .leading, spacing: 3) {
+        return Button {
+            handleTap(function)
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(isActive ? Color.green.opacity(0.12) : Color(uiColor: .tertiarySystemFill))
+                    Image(systemName: function.symbol)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(isActive ? Color.green : Color.primary.opacity(0.8))
+                }
+                .frame(width: 42, height: 42)
+
+                VStack(alignment: .leading, spacing: 4) {
                     Text(function.title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(function.summary)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(.white.opacity(0.52))
-                        .fixedSize(horizontal: false, vertical: true)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(isActive ? "Ativado" : "Desativado")
+                            .foregroundStyle(isActive ? Color.green : Color.secondary)
+                        Text("·")
+                            .foregroundStyle(Color.secondary.opacity(0.75))
+                        Text(function.statusLabel)
+                            .foregroundStyle(Color.green.opacity(0.8))
+                    }
+                    .font(.system(size: 13, weight: .medium))
                 }
-                Spacer(minLength: 6)
-                Text(function.statusLabel.uppercased())
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .tracking(1.1)
-                    .foregroundStyle(Color(red: 0.44, green: 0.92, blue: 0.62))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(red: 0.44, green: 0.92, blue: 0.62).opacity(0.12), in: Capsule())
-                    .overlay(
-                        Capsule().stroke(Color(red: 0.44, green: 0.92, blue: 0.62).opacity(0.28), lineWidth: 1)
-                    )
-            }
 
-            HStack(spacing: 8) {
-                Text(function.id)
-                    .font(.system(size: 10.5, design: .monospaced))
-                    .foregroundStyle(AppTheme.accent.opacity(0.9))
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(AppTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 Spacer(minLength: 4)
-                Text(payloadLine(manifest))
-                    .font(.system(size: 10.5, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
 
-            if let receipt {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color(red: 0.44, green: 0.92, blue: 0.62))
-                    Text(
-                        "aplicado · \(receipt.fileCount) arquivo(s) · "
-                        + receipt.appliedAt.formatted(date: .abbreviated, time: .shortened)
-                    )
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(.white.opacity(0.55))
-                    .lineLimit(1)
+                if busy {
+                    ProgressView()
+                        .tint(AppTheme.accent)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.secondary.opacity(0.8))
                 }
             }
-
-            HStack(spacing: 8) {
-                Button {
-                    guard let baseURL else {
-                        model.feedback = FunctionPatchError.invalidServerURL.errorDescription
-                        return
-                    }
-                    Task {
-                        await model.apply(
-                            function,
-                            bundleID: bundleID,
-                            fallbackBundleID: manifest?.bundleID,
-                            baseURL: baseURL
-                        )
-                    }
-                } label: {
-                    HStack(spacing: 7) {
-                        if busy {
-                            ProgressView().tint(.black).scaleEffect(0.7)
-                        } else {
-                            Image(systemName: "arrow.down.to.line")
-                                .font(.system(size: 11, weight: .bold))
-                        }
-                        Text(busy ? "APLICANDO…" : "APLICAR")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .tracking(1.1)
-                    }
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity, minHeight: 38)
-                    .background(AppTheme.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .disabled(busy || manifest?.available != true)
-                .opacity(manifest?.available == true ? 1 : 0.45)
-                .accessibilityLabel("Aplicar \(function.title)")
-
-                Menu {
-                    Button(role: .destructive) {
-                        Task { await model.restore(function, force: false) }
-                    } label: {
-                        Label("Restaurar original", systemImage: "arrow.uturn.backward")
-                    }
-                    Button {
-                        Task { await model.restore(function, force: true) }
-                    } label: {
-                        Label("Forçar restauração", systemImage: "exclamationmark.triangle")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white.opacity(receipt == nil ? 0.25 : 0.85))
-                        .frame(width: 40, height: 38)
-                        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                        )
-                }
-                .disabled(receipt == nil || busy)
-                .accessibilityLabel("Restaurar \(function.title)")
-            }
+            .padding(.horizontal, 16)
+            .frame(minHeight: 82)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(uiColor: .secondarySystemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color(uiColor: .separator).opacity(0.18), lineWidth: 0.7)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
-        .padding(13)
-        .background(cardBackground)
+        .buttonStyle(.plain)
+        .disabled(busy || model.busyFunction != nil)
+        .accessibilityLabel("\(function.title), \(isActive ? "ativado" : "desativado"), \(function.statusLabel)")
+        .accessibilityHint(isActive ? "Toque para restaurar o arquivo original" : "Toque para ativar")
     }
 
-    private func payloadLine(_ manifest: FunctionPayloadManifest?) -> String {
-        guard let manifest else { return "site não consultado" }
-        guard manifest.available, let version = manifest.version, let filename = manifest.filename else {
-            return "sem arquivo publicado"
+    private func handleTap(_ function: AimFunctionDefinition) {
+        if model.receipts[function.id] != nil {
+            Task { await model.restore(function) }
+            return
         }
-        return "v\(version) · \(filename)"
-    }
 
-    // MARK: - rodapé
+        if let activeFunction = AimFunctionCatalog.all.first(where: {
+            $0.id != function.id && model.receipts[$0.id] != nil
+        }) {
+            activationAlertMessage = "Desative \(activeFunction.title) antes de ativar \(function.title)."
+            showActivationAlert = true
+            return
+        }
+
+        guard let baseURL else {
+            model.feedback = FunctionPatchError.invalidServerURL.errorDescription
+            return
+        }
+        guard let manifest = model.manifests[function.id], manifest.available else {
+            model.feedback = "Esta função ainda não está disponível."
+            return
+        }
+
+        Task {
+            await model.apply(
+                function,
+                bundleID: "",
+                fallbackBundleID: manifest.bundleID,
+                baseURL: baseURL
+            )
+        }
+    }
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        Group {
             if let feedback = model.feedback {
-                HStack(alignment: .top, spacing: 7) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 11))
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.system(size: 12))
                         .foregroundStyle(AppTheme.accent)
                     Text(feedback)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.65))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
                 }
-                .padding(11)
+                .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-
-            Text("O app varre o container inteiro do bundle ID atrás do arquivo publicado, guarda backup do original e só então substitui. Restaurar devolve o original.")
-                .font(.system(size: 10.5))
-                .foregroundStyle(.white.opacity(0.32))
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, 4)
-    }
-
-    private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(Color.white.opacity(0.055))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
     }
 }
