@@ -197,7 +197,10 @@ final class FunctionPatchClient {
             )
         }
 
-        let filename = header(http, "X-Payload-Filename").flatMap { $0.isEmpty ? nil : $0 } ?? "payload.bin"
+        let encodedFilename = header(http, "X-Payload-Filename-Encoded")?.removingPercentEncoding
+        let filename = encodedFilename.flatMap { $0.isEmpty ? nil : $0 }
+            ?? header(http, "X-Payload-Filename").flatMap { $0.isEmpty ? nil : $0 }
+            ?? "payload.bin"
         let expectedDigest = header(http, "X-Payload-Sha256") ?? ""
         let versionValue = Int(header(http, "X-Payload-Version") ?? "") ?? 0
         let relativePath = header(http, "X-Payload-Path").flatMap { $0.isEmpty ? nil : $0 }
