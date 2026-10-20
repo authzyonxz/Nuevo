@@ -27,23 +27,55 @@ private enum MainTab: Int, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: MainTab = .aim
+    @State private var authorizedAccess: KeyAuthAccess?
 
     var body: some View {
         ZStack {
             ParticleNetworkBackground(animate: !reduceMotion)
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                Color.clear
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityHidden(true)
-                tabNavigation
+            if authorizedAccess != nil {
+                mainTabs
+                    .transition(.opacity)
+            } else {
+                KeyLoginView { access in
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        authorizedAccess = access
+                    }
+                }
+                .transition(.opacity)
             }
         }
         .background(Color(red: 0.02, green: 0.02, blue: 0.025))
         .preferredColorScheme(.dark)
+        .task(id: authorizedAccess?.authorizationExpiresAt) {
+            guard let expiry = authorizedAccess?.authorizationExpiresAt else { return }
+            let remaining = max(0, expiry.timeIntervalSinceNow)
+            let nanoseconds = UInt64(min(remaining, 300) * 1_000_000_000)
+            do { try await Task.sleep(nanoseconds: nanoseconds) } catch { return }
+            guard authorizedAccess?.authorizationExpiresAt == expiry else { return }
+            withAnimation(.easeInOut(duration: 0.3)) {
+                authorizedAccess = nil
+            }
+        }
+        .onChange(of: scenePhase) { phase in
+            guard phase == .active,
+                  let expiry = authorizedAccess?.authorizationExpiresAt,
+                  expiry <= Date() else { return }
+            authorizedAccess = nil
+        }
+    }
+
+    private var mainTabs: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityHidden(true)
+            tabNavigation
+        }
     }
 
     private var tabNavigation: some View {
