@@ -24,14 +24,14 @@ enum ContainerFileLocator {
 
         // Caminho exato publicado pelo site: não precisa varrer nada.
         if let relativePath, !relativePath.isEmpty {
-            guard let target = try? PatchPathValidator.resolveContainedTargetURL(
+            if let target = try? PatchPathValidator.resolveContainedTargetURL(
                 relativePath: relativePath,
                 containerRoot: root
-            ),
-            isRegularFile(target) else {
-                return []
+            ), isRegularFile(target) {
+                return [ContainerFileMatch(relativePath: relativePath, byteCount: byteCount(target, fileManager))]
             }
-            return [ContainerFileMatch(relativePath: relativePath, byteCount: byteCount(target, fileManager))]
+            // Nunca usamos diretamente caminhos absolutos ou fora do container.
+            // Caso a dica publicada não resolva, confirmamos pelo nome na árvore.
         }
 
         let wanted = filename.lowercased()
