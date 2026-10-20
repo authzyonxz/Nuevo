@@ -20,7 +20,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         switch self {
         case .aim: return "scope"
         case .cpp: return "chevron.left.forwardslash.chevron.right"
-        case .profile: return "person.crop.circle.fill"
+        case .profile: return "person.crop.circle"
         }
     }
 }
@@ -36,36 +36,36 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
-
-                // Intentionally empty: each section will be built in a later step.
                 Color.clear
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityHidden(true)
-
-                bottomBar
+                tabNavigation
             }
         }
         .background(Color.black)
         .preferredColorScheme(.dark)
-        .statusBarHidden(false)
     }
 
-    private var bottomBar: some View {
-        HStack(spacing: 0) {
+    private var tabNavigation: some View {
+        HStack(alignment: .center, spacing: 0) {
             ForEach(MainTab.allCases) { tab in
                 Button {
-                    withAnimation(.spring(response: 0.34, dampingFraction: 0.78)) {
+                    withAnimation(.easeInOut(duration: 0.32)) {
                         selectedTab = tab
                     }
                 } label: {
-                    VStack(spacing: 7) {
+                    VStack(spacing: 6) {
                         tabIcon(tab)
-                            .frame(height: 25)
-                        Text(tab.title)
-                            .font(.system(size: 11, weight: selectedTab == tab ? .semibold : .medium, design: .rounded))
-                            .tracking(0.35)
+                            .frame(height: 23)
+                        Text(tab.title.uppercased())
+                            .font(.system(size: 9, weight: selectedTab == tab ? .semibold : .medium, design: .rounded))
+                            .tracking(1.35)
+                        Capsule()
+                            .fill(Color.white.opacity(selectedTab == tab ? 0.8 : 0))
+                            .frame(width: selectedTab == tab ? 13 : 3, height: 1.5)
+                            .padding(.top, 1)
                     }
-                    .foregroundStyle(selectedTab == tab ? .white : Color.white.opacity(0.48))
+                    .foregroundStyle(selectedTab == tab ? .white : Color.white.opacity(0.42))
                     .frame(maxWidth: .infinity)
                     .frame(height: 62)
                     .contentShape(Rectangle())
@@ -75,43 +75,17 @@ struct ContentView: View {
                 .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 11)
-        .padding(.bottom, 5)
-        .background {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
-                .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.12))
-                        .frame(height: 0.5)
-                }
-                .ignoresSafeArea(edges: .bottom)
-        }
+        .padding(.horizontal, 28)
+        .padding(.top, 8)
+        .padding(.bottom, 3)
+        .background(Color.black.opacity(0.18))
     }
 
-    @ViewBuilder
     private func tabIcon(_ tab: MainTab) -> some View {
-        if tab == .cpp {
-            Text("C++")
-                .font(.system(size: 13, weight: .black, design: .rounded))
-                .tracking(-0.8)
-                .frame(width: 34, height: 25)
-                .background {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(selectedTab == tab ? 0.9 : 0.42), lineWidth: 1.2)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(Color.white.opacity(selectedTab == tab ? 0.12 : 0.035))
-                        )
-                }
-        } else {
-            Image(systemName: tab.symbol)
-                .font(.system(size: 20, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
-                .frame(width: 34, height: 25)
-        }
+        Image(systemName: tab.symbol)
+            .font(.system(size: tab == .cpp ? 18 : 19, weight: selectedTab == tab ? .medium : .regular))
+            .symbolRenderingMode(.hierarchical)
+            .frame(width: 28, height: 23)
     }
 }
 
@@ -121,7 +95,7 @@ private struct SpiderWebBackground: View {
     var body: some View {
         GeometryReader { proxy in
             if animate {
-                TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { timeline in
+                TimelineView(.animation(minimumInterval: 1.0 / 15.0, paused: false)) { timeline in
                     webCanvas(size: proxy.size, time: timeline.date.timeIntervalSinceReferenceDate)
                 }
             } else {
@@ -134,67 +108,135 @@ private struct SpiderWebBackground: View {
 
     private func webCanvas(size: CGSize, time: TimeInterval) -> some View {
         Canvas { context, canvasSize in
-            let points = webPoints(in: canvasSize, time: time)
-            let spacing: CGFloat = 104
-            let columns = max(1, Int(canvasSize.width / spacing))
-            let rows = max(1, Int(canvasSize.height / spacing))
+            let clusters: [(x: CGFloat, y: CGFloat, radius: CGFloat, spokes: Int, opacity: Double)] = [
+                (0.14, 0.20, 76, 10, 0.17),
+                (0.82, 0.27, 57, 9, 0.13),
+                (0.29, 0.61, 50, 9, 0.105),
+                (0.76, 0.78, 81, 11, 0.145),
+                (0.52, 0.40, 39, 8, 0.075)
+            ]
 
-            // Fine mesh: short links keep the pattern organic rather than grid-like.
-            for first in points.indices {
-                for second in points.indices where second > first {
-                    let distance = hypot(points[first].x - points[second].x, points[first].y - points[second].y)
-                    guard distance < spacing * 1.48 else { continue }
-                    var strand = Path()
-                    strand.move(to: points[first])
-                    strand.addLine(to: points[second])
-                    let shimmer = 0.34 + 0.20 * sin(time * 0.55 + Double(first + second) * 0.21)
-                    context.stroke(strand, with: .color(.white.opacity(shimmer)), lineWidth: 0.55)
-                }
+            for (index, cluster) in clusters.enumerated() {
+                drawWeb(
+                    in: &context,
+                    size: canvasSize,
+                    centerX: cluster.x,
+                    centerY: cluster.y,
+                    radius: cluster.radius,
+                    spokeCount: cluster.spokes,
+                    opacity: cluster.opacity,
+                    seed: index,
+                    time: time
+                )
             }
 
-            // A few brighter anchor points give the web depth and a subtle premium shimmer.
-            for index in points.indices where index % max(1, columns / 3) == 0 {
-                let point = points[index]
-                let pulse = 1.2 + 0.7 * (0.5 + 0.5 * sin(time * 0.8 + Double(index)))
-                let glowRect = CGRect(x: point.x - pulse, y: point.y - pulse, width: pulse * 2, height: pulse * 2)
-                context.fill(Path(ellipseIn: glowRect), with: .color(.white.opacity(0.62)))
-            }
+            drawDriftingParticles(in: &context, size: canvasSize, time: time)
 
-            // Sparse radial arcs suggest classic spider silk without cluttering the screen.
-            let center = CGPoint(x: canvasSize.width * 0.5, y: canvasSize.height * 0.46)
-            let radius = min(canvasSize.width, canvasSize.height) * 0.42
-            for ring in 1...5 {
-                let ringRadius = radius * CGFloat(ring) / 5
-                var arc = Path()
-                arc.addEllipse(in: CGRect(x: center.x - ringRadius, y: center.y - ringRadius, width: ringRadius * 2, height: ringRadius * 2))
-                context.stroke(arc, with: .color(.white.opacity(0.055)), lineWidth: 0.7)
-            }
-
-            // A soft vignette maintains a clean, nearly-black center for future content.
-            let vignette = Gradient(colors: [.black.opacity(0.12), .black.opacity(0.5), .black.opacity(0.18)])
+            let vignette = Gradient(colors: [
+                .black.opacity(0.03),
+                .black.opacity(0.31),
+                .black.opacity(0.08)
+            ])
             context.fill(
                 Path(CGRect(origin: .zero, size: canvasSize)),
-                with: .linearGradient(vignette, startPoint: .zero, endPoint: CGPoint(x: canvasSize.width, y: canvasSize.height))
+                with: .linearGradient(
+                    vignette,
+                    startPoint: .zero,
+                    endPoint: CGPoint(x: canvasSize.width, y: canvasSize.height)
+                )
             )
-            _ = rows
         }
     }
 
-    private func webPoints(in size: CGSize, time: TimeInterval) -> [CGPoint] {
-        let spacing: CGFloat = 104
-        let columns = max(2, Int(ceil(size.width / spacing)) + 1)
-        let rows = max(3, Int(ceil(size.height / spacing)) + 1)
-        var points: [CGPoint] = []
-        points.reserveCapacity(columns * rows)
+    private func drawWeb(
+        in context: inout GraphicsContext,
+        size: CGSize,
+        centerX: CGFloat,
+        centerY: CGFloat,
+        radius: CGFloat,
+        spokeCount: Int,
+        opacity: Double,
+        seed: Int,
+        time: TimeInterval
+    ) {
+        let drift = time * 0.075
+        let center = CGPoint(
+            x: size.width * centerX + CGFloat(sin(drift + Double(seed) * 2.1)) * 4.2,
+            y: size.height * centerY + CGFloat(cos(drift * 0.83 + Double(seed) * 1.7)) * 4.2
+        )
+        let phase = drift * 0.42 + Double(seed) * 0.63
+        let ringCount = 6
+        var intersections: [[CGPoint]] = Array(repeating: [], count: ringCount)
 
-        for row in 0..<rows {
-            for column in 0..<columns {
-                let seed = Double(row * 37 + column * 19)
-                let x = CGFloat(column) * spacing + CGFloat(sin(time * 0.32 + seed) * 9)
-                let y = CGFloat(row) * spacing + CGFloat(cos(time * 0.27 + seed * 0.7) * 9)
-                points.append(CGPoint(x: x, y: y))
+        for spoke in 0..<spokeCount {
+            let angle = (Double(spoke) / Double(spokeCount)) * .pi * 2
+                + 0.035 * sin(phase + Double(spoke) * 0.7)
+            let outerVariation = 0.89 + 0.09 * sin(Double(spoke) * 1.8 + phase)
+            let edgeRadius = radius * outerVariation
+            let edge = CGPoint(
+                x: center.x + CGFloat(cos(angle)) * edgeRadius,
+                y: center.y + CGFloat(sin(angle)) * edgeRadius
+            )
+
+            var strand = Path()
+            strand.move(to: center)
+            strand.addLine(to: edge)
+            context.stroke(
+                strand,
+                with: .color(.white.opacity(opacity * (0.76 + 0.12 * sin(phase + Double(spoke))))),
+                lineWidth: 0.62
+            )
+
+            for ring in 0..<ringCount {
+                let fraction = CGFloat(ring + 1) / CGFloat(ringCount)
+                let ripple = 1 + 0.035 * CGFloat(sin(phase + Double(spoke) * 0.9 + Double(ring) * 0.6))
+                let distance = edgeRadius * fraction * ripple
+                intersections[ring].append(CGPoint(
+                    x: center.x + CGFloat(cos(angle)) * distance,
+                    y: center.y + CGFloat(sin(angle)) * distance
+                ))
             }
         }
-        return points
+
+        for ring in 0..<ringCount {
+            let nodes = intersections[ring]
+            guard nodes.count > 1 else { continue }
+            var silk = Path()
+            silk.move(to: nodes[0])
+            for node in nodes.dropFirst() { silk.addLine(to: node) }
+            silk.closeSubpath()
+            context.stroke(
+                silk,
+                with: .color(.white.opacity(opacity * (0.54 - Double(ring) * 0.025))),
+                lineWidth: ring == ringCount - 1 ? 0.48 : 0.58
+            )
+
+            for (nodeIndex, node) in nodes.enumerated() where (nodeIndex + ring + seed) % 2 == 0 {
+                let dotSize: CGFloat = ring == ringCount - 1 ? 1.8 : 1.35
+                let dot = CGRect(x: node.x - dotSize / 2, y: node.y - dotSize / 2, width: dotSize, height: dotSize)
+                context.fill(Path(ellipseIn: dot), with: .color(.white.opacity(opacity * 2.25)))
+            }
+        }
+
+        let anchorSize: CGFloat = 2.6
+        let anchor = CGRect(x: center.x - anchorSize / 2, y: center.y - anchorSize / 2, width: anchorSize, height: anchorSize)
+        context.fill(Path(ellipseIn: anchor), with: .color(.white.opacity(opacity * 3.3)))
+    }
+
+    private func drawDriftingParticles(in context: inout GraphicsContext, size: CGSize, time: TimeInterval) {
+        for index in 0..<38 {
+            let seed = Double(index)
+            let baseX = (seed * 0.61803398875).truncatingRemainder(dividingBy: 1)
+            let baseY = (seed * 0.41421356237 + 0.17).truncatingRemainder(dividingBy: 1)
+            let speed = 0.0014 + Double(index % 5) * 0.00028
+            let xFraction = (baseX + time * speed).truncatingRemainder(dividingBy: 1)
+            let yFraction = (baseY + 0.018 * sin(time * 0.09 + seed * 2.4)).truncatingRemainder(dividingBy: 1)
+            let x = size.width * CGFloat(xFraction)
+            let y = size.height * CGFloat(yFraction)
+            let radius = index % 9 == 0 ? 1.45 : 0.75
+            let dot = CGRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2)
+            let shimmer = 0.19 + 0.12 * (0.5 + 0.5 * sin(time * 0.13 + seed))
+            context.fill(Path(ellipseIn: dot), with: .color(.white.opacity(shimmer)))
+        }
     }
 }
