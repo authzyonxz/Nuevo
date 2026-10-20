@@ -115,7 +115,7 @@ struct ContentView: View {
                 case .cpp:
                     TabPlaceholderView(
                         title: "C++",
-                        symbol: "chevron.left.forwardslash.forwardslash.forwardslash.forwardslash",
+                        symbol: "chevron.left.forwardslash.chevron.right",
                         detail: "Funções C++ em fase de desenvolvimento."
                     )
                 case .profile:
