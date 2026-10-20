@@ -59,7 +59,7 @@ final class AimViewModel: ObservableObject {
                 )
             }.value
             receipts[function.id] = receipt
-            feedback = "\(function.title) ativado."
+            feedback = "\(function.title) ativada com sucesso."
         } catch let error as FunctionPatchError {
             feedback = error.errorDescription
         } catch {
@@ -78,7 +78,7 @@ final class AimViewModel: ObservableObject {
                 try FunctionPatchStore.restore(receipt: receipt, allowChangedTargets: force)
             }.value
             receipts.removeValue(forKey: function.id)
-            feedback = "\(function.title) desativado; arquivo original restaurado."
+            feedback = "\(function.title) desativada com sucesso."
         } catch let error as FunctionPatchError {
             feedback = error.errorDescription
         } catch {
@@ -91,44 +91,52 @@ struct AimView: View {
     @StateObject private var model = AimViewModel()
     // Mantém a configuração atual intacta; o endereço poderá ser definido internamente depois.
     @AppStorage(AimFunctionConfig.serverURLKey) private var serverURL = AimFunctionConfig.defaultServerURL
-    @State private var showActivationAlert = false
-    @State private var activationAlertMessage = ""
+    @State private var isNoticePresented = false
+    @State private var noticeTitle = ""
+    @State private var noticeMessage = ""
 
     private var baseURL: URL? { FunctionPatchClient.normalizedBaseURL(serverURL) }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 header
+                tutorial
                 ForEach(AimFunctionCatalog.all) { function in
                     functionCard(function)
                 }
-                footer
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 20)
         }
         .scrollIndicators(.hidden)
-        .background(AppTheme.pageBackground)
         .task {
             model.loadLocalState()
             if let baseURL {
                 await model.refresh(baseURL: baseURL)
             }
         }
-        .alert("Desative a outra função", isPresented: $showActivationAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(activationAlertMessage)
+        .overlay {
+            if isNoticePresented {
+                noticePopup
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .zIndex(1)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isNoticePresented)
+        .onChange(of: model.feedback) { feedback in
+            guard let feedback else { return }
+            let isSuccess = feedback.localizedCaseInsensitiveContains("com sucesso")
+            presentNotice(title: isSuccess ? "Concluído" : "Aviso", message: feedback)
         }
     }
 
     private var header: some View {
         HStack(spacing: 12) {
-            Text("AIM")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .tracking(2.5)
+            Text("FUNÇÕES")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .tracking(1.6)
                 .foregroundStyle(.primary)
             Spacer()
             HStack(spacing: 6) {
@@ -155,19 +163,15 @@ struct AimView: View {
         return Button {
             handleTap(function)
         } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(isActive ? Color.green.opacity(0.12) : Color(uiColor: .tertiarySystemFill))
-                    Image(systemName: function.symbol)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(isActive ? Color.green : Color.primary.opacity(0.8))
-                }
-                .frame(width: 42, height: 42)
+            HStack(spacing: 12) {
+                Image(systemName: function.symbol)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(isActive ? Color.green : Color.primary.opacity(0.8))
+                    .frame(width: 22, height: 26)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(function.title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     HStack(spacing: 6) {
@@ -178,7 +182,7 @@ struct AimView: View {
                         Text(function.statusLabel)
                             .foregroundStyle(Color.green.opacity(0.8))
                     }
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                 }
 
                 Spacer(minLength: 4)
@@ -192,17 +196,13 @@ struct AimView: View {
                         .foregroundStyle(Color.secondary.opacity(0.8))
                 }
             }
-            .padding(.horizontal, 16)
-            .frame(minHeight: 82)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color(uiColor: .secondarySystemBackground))
-            )
+            .padding(.horizontal, 14)
+            .frame(minHeight: 64)
             .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color(uiColor: .separator).opacity(0.18), lineWidth: 0.7)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color(uiColor: .separator).opacity(0.24), lineWidth: 0.7)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(busy || model.busyFunction != nil)
@@ -210,7 +210,23 @@ struct AimView: View {
         .accessibilityHint(isActive ? "Toque para restaurar o arquivo original" : "Toque para ativar")
     }
 
+    private var tutorial: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("TUTORIAL")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .tracking(1.1)
+                .foregroundStyle(.primary)
+            Text("Entre no jogo e aguarde carregar até 40%. Saia do jogo e volte ao External. Ative a função desejada; depois, volte ao jogo e aguarde chegar ao lobby. Assim que entrar, volte rapidamente à IPA e desative a função. Feito isso, é só jogar normalmente.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+    }
+
     private func handleTap(_ function: AimFunctionDefinition) {
+        model.feedback = nil
         if model.receipts[function.id] != nil {
             Task { await model.restore(function) }
             return
@@ -219,8 +235,10 @@ struct AimView: View {
         if let activeFunction = AimFunctionCatalog.all.first(where: {
             $0.id != function.id && model.receipts[$0.id] != nil
         }) {
-            activationAlertMessage = "Desative \(activeFunction.title) antes de ativar \(function.title)."
-            showActivationAlert = true
+            presentNotice(
+                title: "Desative a outra função",
+                message: "Desative \(activeFunction.title) antes de ativar \(function.title)."
+            )
             return
         }
 
@@ -229,7 +247,10 @@ struct AimView: View {
             return
         }
         guard let manifest = model.manifests[function.id], manifest.available else {
-            model.feedback = "Esta função ainda não está disponível."
+            presentNotice(
+                title: "Arquivo ainda não publicado",
+                message: "Ainda não há arquivo publicado para \(function.title). Tente novamente quando estiver disponível."
+            )
             return
         }
 
@@ -243,24 +264,56 @@ struct AimView: View {
         }
     }
 
-    private var footer: some View {
-        Group {
-            if let feedback = model.feedback {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppTheme.accent)
-                    Text(feedback)
-                        .font(.system(size: 12))
+    private var noticePopup: some View {
+        ZStack {
+            Color.black.opacity(0.28)
+                .ignoresSafeArea()
+                .onTapGesture { dismissNotice() }
+
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 9) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 17, weight: .medium))
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
+                    Text(noticeTitle)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.primary)
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                Text(noticeMessage)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.primary.opacity(0.82))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button(action: dismissNotice) {
+                    Text("Entendi")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(uiColor: .systemBackground))
+                        .frame(maxWidth: .infinity, minHeight: 42)
+                        .background(Color.primary, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                }
+                .buttonStyle(.plain)
             }
+            .padding(20)
+            .frame(maxWidth: 320)
+            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color(uiColor: .separator).opacity(0.24), lineWidth: 0.8)
+            )
+            .shadow(color: .black.opacity(0.12), radius: 22, y: 10)
+            .padding(.horizontal, 28)
+            .accessibilityAddTraits(.isModal)
         }
-        .padding(.top, 4)
+    }
+
+    private func presentNotice(title: String, message: String) {
+        noticeTitle = title
+        noticeMessage = message
+        isNoticePresented = true
+    }
+
+    private func dismissNotice() {
+        isNoticePresented = false
     }
 }
