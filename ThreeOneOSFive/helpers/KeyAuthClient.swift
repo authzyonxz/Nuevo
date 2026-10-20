@@ -25,6 +25,11 @@ struct KeyAuthAccess {
     let packageName: String
     let keyPreview: String
     let authorizationExpiresAt: Date
+    let licenseDurationDays: Int
+    let licenseActivatedAt: Date?
+    let licenseExpiresAt: Date
+    let grant: String
+    let sessionToken: String
 }
 
 enum KeyAuthFailure: Error {
@@ -44,6 +49,7 @@ enum KeyAuthFailure: Error {
             case "DEVICE_ALREADY_REGISTERED": return "Há um conflito de licença vinculado a esta instalação. Fale com o suporte."
             case "SESSION_EXPIRED": return "A sessão expirou durante a validação. Toque em Entrar para tentar novamente."
             case "SESSION_NOT_FOUND": return "Não foi possível localizar a sessão. Feche e abra o app para tentar novamente."
+            case "GRANT_INVALID", "GRANT_INACTIVE": return "A sessão KeyAuth ou a licença não está mais válida. Entre novamente para continuar."
             case "PACKAGE_UNAVAILABLE": return "O pacote EXTERNAL - iOS está temporariamente indisponível. Tente mais tarde."
             case "PACKAGE_NOT_FOUND": return "A configuração do pacote não foi localizada. Atualize o app ou fale com o suporte."
             case "INSTALLATION_KEY_MISMATCH": return "A identidade segura desta instalação mudou. Reinstale o app ou fale com o suporte."
@@ -95,6 +101,16 @@ private struct EmptyReply: Decodable {
     init(from decoder: Decoder) throws { _ = try decoder.container(keyedBy: AnyCodingKey.self) }
 }
 private struct IssueReply: Decodable { let grant: String; let expiresAt: Double; let package: PackageSummary }
+private struct GrantIntrospectionReply: Decodable {
+    struct License: Decodable {
+        let durationDays: Int
+        let activatedAt: Double?
+        let expiresAt: Double
+    }
+    let active: Bool
+    let claims: GrantClaims
+    let license: License
+}
 private struct GrantHeader: Decodable { let alg: String; let typ: String; let kid: String }
 private struct GrantClaims: Decodable {
     let iss: String
@@ -160,10 +176,85 @@ final class KeyAuthClient {
         let result: IssueReply = try await post("/api/v2/authorization/issue", body: issueBody, responseType: IssueReply.self)
         let claims = try verifyGrant(result.grant, expectedSessionToken: session.token,
                                      expectedInstallationID: installationID, expectedPackageID: package.publicId)
+        let introspection = try await fetchGrantIntrospection(
+            grant: result.grant,
+            sessionToken: session.token,
+            expectedClaims: claims
+        )
         // A Key digitada só é gravada depois de o grant e sua assinatura passarem na validação.
         if let normalizedKey { try KeyAuthKeychain.saveLicenseKey(normalizedKey) }
         return KeyAuthAccess(packageName: package.name, keyPreview: Self.maskKey(claims.key),
-                             authorizationExpiresAt: Date(timeIntervalSince1970: claims.exp))
+                             authorizationExpiresAt: Date(timeIntervalSince1970: claims.exp),
+                             licenseDurationDays: introspection.license.durationDays,
+                             licenseActivatedAt: introspection.license.activatedAt.map { Date(timeIntervalSince1970: $0 / 1000) },
+                             licenseExpiresAt: Date(timeIntervalSince1970: introspection.license.expiresAt / 1000),
+                             grant: result.grant,
+                             sessionToken: session.token)
+    }
+
+    /// Revalida a assinatura local e consulta o estado atual da sessão/key no servidor.
+    /// Quando o grant está perto de expirar, cria uma sessão e um grant novos.
+    func revalidate(_ access: KeyAuthAccess) async throws -> KeyAuthAccess {
+        if access.authorizationExpiresAt.timeIntervalSinceNow <= 60 {
+            let refreshed = try await authorize(licenseKey: nil)
+            guard refreshed.keyPreview == access.keyPreview else { throw KeyAuthFailure.invalidGrant }
+            return refreshed
+        }
+
+        let config = ExternalIOSKeyAuthConfig.self
+        let installationID = try KeyAuthKeychain.installationID()
+        let claims = try verifyGrant(
+            access.grant,
+            expectedSessionToken: access.sessionToken,
+            expectedInstallationID: installationID,
+            expectedPackageID: config.packagePublicID
+        )
+        guard Self.maskKey(claims.key) == access.keyPreview else { throw KeyAuthFailure.invalidGrant }
+        let introspection = try await fetchGrantIntrospection(
+            grant: access.grant,
+            sessionToken: access.sessionToken,
+            expectedClaims: claims
+        )
+        return KeyAuthAccess(
+            packageName: config.packageName,
+            keyPreview: access.keyPreview,
+            authorizationExpiresAt: Date(timeIntervalSince1970: claims.exp),
+            licenseDurationDays: introspection.license.durationDays,
+            licenseActivatedAt: introspection.license.activatedAt.map { Date(timeIntervalSince1970: $0 / 1000) },
+            licenseExpiresAt: Date(timeIntervalSince1970: introspection.license.expiresAt / 1000),
+            grant: access.grant,
+            sessionToken: access.sessionToken
+        )
+    }
+
+    private func fetchGrantIntrospection(
+        grant: String,
+        sessionToken: String,
+        expectedClaims: GrantClaims
+    ) async throws -> GrantIntrospectionReply {
+        let config = ExternalIOSKeyAuthConfig.self
+        let reply: GrantIntrospectionReply = try await post(
+            "/api/v2/grant/introspect",
+            body: ["package": config.packageSlug, "token": sessionToken, "grant": grant],
+            responseType: GrantIntrospectionReply.self
+        )
+        let nowMilliseconds = Date().timeIntervalSince1970 * 1000
+        guard reply.active,
+              reply.claims.iss == config.issuer,
+              reply.claims.aud == config.audience,
+              reply.claims.package == expectedClaims.package,
+              reply.claims.packageId == expectedClaims.packageId,
+              reply.claims.installationId == expectedClaims.installationId,
+              reply.claims.sessionId == expectedClaims.sessionId,
+              reply.claims.sessionHash == expectedClaims.sessionHash,
+              reply.claims.key == expectedClaims.key,
+              reply.claims.jti == expectedClaims.jti,
+              reply.claims.exp == expectedClaims.exp,
+              reply.license.durationDays > 0,
+              reply.license.expiresAt > nowMilliseconds else {
+            throw KeyAuthFailure.server("GRANT_INACTIVE")
+        }
+        return reply
     }
 
     private func post<T: Decodable>(_ path: String, body: [String: String], responseType: T.Type) async throws -> T {
@@ -282,7 +373,7 @@ final class KeyAuthClient {
               claims.iss == config.issuer, claims.aud == config.audience,
               claims.package == config.packageSlug, claims.packageId == expectedPackageID,
               claims.installationId == expectedInstallationID, claims.sessionHash == sessionHash,
-              claims.keyStatus == "active", claims.policyVersion >= config.policyVersion,
+              claims.keyStatus == "active", claims.policyVersion == config.policyVersion,
               claims.scope.contains("app:open") else { throw KeyAuthFailure.invalidGrant }
         let now = Date().timeIntervalSince1970
         guard claims.iat <= now + 30, claims.exp >= now - 30, claims.exp > claims.iat,

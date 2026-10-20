@@ -166,6 +166,9 @@ final class FunctionPatchClient {
     func download(
         functionID: String,
         baseURL: URL,
+        grant: String,
+        sessionToken: String,
+        expectedSHA256: String,
         version: Int? = nil
     ) async throws -> FunctionPayload {
         var components = URLComponents(
@@ -180,6 +183,8 @@ final class FunctionPatchClient {
         var request = URLRequest(url: url)
         request.timeoutInterval = 60
         request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("Bearer \(grant)", forHTTPHeaderField: "Authorization")
+        request.setValue(sessionToken, forHTTPHeaderField: "X-KeyAuth-Session")
 
         let temporaryURL: URL
         let response: URLResponse
@@ -191,10 +196,12 @@ final class FunctionPatchClient {
 
         guard let http = response as? HTTPURLResponse else { throw FunctionPatchError.offline }
         guard (200..<300).contains(http.statusCode) else {
+            let responseData = try? Data(contentsOf: temporaryURL)
+            let errorObject = responseData.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+            let errorBody = errorObject?["error"] as? [String: Any]
+            let message = errorBody?["message"] as? String ?? "HTTP \(http.statusCode)"
             try? FileManager.default.removeItem(at: temporaryURL)
-            throw FunctionPatchError.payloadUnavailable(
-                AimFunctionCatalog.function(id: functionID)?.title ?? functionID
-            )
+            throw FunctionPatchError.server(message)
         }
 
         let encodedFilename = header(http, "X-Payload-Filename-Encoded")?.removingPercentEncoding
@@ -204,6 +211,17 @@ final class FunctionPatchClient {
         let expectedDigest = header(http, "X-Payload-Sha256") ?? ""
         let versionValue = Int(header(http, "X-Payload-Version") ?? "") ?? 0
         let relativePath = header(http, "X-Payload-Path").flatMap { $0.isEmpty ? nil : $0 }
+
+        let hexCharacters = CharacterSet(charactersIn: "0123456789abcdefABCDEF")
+        let isExpectedDigestValid = expectedSHA256.count == 64
+            && expectedSHA256.unicodeScalars.allSatisfy(hexCharacters.contains)
+        let isHeaderDigestValid = expectedDigest.count == 64
+            && expectedDigest.unicodeScalars.allSatisfy(hexCharacters.contains)
+        guard isExpectedDigestValid, isHeaderDigestValid,
+              expectedDigest.lowercased() == expectedSHA256.lowercased() else {
+            try? FileManager.default.removeItem(at: temporaryURL)
+            throw FunctionPatchError.digestMismatch
+        }
 
         let directory = try Self.cacheDirectory(functionID: functionID)
         let safeName = filename.replacingOccurrences(of: "/", with: "_")
@@ -218,8 +236,8 @@ final class FunctionPatchClient {
         }
 
         let actualDigest = (try? FileDigest.sha256Hex(ofFileAt: destination)) ?? ""
-        guard expectedDigest.isEmpty || actualDigest == expectedDigest else {
-            try? fileManager.removeItem(at: destination)
+        guard actualDigest.caseInsensitiveCompare(expectedDigest) == .orderedSame else {
+            try? FileManager.default.removeItem(at: destination)
             throw FunctionPatchError.digestMismatch
         }
         let writtenSize: Int64

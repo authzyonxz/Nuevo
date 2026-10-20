@@ -50,20 +50,54 @@ struct ContentView: View {
         }
         .background(Color(red: 0.02, green: 0.02, blue: 0.025))
         .preferredColorScheme(.dark)
-        .task(id: authorizedAccess?.authorizationExpiresAt) {
-            guard let expiry = authorizedAccess?.authorizationExpiresAt else { return }
-            let remaining = max(0, expiry.timeIntervalSinceNow)
-            let nanoseconds = UInt64(min(remaining, 300) * 1_000_000_000)
-            do { try await Task.sleep(nanoseconds: nanoseconds) } catch { return }
-            guard authorizedAccess?.authorizationExpiresAt == expiry else { return }
-            withAnimation(.easeInOut(duration: 0.3)) {
-                authorizedAccess = nil
+        .task(id: authorizedAccess?.grant) {
+            guard var currentAccess = authorizedAccess else { return }
+            let authClient = KeyAuthClient()
+            while !Task.isCancelled {
+                do { try await Task.sleep(nanoseconds: 45_000_000_000) } catch { return }
+                guard let latestAccess = authorizedAccess,
+                      latestAccess.grant == currentAccess.grant else { return }
+                do {
+                    let refreshed = try await authClient.revalidate(latestAccess)
+                    guard authorizedAccess?.grant == latestAccess.grant else { return }
+                    authorizedAccess = refreshed
+                    currentAccess = refreshed
+                } catch {
+                    handleRevalidationFailure(error, using: latestAccess)
+                }
             }
         }
         .onChange(of: scenePhase) { phase in
-            guard phase == .active,
-                  let expiry = authorizedAccess?.authorizationExpiresAt,
-                  expiry <= Date() else { return }
+            guard phase == .active, let access = authorizedAccess else { return }
+            Task {
+                do {
+                    let refreshed = try await KeyAuthClient().revalidate(access)
+                    guard authorizedAccess?.grant == access.grant else { return }
+                    authorizedAccess = refreshed
+                } catch {
+                    handleRevalidationFailure(error, using: access)
+                }
+            }
+        }
+    }
+
+    private func handleRevalidationFailure(_ error: Error, using access: KeyAuthAccess) {
+        guard authorizedAccess?.grant == access.grant else { return }
+        let isTransient: Bool
+        if let failure = error as? KeyAuthFailure {
+            switch failure {
+            case .network:
+                isTransient = true
+            case .server(let code) where code == "RATE_LIMITED" || code == "DATABASE_UNAVAILABLE":
+                isTransient = true
+            default:
+                isTransient = false
+            }
+        } else {
+            isTransient = false
+        }
+        guard !isTransient || Date() >= access.authorizationExpiresAt else { return }
+        withAnimation(.easeInOut(duration: 0.3)) {
             authorizedAccess = nil
         }
     }
@@ -73,7 +107,11 @@ struct ContentView: View {
             Group {
                 switch selectedTab {
                 case .aim:
-                    AimView()
+                    if let access = authorizedAccess {
+                        AimView(access: access) { refreshed in
+                            authorizedAccess = refreshed
+                        }
+                    }
                 case .cpp:
                     TabPlaceholderView(
                         title: "C++",
@@ -177,11 +215,14 @@ private struct ProfileTabView: View {
 
                 profileCard(title: "INFORMAÇÕES DA KEY", symbol: "key.fill") {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
-                        let remaining = max(0, Int(access.authorizationExpiresAt.timeIntervalSince(context.date)))
+                        let remaining = max(0, Int(access.licenseExpiresAt.timeIntervalSince(context.date)))
+                        let days = remaining / 86_400
+                        let hours = (remaining % 86_400) / 3_600
+                        let minutes = (remaining % 3_600) / 60
                         ProfileInfoRow(
                             title: "DURAÇÃO DA KEY",
-                            value: String(format: "%02d:%02d restantes", remaining / 60, remaining % 60),
-                            detail: "Autorização atual até \(access.authorizationExpiresAt.formatted(date: .abbreviated, time: .shortened)). A validade total da licença não é fornecida pela API.",
+                            value: remaining == 0 ? "Expirada" : String(format: "%d d %02d h %02d min", days, hours, minutes),
+                            detail: "Licença de \(access.licenseDurationDays) dias · expira em \(access.licenseExpiresAt.formatted(date: .abbreviated, time: .shortened)).",
                             symbol: "clock"
                         )
                     }

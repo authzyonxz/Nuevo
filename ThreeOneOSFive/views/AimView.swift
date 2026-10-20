@@ -34,7 +34,11 @@ final class AimViewModel: ObservableObject {
         _ function: AimFunctionDefinition,
         bundleID: String,
         fallbackBundleID: String?,
-        baseURL: URL
+        baseURL: URL,
+        expectedSHA256: String,
+        expectedVersion: Int?,
+        access: KeyAuthAccess,
+        onAccessUpdated: @escaping (KeyAuthAccess) -> Void
     ) async {
         guard busyFunction == nil else { return }
         let typed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -48,7 +52,17 @@ final class AimViewModel: ObservableObject {
         defer { busyFunction = nil }
 
         do {
-            let payload = try await client.download(functionID: function.id, baseURL: baseURL)
+            let validatedAccess = try await KeyAuthClient().revalidate(access)
+            guard validatedAccess.keyPreview == access.keyPreview else { throw KeyAuthFailure.invalidGrant }
+            onAccessUpdated(validatedAccess)
+            let payload = try await client.download(
+                functionID: function.id,
+                baseURL: baseURL,
+                grant: validatedAccess.grant,
+                sessionToken: validatedAccess.sessionToken,
+                expectedSHA256: expectedSHA256,
+                version: expectedVersion
+            )
             let receipt = try await Task.detached(priority: .userInitiated) {
                 try FunctionPatchStore.apply(
                     functionID: function.id,
@@ -60,6 +74,8 @@ final class AimViewModel: ObservableObject {
             }.value
             receipts[function.id] = receipt
             feedback = "\(function.title) ativada com sucesso."
+        } catch let error as KeyAuthFailure {
+            feedback = error.userMessage
         } catch let error as FunctionPatchError {
             feedback = error.errorDescription
         } catch {
@@ -88,6 +104,9 @@ final class AimViewModel: ObservableObject {
 }
 
 struct AimView: View {
+    let access: KeyAuthAccess
+    let onAccessUpdated: (KeyAuthAccess) -> Void
+
     @StateObject private var model = AimViewModel()
     // Mantém a configuração atual intacta; o endereço poderá ser definido internamente depois.
     @AppStorage(AimFunctionConfig.serverURLKey) private var serverURL = AimFunctionConfig.defaultServerURL
@@ -253,13 +272,21 @@ struct AimView: View {
             )
             return
         }
+        guard let expectedSHA256 = manifest.sha256, expectedSHA256.count == 64 else {
+            model.feedback = FunctionPatchError.digestMismatch.errorDescription
+            return
+        }
 
         Task {
             await model.apply(
                 function,
                 bundleID: "",
                 fallbackBundleID: manifest.bundleID,
-                baseURL: baseURL
+                baseURL: baseURL,
+                expectedSHA256: expectedSHA256,
+                expectedVersion: manifest.version,
+                access: access,
+                onAccessUpdated: onAccessUpdated
             )
         }
     }
