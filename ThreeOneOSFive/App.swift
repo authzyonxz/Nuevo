@@ -68,7 +68,13 @@ class AppState: ObservableObject {
 
     func detectSupport() {
         let v = AppInfo.versionTuple
-        let supported = ExploitSupportPolicy.isSupported(
+        let appVersionListed = ExploitSupportPolicy.isAppVersionListed(
+            major: v.major,
+            minor: v.minor,
+            patch: v.patch,
+            build: AppInfo.osBuild
+        )
+        let exploitVerified = ExploitSupportPolicy.isSupported(
             major: v.major,
             minor: v.minor,
             patch: v.patch,
@@ -80,9 +86,16 @@ class AppState: ObservableObject {
         }
 #endif
 
-        unsupportedMessage = supported ? nil : "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
+        unsupportedMessage = appVersionListed ? nil : "iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))"
         if let unsupportedMessage {
             exploitStatus = .unsupported(unsupportedMessage)
+            return
+        }
+
+        // A listed OS version can use the app UI, but must not trigger a
+        // privileged exploit path until its implementation is verified.
+        guard exploitVerified else {
+            exploitStatus = .unsupported("iOS \(AppInfo.osVersion) — exploit not verified")
             return
         }
 

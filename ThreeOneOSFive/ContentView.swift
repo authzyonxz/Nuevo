@@ -237,6 +237,20 @@ private struct ProfileTabView: View {
                     profileDivider
                     ProfileInfoRow(title: "BUILD DO iOS", value: AppInfo.osBuild, symbol: "number")
                 }
+
+                profileCard(title: "VERSÕES DO IOS LISTADAS", symbol: "checkmark.seal") {
+                    ForEach(Array(ExploitSupportPolicy.listedIOSVersions.enumerated()), id: \.offset) { item in
+                        if item.offset > 0 {
+                            profileDivider
+                        }
+                        ProfileInfoRow(
+                            title: "COMPATIBILIDADE DO APP",
+                            value: item.element,
+                            detail: "O app pode abrir nesta versão. O acesso privilegiado só é liberado quando o exploit correspondente estiver verificado.",
+                            symbol: "checkmark.circle"
+                        )
+                    }
+                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
