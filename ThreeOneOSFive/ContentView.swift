@@ -30,6 +30,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: MainTab = .aim
     @State private var authorizedAccess: KeyAuthAccess?
+    @State private var revalidationInFlight = false
 
     var body: some View {
         ZStack {
@@ -52,32 +53,44 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .task(id: authorizedAccess?.grant) {
             guard var currentAccess = authorizedAccess else { return }
-            let authClient = KeyAuthClient()
             while !Task.isCancelled {
                 do { try await Task.sleep(nanoseconds: 45_000_000_000) } catch { return }
                 guard let latestAccess = authorizedAccess,
                       latestAccess.grant == currentAccess.grant else { return }
-                do {
-                    let refreshed = try await authClient.revalidate(latestAccess)
-                    guard authorizedAccess?.grant == latestAccess.grant else { return }
-                    authorizedAccess = refreshed
-                    currentAccess = refreshed
-                } catch {
-                    handleRevalidationFailure(error, using: latestAccess)
-                }
+                await revalidateSilently(latestAccess, clearOnDefinitiveFailure: true)
+                guard let refreshed = authorizedAccess, refreshed.grant != latestAccess.grant else { continue }
+                currentAccess = refreshed
             }
         }
         .onChange(of: scenePhase) { phase in
-            guard phase == .active, let access = authorizedAccess else { return }
-            Task {
-                do {
-                    let refreshed = try await KeyAuthClient().revalidate(access)
-                    guard authorizedAccess?.grant == access.grant else { return }
-                    authorizedAccess = refreshed
-                } catch {
-                    handleRevalidationFailure(error, using: access)
+            guard let access = authorizedAccess else { return }
+            switch phase {
+            case .active:
+                Task { await revalidateSilently(access, clearOnDefinitiveFailure: true) }
+            case .background:
+                let taskID = UIApplication.shared.beginBackgroundTask(withName: "KeyAuthRevalidation", expirationHandler: nil)
+                Task {
+                    await revalidateSilently(access, clearOnDefinitiveFailure: false)
+                    if taskID != .invalid { UIApplication.shared.endBackgroundTask(taskID) }
                 }
+            default:
+                break
             }
+        }
+    }
+
+    private func revalidateSilently(_ access: KeyAuthAccess, clearOnDefinitiveFailure: Bool) async {
+        guard !revalidationInFlight else { return }
+        revalidationInFlight = true
+        defer { revalidationInFlight = false }
+        do {
+            let refreshed = try await KeyAuthClient().revalidate(access)
+            guard authorizedAccess?.grant == access.grant else { return }
+            authorizedAccess = refreshed
+            log("keyauth: silent revalidation succeeded")
+        } catch {
+            log("keyauth: silent revalidation failed: \(String(describing: error))")
+            if clearOnDefinitiveFailure { handleRevalidationFailure(error, using: access) }
         }
     }
 
@@ -96,7 +109,7 @@ struct ContentView: View {
         } else {
             isTransient = false
         }
-        guard !isTransient || Date() >= access.authorizationExpiresAt else { return }
+        guard !isTransient else { return }
         withAnimation(.easeInOut(duration: 0.3)) {
             authorizedAccess = nil
         }
