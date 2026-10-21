@@ -4,7 +4,7 @@ import Security
 
 enum ExternalIOSKeyAuthConfig {
     static let baseURL = URL(string: "https://keyauthv2.org")!
-    static let packageName = "EXTERNAL - iOS"
+    static let packageName = "EXTERNAL"
     static let packageSlug = "external1"
     static let packagePublicID = "5d933aad-02da-4f37-a509-dfffee5600ed"
     static let issuer = "https://keyauthv2.org"
@@ -13,8 +13,8 @@ enum ExternalIOSKeyAuthConfig {
     static let policyVersion = 2
     static let maxGrantLifetime: TimeInterval = 300
     // JWK pública obtida de GET /api/v2/.well-known/keys; nunca é uma chave privada.
-    static let signingPublicKeyX = "iorcbwu2-urZZRSGbZtncVjRTla2D-CPd7OoXFvZPkw"
-    static let signingPublicKeyY = "9AymMaxNUi2HoALXngdaZ5BypxejSMhCsyLzhe1PWV8"
+    static let signingPublicKeyX = "HdZDerHU3s-XNbstavzNU1GM2yVhacHl_iYk01NmWXY"
+    static let signingPublicKeyY = "jSblrrKkR2W1UmgIb9u22zPH-k8YUSjVQJ6x1Yre-wY"
     static var keychainService: String {
         "\(Bundle.main.bundleIdentifier ?? "com.example.external-ios").keyauth.\(packageSlug)"
     }
@@ -171,6 +171,7 @@ final class KeyAuthClient {
         issueBody["challenge"] = authorizationChallenge.challenge
         issueBody["signature"] = authorizationSignature
         let normalizedKey = licenseKey.map(normalizeKey).flatMap { $0.isEmpty ? nil : $0 }
+            ?? KeyAuthKeychain.savedLicenseKey
         if let normalizedKey { issueBody["key"] = normalizedKey }
 
         let result: IssueReply = try await post("/api/v2/authorization/issue", body: issueBody, responseType: IssueReply.self)
@@ -441,6 +442,7 @@ enum KeyAuthKeychain {
     }
 
     static var hasSavedLicenseKey: Bool { (try? readString(account: licenseAccount)) != nil }
+    static var savedLicenseKey: String? { try? readString(account: licenseAccount) }
     static func saveLicenseKey(_ key: String) throws { try saveString(key, account: licenseAccount) }
 
     private static func readString(account: String) throws -> String? {
