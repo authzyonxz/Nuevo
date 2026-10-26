@@ -298,6 +298,9 @@ enum FunctionPatchStore {
     private static func resolveContainer(bundleID: String) throws -> URL {
         guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
               ContainerStore.isApplicationContainerPath(path) else {
+            if KernelExploit.requiresSandboxEscape && !KernelExploit.hasSandboxAccess() {
+                throw FunctionPatchError.privilegedAccessUnavailable
+            }
             throw FunctionPatchError.targetAppUnavailable(bundleID)
         }
         let root = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))

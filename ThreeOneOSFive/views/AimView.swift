@@ -41,6 +41,18 @@ final class AimViewModel: ObservableObject {
         onAccessUpdated: @escaping (KeyAuthAccess) -> Void
     ) async {
         guard busyFunction == nil else { return }
+        guard ExploitSupportPolicy.isSupported(
+            major: AppInfo.versionTuple.major,
+            minor: AppInfo.versionTuple.minor,
+            patch: AppInfo.versionTuple.patch,
+            build: AppInfo.osBuild
+        ) else {
+            feedback = FunctionPatchError.incompatibleIOS(
+                version: AppInfo.osVersion,
+                build: AppInfo.osBuild
+            ).errorDescription
+            return
+        }
         let typed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
         let target = typed.isEmpty ? (fallbackBundleID ?? "") : typed
         guard !target.isEmpty else {

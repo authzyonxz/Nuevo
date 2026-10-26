@@ -37,6 +37,8 @@ struct FunctionPayload: Equatable {
 enum FunctionPatchError: Error, LocalizedError, Equatable {
     case invalidServerURL
     case invalidBundleID
+    case incompatibleIOS(version: String, build: String)
+    case privilegedAccessUnavailable
     case offline
     case server(String)
     case payloadUnavailable(String)
@@ -53,6 +55,10 @@ enum FunctionPatchError: Error, LocalizedError, Equatable {
             return "Endereço do servidor inválido. Use algo como https://aim.seudominio.com"
         case .invalidBundleID:
             return "Bundle ID inválido. Exemplo válido: com.dts.freefireth"
+        case let .incompatibleIOS(version, build):
+            return "Esta versão do iOS não é compatível com o app: iOS \(version) (\(build)). Atualize ou use uma versão compatível antes de ativar a função."
+        case .privilegedAccessUnavailable:
+            return "O acesso necessário ao sandbox não está ativo neste dispositivo. Abra o app novamente e tente liberar o acesso antes de ativar a função."
         case .offline:
             return "Sem conexão com o servidor. Confira a internet e o endereço do site."
         case .server(let message):
