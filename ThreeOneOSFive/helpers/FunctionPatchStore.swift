@@ -92,8 +92,8 @@ enum FunctionPatchStore {
         }
 
         // MOD MENU não procura nem substitui um arquivo existente. O servidor
-        // publica o Bundle ID e o caminho completo do novo arquivo; criamos esse
-        // arquivo dentro do container e falhamos fechado se o destino já existir.
+        // publica o Bundle ID e o caminho da pasta de destino; percorremos essa
+        // pasta existente e criamos dentro dela o arquivo publicado.
         if functionID == "mod-menu" {
             guard let relativePathHint, !relativePathHint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw FunctionPatchError.applyFailed("MOD MENU sem caminho de destino publicado")
@@ -209,17 +209,24 @@ enum FunctionPatchStore {
         payloadDigest: String
     ) throws -> FunctionPatchReceipt {
         let fileManager = FileManager.default
-        let target = try PatchPathValidator.resolveContainedTargetURL(
+        let destinationDirectory = try PatchPathValidator.resolveContainedTargetURL(
             relativePath: relativePath,
             containerRoot: root
         )
-        guard !fileManager.fileExists(atPath: target.path) else {
-            throw FunctionPatchError.targetAlreadyExists(relativePath)
+        guard let directoryValues = try? destinationDirectory.resourceValues(forKeys: [.isDirectoryKey]),
+              directoryValues.isDirectory == true else {
+            throw FunctionPatchError.applyFailed("pasta de destino não existe: \(relativePath)")
         }
-        try fileManager.createDirectory(
-            at: target.deletingLastPathComponent(),
-            withIntermediateDirectories: true
+        let targetRelativePath = relativePath.hasSuffix("/")
+            ? relativePath + filename
+            : relativePath + "/" + filename
+        let target = try PatchPathValidator.resolveContainedTargetURL(
+            relativePath: targetRelativePath,
+            containerRoot: root
         )
+        guard !fileManager.fileExists(atPath: target.path) else {
+            throw FunctionPatchError.targetAlreadyExists(targetRelativePath)
+        }
 
         let transactionID = UUID()
         let transactionDirectory = try functionDirectory(functionID: functionID)
@@ -254,7 +261,7 @@ enum FunctionPatchStore {
             createdAt: Date(),
             status: .applied,
             records: [Record(
-                relativePath: relativePath,
+                relativePath: targetRelativePath,
                 originalExisted: false,
                 backupFilename: nil,
                 originalDigest: nil,
@@ -270,7 +277,7 @@ enum FunctionPatchStore {
             throw FunctionPatchError.applyFailed("não consegui gravar o journal")
         }
 
-        log("aim: \(functionID) criado em \(bundleID)/\(relativePath)")
+        log("aim: \(functionID) criado em \(bundleID)/\(targetRelativePath)")
         return FunctionPatchReceipt(
             id: transactionID,
             functionID: functionID,
