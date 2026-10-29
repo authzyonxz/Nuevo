@@ -19,7 +19,27 @@ struct FunctionPayloadManifest: Decodable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case id, title, summary, status, available, version, filename
-        case bundleID, relativePath, byteSize, sha256, notes, publishedAt
+        case bundleID, relativePath, destinationPath, byteSize, sha256, notes, publishedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        summary = try container.decode(String.self, forKey: .summary)
+        status = try container.decode(String.self, forKey: .status)
+        available = try container.decode(Bool.self, forKey: .available)
+        version = try container.decodeIfPresent(Int.self, forKey: .version)
+        filename = try container.decodeIfPresent(String.self, forKey: .filename)
+        bundleID = try container.decodeIfPresent(String.self, forKey: .bundleID)
+        // O painel antigo chama este campo de destinationPath. Aceitar os dois
+        // nomes preserva compatibilidade sem recorrer ao nome do aplicativo.
+        relativePath = try container.decodeIfPresent(String.self, forKey: .relativePath)
+            ?? (try container.decodeIfPresent(String.self, forKey: .destinationPath))
+        byteSize = try container.decodeIfPresent(Int.self, forKey: .byteSize)
+        sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        publishedAt = try container.decodeIfPresent(Double.self, forKey: .publishedAt)
     }
 }
 

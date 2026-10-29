@@ -272,6 +272,14 @@ struct AimView: View {
             )
             return
         }
+        // O alvo é sempre resolvido pelo Bundle ID publicado no manifesto.
+        // Não use appName/displayName para localizar o container, especialmente
+        // no MOD MENU, pois nomes podem mudar ou não ser únicos.
+        guard let targetBundleID = manifest.bundleID?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !targetBundleID.isEmpty else {
+            model.feedback = "O site ainda não publicou o bundle ID de \(function.title)."
+            return
+        }
         guard let expectedSHA256 = manifest.sha256, expectedSHA256.count == 64 else {
             model.feedback = FunctionPatchError.digestMismatch.errorDescription
             return
@@ -280,8 +288,8 @@ struct AimView: View {
         Task {
             await model.apply(
                 function,
-                bundleID: "",
-                fallbackBundleID: manifest.bundleID,
+                bundleID: targetBundleID,
+                fallbackBundleID: nil,
                 baseURL: baseURL,
                 expectedSHA256: expectedSHA256,
                 expectedVersion: manifest.version,
