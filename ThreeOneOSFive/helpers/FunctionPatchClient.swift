@@ -63,7 +63,6 @@ enum FunctionPatchError: Error, LocalizedError, Equatable {
     case digestMismatch
     case targetAppUnavailable(String)
     case noTargetFile(String)
-    case targetAlreadyExists(String)
     case targetChanged(String)
     case applyFailed(String)
     case restoreFailed(String)
@@ -86,8 +85,6 @@ enum FunctionPatchError: Error, LocalizedError, Equatable {
             return "Não achei o container de \(bundleID). O app alvo está instalado?"
         case .noTargetFile(let filename):
             return "O arquivo \(filename) não existe em nenhum lugar do container alvo."
-        case .targetAlreadyExists(let path):
-            return "O destino \(path) já existe. O MOD MENU não substitui arquivos existentes."
         case .targetChanged(let path):
             return "O arquivo \(path) mudou depois da aplicação. Restaure mesmo assim para forçar."
         case .applyFailed(let detail):
