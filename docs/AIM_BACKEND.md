@@ -32,7 +32,7 @@ por função + bundle id        GET /api/v1/functions/<id>/payload   (arquivo + 
 
 | arquivo | papel |
 | --- | --- |
-| `helpers/AimFunctions.swift` | catálogo das 5 funções (id, nome, descrição, ícone, status Safe) |
+| `helpers/AimFunctions.swift` | catálogo das 6 funções (id, nome, descrição, ícone, status Safe) |
 | `helpers/FunctionPatchClient.swift` | URL do site, manifestos, download do payload, sha256 |
 | `helpers/ContainerFileLocator.swift` | varredura do container por nome de arquivo (sem symlink, sem staging) |
 | `helpers/FunctionPatchStore.swift` | transação: backup, troca atômica, journal plist, restore fail-closed |

@@ -59,6 +59,13 @@ enum AimFunctionCatalog {
             symbol: "scope",
             statusLabel: "Safe"
         ),
+        AimFunctionDefinition(
+            id: "mod-menu",
+            title: "MOD MENU",
+            summary: "Menu mod publicado pelo servidor",
+            symbol: "rectangle.3.group",
+            statusLabel: "Safe"
+        ),
     ]
 
     static func function(id: String) -> AimFunctionDefinition? {
