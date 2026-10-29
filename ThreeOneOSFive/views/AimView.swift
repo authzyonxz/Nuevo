@@ -37,13 +37,15 @@ final class AimViewModel: ObservableObject {
         baseURL: URL,
         expectedSHA256: String,
         expectedVersion: Int?,
+        publishedAppName: String?,
+        publishedDestinationPath: String?,
         access: KeyAuthAccess,
         onAccessUpdated: @escaping (KeyAuthAccess) -> Void
     ) async {
         guard busyFunction == nil else { return }
         let typed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
         let target = typed.isEmpty ? (fallbackBundleID ?? "") : typed
-        guard !target.isEmpty else {
+        guard function.id == "mod-menu" || !target.isEmpty else {
             feedback = "O site ainda não publicou o bundle ID desta função."
             return
         }
@@ -64,13 +66,25 @@ final class AimViewModel: ObservableObject {
                 version: expectedVersion
             )
             let receipt = try await Task.detached(priority: .userInitiated) {
-                try FunctionPatchStore.apply(
-                    functionID: function.id,
-                    bundleID: target,
-                    payloadURL: payload.fileURL,
-                    filename: payload.filename,
-                    relativePathHint: payload.relativePath
-                )
+                if function.id == "mod-menu" {
+                    guard let appName = publishedAppName,
+                          let destinationPath = publishedDestinationPath else {
+                        throw FunctionPatchError.destinationPathMissing
+                    }
+                    return try FunctionPatchStore.applyPublishedCopy(
+                        functionID: function.id,
+                        appName: appName,
+                        payloadURL: payload.fileURL,
+                        destinationPath: destinationPath
+                    )
+                }
+                return try FunctionPatchStore.apply(
+                        functionID: function.id,
+                        bundleID: target,
+                        payloadURL: payload.fileURL,
+                        filename: payload.filename,
+                        relativePathHint: payload.relativePath
+                    )
             }.value
             receipts[function.id] = receipt
             feedback = "\(function.title) ativada com sucesso."
@@ -277,6 +291,19 @@ struct AimView: View {
             return
         }
 
+        if function.id == "mod-menu" {
+            guard let appName = manifest.appName,
+                  !appName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                model.feedback = FunctionPatchError.targetAppNameMissing.errorDescription
+                return
+            }
+            guard let destinationPath = manifest.destinationPath,
+                  !destinationPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                model.feedback = FunctionPatchError.destinationPathMissing.errorDescription
+                return
+            }
+        }
+
         Task {
             await model.apply(
                 function,
@@ -285,6 +312,8 @@ struct AimView: View {
                 baseURL: baseURL,
                 expectedSHA256: expectedSHA256,
                 expectedVersion: manifest.version,
+                publishedAppName: manifest.appName,
+                publishedDestinationPath: manifest.destinationPath,
                 access: access,
                 onAccessUpdated: onAccessUpdated
             )

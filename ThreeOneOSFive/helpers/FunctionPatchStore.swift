@@ -181,6 +181,146 @@ enum FunctionPatchStore {
         )
     }
 
+    /// MOD MENU only: resolves the target by the app's full display name and
+    /// copies the published payload to the exact relative path from the site.
+    /// It deliberately does not scan the container by filename.
+    @discardableResult
+    static func applyPublishedCopy(
+        functionID: String,
+        appName rawAppName: String,
+        payloadURL: URL,
+        destinationPath rawDestinationPath: String
+    ) throws -> FunctionPatchReceipt {
+        guard functionID == "mod-menu" else {
+            throw FunctionPatchError.applyFailed("cópia publicada permitida somente para mod-menu")
+        }
+
+        lock.lock()
+        defer { lock.unlock() }
+
+        let appName = rawAppName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !appName.isEmpty else { throw FunctionPatchError.targetAppNameMissing }
+        let destinationPath: String
+        do {
+            destinationPath = try PatchPathValidator.canonicalRelativePath(rawDestinationPath)
+        } catch {
+            throw FunctionPatchError.destinationPathMissing
+        }
+
+        guard FileManager.default.fileExists(atPath: payloadURL.path) else {
+            throw FunctionPatchError.applyFailed("payload não está em cache")
+        }
+
+        let matches = ContainerStore.installedApps(matchingFullName: appName)
+        guard !matches.isEmpty else {
+            throw FunctionPatchError.targetAppNameNotFound(appName)
+        }
+        guard matches.count == 1, let app = matches.first else {
+            throw FunctionPatchError.targetAppNameAmbiguous(appName)
+        }
+        guard let containerPath = ContainerStore.resolveAppContainerPath(bundleID: app.bundleID) else {
+            throw FunctionPatchError.targetAppUnavailable(app.bundleID)
+        }
+
+        let fileManager = FileManager.default
+        let root = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: containerPath, isDirectory: true))
+        _ = ContainerStore.grantContainerAccess(root.path)
+        let target = try PatchPathValidator.resolveContainedTargetURL(
+            relativePath: destinationPath,
+            containerRoot: root
+        )
+        let targetExists = fileManager.fileExists(atPath: target.path)
+        if targetExists {
+            guard let targetValues = try? target.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+                  targetValues.isDirectory != true,
+                  targetValues.isSymbolicLink != true else {
+                throw FunctionPatchError.destinationFileUnavailable(destinationPath)
+            }
+        } else {
+            let parent = target.deletingLastPathComponent()
+            guard fileManager.fileExists(atPath: parent.path),
+                  let parentValues = try? parent.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+                  parentValues.isDirectory == true,
+                  parentValues.isSymbolicLink != true else {
+                throw FunctionPatchError.destinationFileUnavailable(destinationPath)
+            }
+        }
+
+        guard !target.path.hasSuffix("/") else {
+            throw FunctionPatchError.destinationFileUnavailable(destinationPath)
+        }
+
+        if let previous = latestReceipt(functionID: functionID) {
+            try restore(receipt: previous, allowChangedTargets: false)
+        }
+
+        let payloadDigest = try FileDigest.sha256Hex(ofFileAt: payloadURL)
+        let transactionID = UUID()
+        let transactionDirectory = try functionDirectory(functionID: functionID)
+            .appendingPathComponent(transactionID.uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: transactionDirectory, withIntermediateDirectories: true)
+
+        let backupURL = transactionDirectory.appendingPathComponent("0.original")
+        do {
+            let originalDigest = targetExists ? try FileDigest.sha256Hex(ofFileAt: target) : nil
+            if targetExists {
+                try fileManager.copyItem(at: target, to: backupURL)
+                _ = try FileReplacementService.replace(target: target, with: payloadURL)
+            } else {
+                try atomicCopy(from: payloadURL, to: target)
+            }
+            guard try FileDigest.sha256Hex(ofFileAt: target) == payloadDigest else {
+                throw FunctionPatchError.digestMismatch
+            }
+
+            var journal = Journal(
+                schemaVersion: 1,
+                transactionID: transactionID,
+                functionID: functionID,
+                bundleID: app.bundleID,
+                containerPath: root.path,
+                filename: destinationPath,
+                createdAt: Date(),
+                status: .applied,
+                records: [Record(
+                    relativePath: destinationPath,
+                    originalExisted: targetExists,
+                    backupFilename: targetExists ? "0.original" : nil,
+                    originalDigest: originalDigest,
+                    replacementDigest: payloadDigest
+                )]
+            )
+            let journalURL = transactionDirectory.appendingPathComponent(journalFilename)
+            try write(journal, to: journalURL)
+            log("aim: mod-menu copiado por nome do app \(app.displayName) em \(destinationPath)")
+            return FunctionPatchReceipt(
+                id: transactionID,
+                functionID: functionID,
+                bundleID: app.bundleID,
+                filename: destinationPath,
+                journalURL: journalURL,
+                appliedAt: journal.createdAt,
+                fileCount: 1
+            )
+        } catch let error as FunctionPatchError {
+            if targetExists {
+                try? FileReplacementService.replace(target: target, with: backupURL)
+            } else {
+                try? fileManager.removeItem(at: target)
+            }
+            try? fileManager.removeItem(at: transactionDirectory)
+            throw error
+        } catch {
+            if targetExists {
+                try? FileReplacementService.replace(target: target, with: backupURL)
+            } else {
+                try? fileManager.removeItem(at: target)
+            }
+            try? fileManager.removeItem(at: transactionDirectory)
+            throw FunctionPatchError.applyFailed("não consegui copiar o payload para o destino publicado")
+        }
+    }
+
     // MARK: - restore
 
     static func restore(
@@ -205,6 +345,7 @@ enum FunctionPatchStore {
             )
             let current = try? FileDigest.sha256Hex(ofFileAt: target)
             if current == nil {
+                if !record.originalExisted { continue }
                 guard allowChangedTargets else {
                     throw FunctionPatchError.targetChanged(record.relativePath)
                 }

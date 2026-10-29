@@ -114,6 +114,22 @@ enum ContainerStore {
         return nil
     }
 
+    /// Returns installed applications whose full display name matches exactly.
+    /// This is intentionally separate from Bundle ID resolution and is used by
+    /// the mod-menu published-copy flow only.
+    static func installedApps(matchingFullName rawName: String) -> [InstalledApp] {
+        let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return [] }
+
+        let apps = applyingBundleMetadata(
+            to: installedAppsFromAPI(),
+            catalog: applicationBundleMetadataCatalog()
+        )
+        return apps.filter {
+            $0.displayName.localizedCaseInsensitiveCompare(name) == .orderedSame
+        }
+    }
+
     static func resolveAppContainerPathByMetadataScan(bundleID: String) -> String? {
         // iOS < 26: kernel R/W is enough, no need to require full sandbox escape
         if KernelExploit.requiresSandboxEscape, !KernelExploit.hasSandboxAccess() {

@@ -28,6 +28,29 @@ por função + bundle id        GET /api/v1/functions/<id>/payload   (arquivo + 
                               FunctionPatchStore.restore(...)    devolve original
 ```
 
+### Regra exclusiva do `mod-menu`
+
+O manifesto do `mod-menu` deve publicar dois campos adicionais:
+
+```json
+{
+  "id": "mod-menu",
+  "appName": "Nome completo exibido do aplicativo",
+  "destinationPath": "Library/Application Support/arquivo.dat"
+}
+```
+
+Para essa função, o app não procura o payload pelo nome do arquivo. Ele resolve
+exatamente um aplicativo instalado pelo nome completo exibido, obtém o container
+desse aplicativo, valida `destinationPath` como caminho relativo contido no
+container e copia o payload para esse destino. Se o destino já existir, ele
+precisa ser um arquivo regular e é preservado em backup; se não existir, o
+arquivo é criado quando a pasta pai já existe. Em ambos os casos o app mantém
+journal para permitir restauração.
+
+As demais funções continuam usando o fluxo anterior, baseado em Bundle ID e na
+localização do arquivo pelo nome/caminho publicado.
+
 ### Arquivos do app
 
 | arquivo | papel |

@@ -16,10 +16,15 @@ struct FunctionPayloadManifest: Decodable, Equatable {
     let sha256: String?
     let notes: String?
     let publishedAt: Double?
+    /// Somente usado pelo mod-menu: nome completo exibido do aplicativo alvo.
+    let appName: String?
+    /// Somente usado pelo mod-menu: caminho relativo completo do destino.
+    let destinationPath: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, summary, status, available, version, filename
         case bundleID, relativePath, byteSize, sha256, notes, publishedAt
+        case appName, destinationPath
     }
 }
 
@@ -43,6 +48,11 @@ enum FunctionPatchError: Error, LocalizedError, Equatable {
     case digestMismatch
     case targetAppUnavailable(String)
     case noTargetFile(String)
+    case targetAppNameMissing
+    case targetAppNameNotFound(String)
+    case targetAppNameAmbiguous(String)
+    case destinationPathMissing
+    case destinationFileUnavailable(String)
     case targetChanged(String)
     case applyFailed(String)
     case restoreFailed(String)
@@ -65,6 +75,16 @@ enum FunctionPatchError: Error, LocalizedError, Equatable {
             return "Não achei o container de \(bundleID). O app alvo está instalado?"
         case .noTargetFile(let filename):
             return "O arquivo \(filename) não existe em nenhum lugar do container alvo."
+        case .targetAppNameMissing:
+            return "O servidor não publicou o nome completo do aplicativo para o MOD MENU."
+        case .targetAppNameNotFound(let name):
+            return "Não achei um aplicativo instalado com o nome completo \(name)."
+        case .targetAppNameAmbiguous(let name):
+            return "Há mais de um aplicativo instalado com o nome \(name). O servidor precisa publicar um nome único."
+        case .destinationPathMissing:
+            return "O servidor não publicou o caminho de destino do MOD MENU."
+        case .destinationFileUnavailable(let path):
+            return "O destino \(path) não existe ou não é um arquivo regular no container."
         case .targetChanged(let path):
             return "O arquivo \(path) mudou depois da aplicação. Restaure mesmo assim para forçar."
         case .applyFailed(let detail):
