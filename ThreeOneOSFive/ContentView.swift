@@ -121,16 +121,21 @@ struct ContentView: View {
                 switch selectedTab {
                 case .aim:
                     if let access = authorizedAccess {
-                        AimView(access: access) { refreshed in
+                        AimView(access: access, onAccessUpdated: { refreshed in
                             authorizedAccess = refreshed
-                        }
+                        }, functions: AimFunctionCatalog.all.filter { $0.id != "mod-menu" })
                     }
                 case .cpp:
-                    TabPlaceholderView(
-                        title: "C++",
-                        symbol: "chevron.left.forwardslash.chevron.right",
-                        detail: "Funções C++ em fase de desenvolvimento."
-                    )
+                    if let access = authorizedAccess {
+                        AimView(
+                            access: access,
+                            onAccessUpdated: { refreshed in
+                            authorizedAccess = refreshed
+                            },
+                            functions: AimFunctionCatalog.all.filter { $0.id == "mod-menu" },
+                            tutorialText: "Ative a função Mod Menu antes de entrar no jogo. Após ativar e entrar no jogo e chegar no lobby, desative a função."
+                        )
+                    }
                 case .profile:
                     if let access = authorizedAccess {
                         ProfileTabView(access: access)

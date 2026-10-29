@@ -106,6 +106,8 @@ final class AimViewModel: ObservableObject {
 struct AimView: View {
     let access: KeyAuthAccess
     let onAccessUpdated: (KeyAuthAccess) -> Void
+    let functions: [AimFunctionDefinition]
+    let tutorialText: String
 
     @StateObject private var model = AimViewModel()
     // Mantém a configuração atual intacta; o endereço poderá ser definido internamente depois.
@@ -114,6 +116,18 @@ struct AimView: View {
     @State private var noticeTitle = ""
     @State private var noticeMessage = ""
 
+    init(
+        access: KeyAuthAccess,
+        onAccessUpdated: @escaping (KeyAuthAccess) -> Void,
+        functions: [AimFunctionDefinition] = AimFunctionCatalog.all.filter { $0.id != "mod-menu" },
+        tutorialText: String = "Entre no jogo e aguarde carregar até 40%. Saia do jogo e volte ao External. Ative a função desejada; depois, volte ao jogo e aguarde chegar ao lobby. Assim que entrar, volte rapidamente à IPA e desative a função. Feito isso, é só jogar normalmente."
+    ) {
+        self.access = access
+        self.onAccessUpdated = onAccessUpdated
+        self.functions = functions
+        self.tutorialText = tutorialText
+    }
+
     private var baseURL: URL? { FunctionPatchClient.normalizedBaseURL(serverURL) }
 
     var body: some View {
@@ -121,7 +135,7 @@ struct AimView: View {
             VStack(spacing: 16) {
                 header
                 tutorial
-                ForEach(AimFunctionCatalog.all) { function in
+                ForEach(functions) { function in
                     functionCard(function)
                 }
             }
@@ -235,7 +249,7 @@ struct AimView: View {
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .tracking(1.1)
                 .foregroundStyle(.primary)
-            Text("Entre no jogo e aguarde carregar até 40%. Saia do jogo e volte ao External. Ative a função desejada; depois, volte ao jogo e aguarde chegar ao lobby. Assim que entrar, volte rapidamente à IPA e desative a função. Feito isso, é só jogar normalmente.")
+            Text(tutorialText)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -251,7 +265,7 @@ struct AimView: View {
             return
         }
 
-        if let activeFunction = AimFunctionCatalog.all.first(where: {
+        if let activeFunction = functions.first(where: {
             $0.id != function.id && model.receipts[$0.id] != nil
         }) {
             presentNotice(
