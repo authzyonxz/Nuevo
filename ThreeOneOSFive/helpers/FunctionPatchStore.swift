@@ -86,17 +86,35 @@ enum FunctionPatchStore {
         }
 
         let payloadDigest = try FileDigest.sha256Hex(ofFileAt: payloadURL)
+        // Trocar de variante sempre começa do original.
+        if let previous = latestReceipt(functionID: functionID) {
+            try restore(receipt: previous, allowChangedTargets: false)
+        }
+
+        // MOD MENU não procura nem substitui um arquivo existente. O servidor
+        // publica o Bundle ID e o caminho completo do novo arquivo; criamos esse
+        // arquivo dentro do container e falhamos fechado se o destino já existir.
+        if functionID == "mod-menu" {
+            guard let relativePathHint, !relativePathHint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw FunctionPatchError.applyFailed("MOD MENU sem caminho de destino publicado")
+            }
+            return try applyNewFile(
+                functionID: functionID,
+                bundleID: bundleID,
+                payloadURL: payloadURL,
+                filename: filename,
+                relativePath: relativePathHint,
+                root: root,
+                payloadDigest: payloadDigest
+            )
+        }
+
         let matches = ContainerFileLocator.matches(
             filename: filename,
             relativePath: relativePathHint,
             containerRoot: root
         )
         guard !matches.isEmpty else { throw FunctionPatchError.noTargetFile(filename) }
-
-        // Trocar de variante sempre começa do original.
-        if let previous = latestReceipt(functionID: functionID) {
-            try restore(receipt: previous, allowChangedTargets: false)
-        }
 
         let transactionID = UUID()
         let transactionDirectory = try functionDirectory(functionID: functionID)
@@ -178,6 +196,89 @@ enum FunctionPatchStore {
             journalURL: journalURL,
             appliedAt: journal.createdAt,
             fileCount: records.count
+        )
+    }
+
+    private static func applyNewFile(
+        functionID: String,
+        bundleID: String,
+        payloadURL: URL,
+        filename: String,
+        relativePath: String,
+        root: URL,
+        payloadDigest: String
+    ) throws -> FunctionPatchReceipt {
+        let fileManager = FileManager.default
+        let target = try PatchPathValidator.resolveContainedTargetURL(
+            relativePath: relativePath,
+            containerRoot: root
+        )
+        guard !fileManager.fileExists(atPath: target.path) else {
+            throw FunctionPatchError.targetAlreadyExists(relativePath)
+        }
+        try fileManager.createDirectory(
+            at: target.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        let transactionID = UUID()
+        let transactionDirectory = try functionDirectory(functionID: functionID)
+            .appendingPathComponent(transactionID.uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: transactionDirectory, withIntermediateDirectories: true)
+
+        let staging = target.deletingLastPathComponent()
+            .appendingPathComponent(".3105-new-\(UUID().uuidString)")
+        do {
+            try fileManager.copyItem(at: payloadURL, to: staging)
+            guard rename(staging.path, target.path) == 0 else {
+                throw FunctionPatchError.applyFailed("não consegui criar o arquivo no destino")
+            }
+            guard try FileDigest.sha256Hex(ofFileAt: target) == payloadDigest else {
+                try? fileManager.removeItem(at: target)
+                throw FunctionPatchError.digestMismatch
+            }
+        } catch {
+            try? fileManager.removeItem(at: staging)
+            try? fileManager.removeItem(at: target)
+            try? fileManager.removeItem(at: transactionDirectory)
+            throw error
+        }
+
+        let journal = Journal(
+            schemaVersion: 1,
+            transactionID: transactionID,
+            functionID: functionID,
+            bundleID: bundleID,
+            containerPath: root.path,
+            filename: filename,
+            createdAt: Date(),
+            status: .applied,
+            records: [Record(
+                relativePath: relativePath,
+                originalExisted: false,
+                backupFilename: nil,
+                originalDigest: nil,
+                replacementDigest: payloadDigest
+            )]
+        )
+        let journalURL = transactionDirectory.appendingPathComponent(journalFilename)
+        do {
+            try write(journal, to: journalURL)
+        } catch {
+            try? fileManager.removeItem(at: target)
+            try? fileManager.removeItem(at: transactionDirectory)
+            throw FunctionPatchError.applyFailed("não consegui gravar o journal")
+        }
+
+        log("aim: \(functionID) criado em \(bundleID)/\(relativePath)")
+        return FunctionPatchReceipt(
+            id: transactionID,
+            functionID: functionID,
+            bundleID: bundleID,
+            filename: filename,
+            journalURL: journalURL,
+            appliedAt: journal.createdAt,
+            fileCount: 1
         )
     }
 
