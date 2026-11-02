@@ -12,6 +12,10 @@ struct AimFunctionDefinition: Identifiable, Hashable {
     let summary: String
     let symbol: String
     let statusLabel: String
+
+    var isTextura: Bool {
+        id.hasPrefix("textura-")
+    }
 }
 
 enum AimFunctionConfig {
@@ -64,6 +68,27 @@ enum AimFunctionCatalog {
             title: "MOD MENU",
             summary: "Menu mod publicado pelo servidor",
             symbol: "rectangle.3.group",
+            statusLabel: "Safe"
+        ),
+        AimFunctionDefinition(
+            id: "textura-mandela-alok-despertar",
+            title: "Textura - Mandela",
+            summary: "Textura Mandela para o personagem Alok Despertar",
+            symbol: "paintbrush.fill",
+            statusLabel: "Safe"
+        ),
+        AimFunctionDefinition(
+            id: "textura-segundo-passe-dimitri",
+            title: "Textura - Segundo Passe",
+            summary: "Textura Segundo Passe para o personagem Dimitri",
+            symbol: "paintbrush.fill",
+            statusLabel: "Safe"
+        ),
+        AimFunctionDefinition(
+            id: "textura-homem-aranha-dimitri",
+            title: "Textura - Homem Aranha",
+            summary: "Textura Homem Aranha para o personagem Dimitri",
+            symbol: "paintbrush.fill",
             statusLabel: "Safe"
         ),
     ]

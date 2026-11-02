@@ -4,6 +4,7 @@ import UIKit
 private enum MainTab: Int, CaseIterable, Identifiable {
     case aim
     case cpp
+    case textura
     case profile
 
     var id: Int { rawValue }
@@ -12,6 +13,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         switch self {
         case .aim: return "Aim"
         case .cpp: return "C++"
+        case .textura: return "Textura"
         case .profile: return "Profile"
         }
     }
@@ -20,6 +22,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         switch self {
         case .aim: return "scope"
         case .cpp: return "chevron.left.forwardslash.chevron.right"
+        case .textura: return "paintbrush.fill"
         case .profile: return "person.crop.circle"
         }
     }
@@ -123,7 +126,7 @@ struct ContentView: View {
                     if let access = authorizedAccess {
                         AimView(access: access, onAccessUpdated: { refreshed in
                             authorizedAccess = refreshed
-                        }, functions: AimFunctionCatalog.all.filter { $0.id != "mod-menu" })
+                        }, functions: AimFunctionCatalog.all.filter { !$0.isTextura && $0.id != "mod-menu" })
                     }
                 case .cpp:
                     if let access = authorizedAccess {
@@ -134,6 +137,17 @@ struct ContentView: View {
                             },
                             functions: AimFunctionCatalog.all.filter { $0.id == "mod-menu" },
                             tutorialText: "Ative a função Mod Menu antes de entrar no jogo. Após ativar e entrar no jogo e chegar no lobby, desative a função."
+                        )
+                    }
+                case .textura:
+                    if let access = authorizedAccess {
+                        AimView(
+                            access: access,
+                            onAccessUpdated: { refreshed in
+                                authorizedAccess = refreshed
+                            },
+                            functions: AimFunctionCatalog.all.filter(\.isTextura),
+                            tutorialText: "Escolha a textura desejada e siga o procedimento indicado pelo site antes de entrar no jogo."
                         )
                     }
                 case .profile:
