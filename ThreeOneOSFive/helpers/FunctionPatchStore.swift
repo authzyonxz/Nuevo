@@ -9,6 +9,8 @@ struct FunctionPatchReceipt: Identifiable, Equatable {
     let journalURL: URL
     let appliedAt: Date
     let fileCount: Int
+    /// Qual backend gravou esta transação. Decide quem faz o restore.
+    var backend: AccessKind = .kernel
 }
 
 /// Aplica o arquivo publicado pelo site dentro do container do bundle ID alvo.

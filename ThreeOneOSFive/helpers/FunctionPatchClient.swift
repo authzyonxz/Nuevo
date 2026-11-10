@@ -16,10 +16,14 @@ struct FunctionPayloadManifest: Decodable, Equatable {
     let sha256: String?
     let notes: String?
     let publishedAt: Double?
+    /// Original publicado pelo site — obrigatório para o restore por Airlift,
+    /// que não tem permissão de leitura no container alvo.
+    let originalSha256: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, summary, status, available, version, filename
         case bundleID, relativePath, destinationPath, byteSize, sha256, notes, publishedAt
+        case originalSha256
     }
 
     init(from decoder: Decoder) throws {
@@ -40,6 +44,7 @@ struct FunctionPayloadManifest: Decodable, Equatable {
         sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
         publishedAt = try container.decodeIfPresent(Double.self, forKey: .publishedAt)
+        originalSha256 = try container.decodeIfPresent(String.self, forKey: .originalSha256)
     }
 }
 
@@ -206,6 +211,46 @@ final class FunctionPatchClient {
         request.setValue("Bearer \(grant)", forHTTPHeaderField: "Authorization")
         request.setValue(sessionToken, forHTTPHeaderField: "X-KeyAuth-Session")
 
+        return try await fetchPayload(
+            request: request,
+            functionID: functionID,
+            expectedSHA256: expectedSHA256,
+            cacheKey: functionID
+        )
+    }
+
+    /// Baixa o arquivo ORIGINAL publicado pelo site.
+    /// Obrigatório para o restore no backend Airlift: aquela rota não tem
+    /// permissão de leitura no container, então o original vem do site.
+    func downloadOriginal(
+        functionID: String,
+        baseURL: URL,
+        grant: String,
+        sessionToken: String,
+        expectedSHA256: String
+    ) async throws -> FunctionPayload {
+        var request = URLRequest(
+            url: baseURL.appendingPathComponent("api/v1/functions/\(functionID)/original")
+        )
+        request.timeoutInterval = 60
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("Bearer \(grant)", forHTTPHeaderField: "Authorization")
+        request.setValue(sessionToken, forHTTPHeaderField: "X-KeyAuth-Session")
+
+        return try await fetchPayload(
+            request: request,
+            functionID: functionID + "#original",
+            expectedSHA256: expectedSHA256,
+            cacheKey: functionID + "-original"
+        )
+    }
+
+    private func fetchPayload(
+        request: URLRequest,
+        functionID: String,
+        expectedSHA256: String,
+        cacheKey: String
+    ) async throws -> FunctionPayload {
         let temporaryURL: URL
         let response: URLResponse
         do {
@@ -243,7 +288,7 @@ final class FunctionPatchClient {
             throw FunctionPatchError.digestMismatch
         }
 
-        let directory = try Self.cacheDirectory(functionID: functionID)
+        let directory = try Self.cacheDirectory(functionID: cacheKey)
         let safeName = filename.replacingOccurrences(of: "/", with: "_")
         let destination = directory.appendingPathComponent("v\(versionValue)_\(safeName)")
         let fileManager = FileManager.default

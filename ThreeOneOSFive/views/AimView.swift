@@ -1,5 +1,7 @@
+import Combine
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 @MainActor
 final class AimViewModel: ObservableObject {
@@ -13,7 +15,7 @@ final class AimViewModel: ObservableObject {
     private let client = FunctionPatchClient()
 
     func loadLocalState() {
-        receipts = FunctionPatchStore.appliedReceipts()
+        receipts = AccessBackend.appliedReceipts()
     }
 
     func refresh(baseURL: URL) async {
@@ -37,6 +39,7 @@ final class AimViewModel: ObservableObject {
         baseURL: URL,
         expectedSHA256: String,
         expectedVersion: Int?,
+        originalSha256: String?,
         access: KeyAuthAccess,
         onAccessUpdated: @escaping (KeyAuthAccess) -> Void
     ) async {
@@ -64,38 +67,53 @@ final class AimViewModel: ObservableObject {
                 version: expectedVersion
             )
             let receipt = try await Task.detached(priority: .userInitiated) {
-                try FunctionPatchStore.apply(
+                try AccessBackend.apply(
                     functionID: function.id,
                     bundleID: target,
                     payloadURL: payload.fileURL,
                     filename: payload.filename,
-                    relativePathHint: payload.relativePath
+                    relativePathHint: payload.relativePath,
+                    version: payload.version,
+                    originalSha256: originalSha256
                 )
             }.value
             receipts[function.id] = receipt
-            feedback = "\(function.title) ativada com sucesso."
+            let route = receipt.backend == .airlift ? "Airlift" : "Kernel"
+            feedback = "\(function.title) ativada com sucesso (\(route))."
         } catch let error as KeyAuthFailure {
             feedback = error.userMessage
         } catch let error as FunctionPatchError {
+            feedback = error.errorDescription
+        } catch let error as AirliftError {
             feedback = error.errorDescription
         } catch {
             feedback = "Não foi possível ativar \(function.title)."
         }
     }
 
-    func restore(_ function: AimFunctionDefinition, force: Bool = false) async {
+    func restore(
+        _ function: AimFunctionDefinition,
+        baseURL: URL?,
+        access: KeyAuthAccess,
+        force: Bool = false
+    ) async {
         guard let receipt = receipts[function.id], busyFunction == nil else { return }
         busyFunction = function.id
         feedback = nil
         defer { busyFunction = nil }
 
         do {
-            try await Task.detached(priority: .userInitiated) {
-                try FunctionPatchStore.restore(receipt: receipt, allowChangedTargets: force)
-            }.value
+            try await AccessBackend.restore(
+                receipt: receipt,
+                baseURL: baseURL,
+                access: access,
+                force: force
+            )
             receipts.removeValue(forKey: function.id)
             feedback = "\(function.title) desativada com sucesso."
         } catch let error as FunctionPatchError {
+            feedback = error.errorDescription
+        } catch let error as AirliftError {
             feedback = error.errorDescription
         } catch {
             feedback = "Não foi possível restaurar \(function.title)."
@@ -134,6 +152,7 @@ struct AimView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header
+                AirliftAccessCard()
                 tutorial
                 ForEach(functions) { function in
                     functionCard(function)
@@ -261,7 +280,7 @@ struct AimView: View {
     private func handleTap(_ function: AimFunctionDefinition) {
         model.feedback = nil
         if model.receipts[function.id] != nil {
-            Task { await model.restore(function) }
+            Task { await model.restore(function, baseURL: baseURL, access: access) }
             return
         }
 
@@ -307,6 +326,7 @@ struct AimView: View {
                 baseURL: baseURL,
                 expectedSHA256: expectedSHA256,
                 expectedVersion: manifest.version,
+                originalSha256: manifest.originalSha256,
                 access: access,
                 onAccessUpdated: onAccessUpdated
             )
@@ -364,5 +384,238 @@ struct AimView: View {
 
     private func dismissNotice() {
         isNoticePresented = false
+    }
+}
+
+// MARK: - Cartão de acesso (kernel vs airlift)
+
+@MainActor
+final class AirliftAccessModel: ObservableObject {
+    @Published private(set) var kind: AccessKind?
+    @Published private(set) var pairing: AirliftPairing.Info?
+    @Published private(set) var tunnelUp = false
+    @Published private(set) var busy = false
+    @Published var message: String?
+
+    func refresh() {
+        kind = AccessBackend.policyKind
+        pairing = AirliftPairing.activeInfo()
+        tunnelUp = LoopbackTunnel.isUp()
+    }
+
+    func importPairing(_ url: URL) {
+        do {
+            let info = try AirliftPairing.importFile(from: url)
+            pairing = info
+            message = "Pairing carregado: \(info.deviceName)."
+            refresh()
+        } catch {
+            message = (error as? LocalizedError)?.errorDescription ?? "Falha ao importar pairing."
+        }
+    }
+
+    func pairOnDevice() async {
+        guard !busy else { return }
+        busy = true
+        message = nil
+        defer { busy = false }
+        do {
+            let info = try await OnDevicePairing.shared.startAndWait()
+            pairing = info
+            message = "Pareado com sucesso: \(info.deviceName)."
+        } catch {
+            message = (error as? LocalizedError)?.errorDescription ?? "Pareamento falhou."
+        }
+        refresh()
+    }
+
+    func removePairing() {
+        AirliftPairing.deleteActive()
+        pairing = nil
+        message = "Pairing removido."
+        refresh()
+    }
+
+    func adoptFirstCandidate() {
+        guard let first = AirliftPairing.discoverCandidates().first else {
+            message = "Nenhum pairing file encontrado em On My iPhone/3105."
+            return
+        }
+        importPairing(first)
+    }
+
+    func testAccess(bundleID: String) async {
+        guard !busy else { return }
+        busy = true
+        message = "Testando Airlift em \(bundleID)…"
+        defer { busy = false }
+
+        do {
+            let pairingPath = try AccessBackend.requireAirliftReady()
+            let container = try await Task.detached(priority: .userInitiated) {
+                try Airlift.findContainer(pairingPath: pairingPath, bundleID: bundleID)
+            }.value
+            _ = try await Task.detached(priority: .userInitiated) {
+                try Airlift.runCanary(pairingPath: pairingPath, target: container)
+            }.value
+            message = "Airlift OK — escrita confirmada em \(bundleID)."
+        } catch {
+            message = (error as? LocalizedError)?.errorDescription ?? "Airlift falhou."
+        }
+    }
+}
+
+struct AirliftAccessCard: View {
+    @StateObject private var model = AirliftAccessModel()
+    @ObservedObject private var pairingHost = OnDevicePairing.shared
+    @State private var importing = false
+
+    private var testBundleID: String {
+        let stored = UserDefaults.standard.string(forKey: AimFunctionConfig.bundleIDKey) ?? ""
+        return stored.isEmpty ? "com.dts.freefireth" : stored
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text("ROTA DE ACESSO")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(1.1)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(badgeTitle)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .tracking(0.6)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(badgeColor.opacity(0.16), in: Capsule())
+                    .foregroundStyle(badgeColor)
+            }
+
+            row(
+                symbol: model.tunnelUp ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
+                tint: model.tunnelUp ? .green : .orange,
+                title: "Túnel loopback",
+                detail: model.tunnelUp ? "10.7.0.1 ativo" : "LocalDevVPN desligado"
+            )
+
+            row(
+                symbol: model.pairing == nil ? "xmark.circle.fill" : "checkmark.circle.fill",
+                tint: model.pairing == nil ? .orange : .green,
+                title: "Pairing record",
+                detail: model.pairing.map { "\($0.deviceName) · \($0.byteCount) bytes" } ?? "nenhum pairing importado"
+            )
+
+            if let pin = pairingHost.pin {
+                Text("PIN \(pin) — Ajustes › Modo Desenvolvedor")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.orange)
+            }
+
+            if pairingHost.running {
+                Text(pairingHost.status)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let message = model.message {
+                Text(message)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 8) {
+                actionButton("Importar pairing") { importing = true }
+                actionButton("Parear iPhone") { Task { await model.pairOnDevice() } }
+                actionButton("Testar") { Task { await model.testAccess(bundleID: testBundleID) } }
+            }
+
+            HStack(spacing: 8) {
+                actionButton("Procurar pairing") { model.adoptFirstCandidate() }
+                actionButton(model.tunnelUp ? "Túnel ativo" : "Abrir LocalDevVPN") {
+                    LoopbackTunnel.openVPNApp()
+                }
+                if model.pairing != nil {
+                    actionButton("Remover") { model.removePairing() }
+                }
+            }
+
+            if model.kind != .kernel {
+                Text("Airlift grava sem ler: o restore baixa o arquivo original publicado pelo site. Mantenha o Apple Books instalado e aberto ao menos uma vez.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Color(uiColor: .secondarySystemBackground).opacity(0.7),
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(uiColor: .separator).opacity(0.22), lineWidth: 0.7)
+        )
+        .task { model.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            model.refresh()
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
+            guard case let .success(urls) = result, let url = urls.first else { return }
+            model.importPairing(url)
+        }
+    }
+
+    private var badgeTitle: String {
+        switch model.kind {
+        case .kernel: return "KERNEL"
+        case .airlift: return "AIRLIFT"
+        case nil: return "SEM ROTA"
+        }
+    }
+
+    private var badgeColor: Color {
+        switch model.kind {
+        case .kernel: return .blue
+        case .airlift: return .green
+        case nil: return .orange
+        }
+    }
+
+    private func row(symbol: String, tint: Color, title: String, detail: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(tint)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 4)
+        }
+    }
+
+    private func actionButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, minHeight: 32)
+                .padding(.horizontal, 6)
+                .background(
+                    Color(uiColor: .tertiarySystemBackground),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(model.busy)
     }
 }

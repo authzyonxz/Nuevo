@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.1</string>
+    <string>2.1</string>
     <key>CFBundleVersion</key>
-    <string>7</string>
+    <string>9</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -73,16 +73,29 @@
     <key>UIFileSharingEnabled</key>
     <true/>
     <key>AppReleaseDisplayVersion</key>
-    <string>1.1.1</string>
+    <string>2.1</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>localdevvpn</string>
+    </array>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_remotepairing-pairable-host._tcp</string>
+        <string>_3105probe._tcp</string>
+    </array>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>audio</string>
+    </array>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsLocalNetworking</key>
         <true/>
     </dict>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>3105 connects to your aim payload server on the local network.</string>
+    <string>3105 conecta ao daemon local do aparelho pelo túnel de loopback e anuncia o pareamento na rede local.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>3105 needs access to photos for wallpaper customization.</string>
     <key>NSDocumentsFolderUsageDescription</key>
@@ -106,6 +119,6 @@
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>MinimumOSVersion</key>
-    <string>16.0</string>
+    <string>18.0</string>
 </dict>
 </plist>

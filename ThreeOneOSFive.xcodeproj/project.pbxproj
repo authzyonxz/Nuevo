@@ -82,6 +82,11 @@
 		3105A234 /* AppDataBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A105; };
 		3105A228 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3105A120; };
 		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
+		3105AL10 /* AirliftFFI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105AL01; };
+		3105AL11 /* AirliftPairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105AL02; };
+		3105AL12 /* AirliftPatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105AL03; };
+		3105AL13 /* AccessBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105AL04; };
+		3105AL14 /* AirliftFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3105AL05; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -178,6 +183,11 @@
 		3105A121 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105A122 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105B123 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		3105AL01 /* AirliftFFI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftFFI.swift; sourceTree = "<group>"; };
+		3105AL02 /* AirliftPairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairing.swift; sourceTree = "<group>"; };
+		3105AL03 /* AirliftPatchStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPatchStore.swift; sourceTree = "<group>"; };
+		3105AL04 /* AccessBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessBackend.swift; sourceTree = "<group>"; };
+		3105AL05 /* AirliftFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = AirliftFFI.xcframework; path = AirliftFFI.xcframework; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -185,6 +195,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3105AL14,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -194,6 +205,7 @@
 		3105A400 = {
 			isa = PBXGroup;
 			children = (
+				3105AL05 /* AirliftFFI.xcframework */,
 				3105A401 /* ThreeOneOSFive */,
 				3105A402 /* Products */,
 			);
@@ -265,6 +277,7 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
+				3105AL00 /* Airlift */,
 				3105A099 /* Localization.swift */,
 				3105A104 /* ContainerStore.swift */,
 				3105A108 /* ContainerIdentityResolver.swift */,
@@ -334,6 +347,17 @@
 				3105A097 /* xpaci.h */,
 			);
 			path = kexploit;
+			sourceTree = "<group>";
+		};
+		3105AL00 /* Airlift */ = {
+			isa = PBXGroup;
+			children = (
+				3105AL01 /* AirliftFFI.swift */,
+				3105AL02 /* AirliftPairing.swift */,
+				3105AL03 /* AirliftPatchStore.swift */,
+				3105AL04 /* AccessBackend.swift */,
+			);
+			path = Airlift;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -465,6 +489,10 @@
 				3105N202,
 				3105N203,
 				3105N204,
+				3105AL10,
+				3105AL11,
+				3105AL12,
+				3105AL13,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -491,7 +519,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -502,18 +530,27 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0;
-				OTHER_LDFLAGS = "-lz";
+				MARKETING_VERSION = 2.1;
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lc++",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.apple.mobile.MobileHouseArrest";
 				PRODUCT_NAME = 3105;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)",
+				);
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -525,7 +562,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -536,18 +573,27 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0;
-				OTHER_LDFLAGS = "-lz";
+				MARKETING_VERSION = 2.1;
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lc++",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.apple.mobile.MobileHouseArrest";
 				PRODUCT_NAME = 3105;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)",
+				);
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -604,7 +650,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -660,7 +707,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
