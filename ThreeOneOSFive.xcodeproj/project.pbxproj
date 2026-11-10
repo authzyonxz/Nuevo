@@ -87,6 +87,7 @@
 		3105AL12 /* AirliftPatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105AL03; };
 		3105AL13 /* AccessBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105AL04; };
 		3105AL14 /* AirliftFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3105AL05; };
+		3105AL15 /* AirliftPairingFFICompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105AL06; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -188,6 +189,7 @@
 		3105AL03 /* AirliftPatchStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPatchStore.swift; sourceTree = "<group>"; };
 		3105AL04 /* AccessBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessBackend.swift; sourceTree = "<group>"; };
 		3105AL05 /* AirliftFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = AirliftFFI.xcframework; path = AirliftFFI.xcframework; sourceTree = SOURCE_ROOT; };
+		3105AL06 /* AirliftPairingFFICompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairingFFICompat.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -354,6 +356,7 @@
 			children = (
 				3105AL01 /* AirliftFFI.swift */,
 				3105AL02 /* AirliftPairing.swift */,
+				3105AL06 /* AirliftPairingFFICompat.swift */,
 				3105AL03 /* AirliftPatchStore.swift */,
 				3105AL04 /* AccessBackend.swift */,
 			);
@@ -493,6 +496,7 @@
 				3105AL11,
 				3105AL12,
 				3105AL13,
+				3105AL15,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

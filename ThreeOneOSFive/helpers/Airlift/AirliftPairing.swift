@@ -284,13 +284,13 @@ final class OnDevicePairing: NSObject, ObservableObject {
         altIRK: String,
         ctx: UnsafeMutableRawPointer
     ) -> HostOutcome {
-        var result = ALPairResult()
+        var result = AirliftPairResult()
         let rc = bind.withCString { bindC in
             name.withCString { nameC in
                 model.withCString { modelC in
                     outPath.withCString { outC in
                         altIRK.withCString { irkC in
-                            al_pairing_run_host(
+                            airlift_pairing_run_host(
                                 bindC, 0, nameC, modelC, outC, irkC,
                                 pairingReadyCallback, pairingPinCallback, ctx, &result
                             )
@@ -306,7 +306,7 @@ final class OnDevicePairing: NSObject, ObservableObject {
             pairingPath: pairingCString(result.pairing_file_path),
             altIRK: pairingCString(result.host_alt_irk_hex)
         )
-        al_pairing_result_free(&result)
+        airlift_pairing_result_free(&result)
         return outcome
     }
 
@@ -372,7 +372,7 @@ final class OnDevicePairing: NSObject, ObservableObject {
     }
 }
 
-private let pairingReadyCallback: ALPairReadyCb = { ctx, serviceID, port, keys, values, count in
+private let pairingReadyCallback: AirliftPairReadyCallback = { ctx, serviceID, port, keys, values, count, _ in
     guard let ctx, let serviceID else { return }
     let controller = Unmanaged<OnDevicePairing>.fromOpaque(ctx).takeUnretainedValue()
     let identifier = String(cString: serviceID)
@@ -389,7 +389,7 @@ private let pairingReadyCallback: ALPairReadyCb = { ctx, serviceID, port, keys, 
     }
 }
 
-private let pairingPinCallback: ALPairPinCb = { pin, ctx in
+private let pairingPinCallback: AirliftPairPinCallback = { pin, ctx in
     guard let pin, let ctx else { return }
     let controller = Unmanaged<OnDevicePairing>.fromOpaque(ctx).takeUnretainedValue()
     let value = String(cString: pin)
