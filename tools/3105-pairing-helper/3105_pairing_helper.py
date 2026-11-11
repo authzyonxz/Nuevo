@@ -38,6 +38,8 @@ def find_cli() -> str:
 
 def find_pairing_candidates() -> list[Path]:
     home = Path.home()
+    all_users = os.environ.get("ALLUSERSPROFILE", "")
+    program_data = os.environ.get("PROGRAMDATA", "")
     candidates = [
         Path.cwd() / "ALTPairingFile.mobiledevicepairing",
         Path.cwd() / "pairing.mobiledevicepairing",
@@ -45,6 +47,8 @@ def find_pairing_candidates() -> list[Path]:
         home / ".config" / "libimobiledevice",
         home / "Library" / "Lockdown",
         Path(os.environ.get("APPDATA", "")) / "pymobiledevice3",
+        Path(all_users) / "Apple" / "Lockdown",
+        Path(program_data) / "Apple" / "Lockdown",
     ]
     found: list[Path] = []
     for candidate in candidates:
