@@ -152,7 +152,6 @@ struct AimView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header
-                AirliftAccessCard()
                 tutorial
                 ForEach(functions) { function in
                     functionCard(function)
@@ -465,9 +464,27 @@ final class AirliftAccessModel: ObservableObject {
     }
 }
 
+@MainActor
+final class ComputerPairingModel: ObservableObject {
+    @Published private(set) var pin: String?
+    @Published private(set) var status = "Nenhuma sessão iniciada"
+
+    func start() {
+        let value = Int.random(in: 100_000...999_999)
+        pin = String(format: "%06d", value)
+        status = "Aguardando o helper do computador…"
+    }
+
+    func reset() {
+        pin = nil
+        status = "Nenhuma sessão iniciada"
+    }
+}
+
 struct AirliftAccessCard: View {
     @StateObject private var model = AirliftAccessModel()
     @ObservedObject private var pairingHost = OnDevicePairing.shared
+    @StateObject private var computerPairing = ComputerPairingModel()
     @State private var importing = false
 
     private var testBundleID: String {
@@ -526,8 +543,20 @@ struct AirliftAccessCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if let pin = computerPairing.pin {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("CÓDIGO DO COMPUTADOR  \(pin)")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.orange)
+                    Text(computerPairing.status)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             HStack(spacing: 8) {
                 actionButton("Importar pairing") { importing = true }
+                actionButton("Parear com computador") { computerPairing.start() }
                 actionButton("Parear iPhone") { Task { await model.pairOnDevice() } }
                 actionButton("Testar") { Task { await model.testAccess(bundleID: testBundleID) } }
             }

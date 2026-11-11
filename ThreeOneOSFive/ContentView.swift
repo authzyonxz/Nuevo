@@ -5,6 +5,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
     case aim
     case cpp
     case textura
+    case config
     case profile
 
     var id: Int { rawValue }
@@ -14,6 +15,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         case .aim: return "Aim"
         case .cpp: return "C++"
         case .textura: return "Textura"
+        case .config: return "Config"
         case .profile: return "Profile"
         }
     }
@@ -23,6 +25,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         case .aim: return "scope"
         case .cpp: return "chevron.left.forwardslash.chevron.right"
         case .textura: return "paintbrush.fill"
+        case .config: return "gearshape.fill"
         case .profile: return "person.crop.circle"
         }
     }
@@ -150,6 +153,8 @@ struct ContentView: View {
                             tutorialText: "Escolha a textura desejada e siga o procedimento indicado pelo site antes de entrar no jogo."
                         )
                     }
+                case .config:
+                    ConfigTabView()
                 case .profile:
                     if let access = authorizedAccess {
                         ProfileTabView(access: access)
@@ -202,6 +207,46 @@ struct ContentView: View {
         .padding(.horizontal, 28)
         .padding(.top, 8)
         .padding(.bottom, 3)
+    }
+}
+
+private struct ConfigTabView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("CONFIG", systemImage: "gearshape.fill")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("Pareamento, Airlift e acesso ao dispositivo")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.56))
+                }
+
+                AirliftAccessCard()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("PAREAMENTO PELO COMPUTADOR", systemImage: "cable.connector")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .tracking(1.1)
+                        .foregroundStyle(.white.opacity(0.55))
+                    Text("Use o helper 3105 Pairing no Windows, macOS ou Linux com o iPhone conectado por USB. Ele gera o pairing autorizado e envia o arquivo para a pasta Documents deste app.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.62))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.10), lineWidth: 1))
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
+            .frame(maxWidth: 560, alignment: .leading)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollIndicators(.hidden)
     }
 }
 

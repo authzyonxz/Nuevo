@@ -117,7 +117,7 @@ class AppState: ObservableObject {
 
         case .airlift:
             // Não há exploit a executar: o acesso é pairing + túnel loopback.
-            // O cartão de acesso na aba Aim mostra o estado real dos dois.
+            // O cartão de acesso na aba CONFIG mostra o estado real dos dois.
             log("app: acesso por Airlift — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
             if AirliftPairing.hasActive(), LoopbackTunnel.isUp() {
                 exploitStatus = .success(method: "airlift")

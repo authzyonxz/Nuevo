@@ -23,7 +23,7 @@ enum AirliftError: Error, LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .pairingMissing:
-            return "Nenhum pairing file ativo. Importe o ALTPairingFile do SideStore ou pareie este iPhone na aba Profile."
+            return "Nenhum pairing file ativo. Importe o ALTPairingFile do SideStore ou pareie este iPhone na aba CONFIG."
         case .pairingInvalid(let detail):
             return "Pairing file inválido: \(detail)"
         case .tunnelDown:
