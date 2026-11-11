@@ -402,14 +402,17 @@ final class AirliftAccessModel: ObservableObject {
         tunnelUp = LoopbackTunnel.isUp()
     }
 
-    func importPairing(_ url: URL) {
+    @discardableResult
+    func importPairing(_ url: URL) -> AirliftPairing.Info? {
         do {
             let info = try AirliftPairing.importFile(from: url)
             pairing = info
             message = "Pairing carregado: \(info.deviceName)."
             refresh()
+            return info
         } catch {
             message = (error as? LocalizedError)?.errorDescription ?? "Falha ao importar pairing."
+            return nil
         }
     }
 
@@ -435,12 +438,13 @@ final class AirliftAccessModel: ObservableObject {
         refresh()
     }
 
-    func adoptFirstCandidate() {
+    @discardableResult
+    func adoptFirstCandidate() -> AirliftPairing.Info? {
         guard let first = AirliftPairing.discoverCandidates().first else {
             message = "Nenhum pairing file encontrado em On My iPhone/3105."
-            return
+            return nil
         }
-        importPairing(first)
+        return importPairing(first)
     }
 
     func testAccess(bundleID: String) async {
@@ -468,15 +472,23 @@ final class AirliftAccessModel: ObservableObject {
 final class ComputerPairingModel: ObservableObject {
     @Published private(set) var pin: String?
     @Published private(set) var status = "Nenhuma sessão iniciada"
+    @Published private(set) var connectedInfo: AirliftPairing.Info?
 
     func start() {
         let value = Int.random(in: 100_000...999_999)
         pin = String(format: "%06d", value)
+        connectedInfo = nil
         status = "Aguardando o helper do computador…"
+    }
+
+    func confirmConnection(_ info: AirliftPairing.Info) {
+        connectedInfo = info
+        status = "Conexão confirmada. Pairing pronto para o Airlift."
     }
 
     func reset() {
         pin = nil
+        connectedInfo = nil
         status = "Nenhuma sessão iniciada"
     }
 }
@@ -486,6 +498,7 @@ struct AirliftAccessCard: View {
     @ObservedObject private var pairingHost = OnDevicePairing.shared
     @StateObject private var computerPairing = ComputerPairingModel()
     @State private var importing = false
+    @State private var showingComputerPairing = false
 
     private var testBundleID: String {
         let stored = UserDefaults.standard.string(forKey: AimFunctionConfig.bundleIDKey) ?? ""
@@ -543,31 +556,33 @@ struct AirliftAccessCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if let pin = computerPairing.pin {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("CÓDIGO DO COMPUTADOR  \(pin)")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.orange)
-                    Text(computerPairing.status)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+            sectionLabel("PAREAMENTO")
+            VStack(spacing: 8) {
+                actionButton("Importar pairing", symbol: "doc.badge.plus") { importing = true }
+                actionButton("Parear com computador", symbol: "desktopcomputer") {
+                    computerPairing.start()
+                    showingComputerPairing = true
+                }
+                actionButton("Parear este iPhone", symbol: "iphone") {
+                    Task { await model.pairOnDevice() }
+                }
+                actionButton("Procurar pairing", symbol: "magnifyingglass") {
+                    confirmComputerPairingIfFound()
                 }
             }
 
-            HStack(spacing: 8) {
-                actionButton("Importar pairing") { importing = true }
-                actionButton("Parear com computador") { computerPairing.start() }
-                actionButton("Parear iPhone") { Task { await model.pairOnDevice() } }
-                actionButton("Testar") { Task { await model.testAccess(bundleID: testBundleID) } }
-            }
-
-            HStack(spacing: 8) {
-                actionButton("Procurar pairing") { model.adoptFirstCandidate() }
-                actionButton(model.tunnelUp ? "Túnel ativo" : "Abrir LocalDevVPN") {
+            sectionLabel("AIRLIFT E CONEXÃO")
+            VStack(spacing: 8) {
+                actionButton(model.tunnelUp ? "Túnel ativo" : "Abrir LocalDevVPN", symbol: "network") {
                     LoopbackTunnel.openVPNApp()
                 }
+                actionButton("Testar acesso Airlift", symbol: "checkmark.shield") {
+                    Task { await model.testAccess(bundleID: testBundleID) }
+                }
                 if model.pairing != nil {
-                    actionButton("Remover") { model.removePairing() }
+                    actionButton("Remover pairing", symbol: "trash", tint: .red) {
+                        model.removePairing()
+                    }
                 }
             }
 
@@ -595,6 +610,16 @@ struct AirliftAccessCard: View {
         .fileImporter(isPresented: $importing, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
             model.importPairing(url)
+            if let info = model.pairing {
+                computerPairing.confirmConnection(info)
+            }
+        }
+        .sheet(isPresented: $showingComputerPairing, onDismiss: { computerPairing.reset() }) {
+            ComputerPairingSheet(model: computerPairing) {
+                confirmComputerPairingIfFound()
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -631,20 +656,136 @@ struct AirliftAccessCard: View {
         }
     }
 
-    private func actionButton(_ title: String, action: @escaping () -> Void) -> some View {
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .tracking(1.1)
+            .foregroundStyle(.secondary)
+            .padding(.top, 3)
+    }
+
+    private func confirmComputerPairingIfFound() {
+        if model.pairing == nil {
+            _ = model.adoptFirstCandidate()
+        }
+        guard let info = model.pairing else { return }
+        computerPairing.confirmConnection(info)
+    }
+
+    private func actionButton(
+        _ title: String,
+        symbol: String,
+        tint: Color = .primary,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(maxWidth: .infinity, minHeight: 32)
-                .padding(.horizontal, 6)
-                .background(
-                    Color(uiColor: .tertiarySystemBackground),
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                )
+            HStack(spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 20)
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(tint)
+            .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+            .padding(.horizontal, 12)
+            .background(Color(uiColor: .tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(model.busy)
+    }
+}
+
+private struct ComputerPairingSheet: View {
+    @ObservedObject var model: ComputerPairingModel
+    let onCheckConnection: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("PAREAR COM COMPUTADOR", systemImage: "desktopcomputer")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                        Text("Use o código abaixo no helper 3105 Pairing. O arquivo será enviado para o app por USB e o Airlift poderá usar a conexão.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if let pin = model.pin {
+                        VStack(spacing: 8) {
+                            Text("CÓDIGO DE PAREAMENTO")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .tracking(1.1)
+                                .foregroundStyle(.secondary)
+                            Text(pin)
+                                .font(.system(size: 36, weight: .bold, design: .monospaced))
+                                .tracking(4)
+                                .foregroundStyle(.orange)
+                                .textSelection(.enabled)
+                            Text(model.status)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(model.connectedInfo == nil ? .secondary : .green)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.orange.opacity(0.28), lineWidth: 1))
+                    }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        pairingStep("1", "Conecte o iPhone ao computador por USB e desbloqueie-o.")
+                        pairingStep("2", "Aceite “Confiar neste computador” no iPhone, se aparecer.")
+                        pairingStep("3", "Execute o helper com o código mostrado: python tools/3105-pairing-helper/3105_pairing_helper.py --pin \(model.pin ?? "000000").")
+                        pairingStep("4", "Depois toque em “Verificar conexão” para importar o pairing e confirmar o Airlift.")
+                    }
+
+                    if let info = model.connectedInfo {
+                        Label {
+                            Text("Conectado: \(info.deviceName) · \(info.byteCount) bytes")
+                                .font(.system(size: 13, weight: .semibold))
+                        } icon: {
+                            Image(systemName: "checkmark.circle.fill")
+                        }
+                        .foregroundStyle(.green)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+
+                    Button(action: onCheckConnection) {
+                        Label(model.connectedInfo == nil ? "Verificar conexão" : "Atualizar confirmação", systemImage: "arrow.clockwise")
+                            .font(.system(size: 15, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                }
+                .padding(20)
+            }
+            .navigationTitle("Pareamento")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private func pairingStep(_ number: String, _ text: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(number)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Color.orange, in: Circle())
+            Text(text)
+                .font(.system(size: 13))
+                .foregroundStyle(.primary.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
