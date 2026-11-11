@@ -1,7 +1,7 @@
 # Airlift — acesso a container sem kernel exploit
 
 Port do mecanismo do [AirCard-iOS](https://github.com/Mak5er/AirCard-iOS) para o 3105.
-Estende o alcance do app para **27.0 – 27.0.1 e 27.2 beta 1–2**
+Estende o alcance do app para **iOS 27.0 – 27.3**
 sem depender de offsets de kernel.
 
 ## Por que isso funciona onde o kexploit não vai
@@ -27,9 +27,7 @@ assimetria central e ela define o desenho do patch.
 | --- | --- | --- |
 | 17.0 – 17.7.x | kernel | ler + escrever + backup local do original |
 | 18.0 – 18.7.1 | kernel | idem, sem fallback Airlift |
-| 27.0 – 27.0.1 | airlift | pareamento on-device disponível |
-| 27.2 beta 1–2 | airlift | pareamento on-device disponível |
-| 27.2 beta 3+ | bloqueado | Apple fechou o sync do AirTraffic |
+| 27.0 – 27.3 | airlift | pareamento on-device disponível |
 
 A decisão vive em `ExploitSupportPolicy.accessKind(major:minor:patch:build:)`.
 `KernelExploit.isApplicable` agora responde `false` fora da faixa de kernel, então o app

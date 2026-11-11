@@ -4,9 +4,9 @@ import Foundation
 ///
 /// Três faixas, três regras:
 ///  - kernel exploit  → iOS 17.0–17.7.x e 18.0–18.7.1 (kexploit_opa334)
-///  - airlift         → iOS 27.0–27.0.1 e 27.2 beta 1–2, com pareamento
+///  - airlift         → iOS 27.0–27.3, com pareamento
 ///                      iniciado no próprio iPhone (sem computador)
-///  - bloqueado       → 27.2 beta 3+ (Apple corrigiu), 18.7.11+, 26.6.3+
+///  - bloqueado       → versões fora das faixas verificadas
 enum ExploitSupportPolicy {
 
     /// Versões exibidas em Profile como "o app abre". É mais largo que a
@@ -15,16 +15,15 @@ enum ExploitSupportPolicy {
         "iOS 16.6–16.7.10 (somente UI)",
         "iOS 17.0–17.7.x (kernel)",
         "iOS 18.0–18.7.1 (kernel)",
-        "iOS 27.0–27.0.1 (airlift)",
-        "iOS 27.2 beta 1–2 (airlift)"
+        "iOS 27.0–27.3 (airlift local)"
     ]
 
     static let kernelIOS17Range = "17.0–17.7.x"
     static let kernelIOS18Range = "18.0–18.7.1"
-    static let airliftIOS27Range = "27.0–27.0.1"
+    static let airliftIOS27Range = "27.0–27.3"
 
     /// Beta 3 em diante: a Apple fechou o sync exploit do AirTraffic.
-    static let patchedMessage = "iOS 27.2 beta 3 ou superior — a Apple corrigiu o AirTraffic sync. Não há caminho por Airlift neste build."
+    static let patchedMessage = "Esta versão do iOS está fora da faixa Airlift local verificada."
 
     // Aliases mantidos para as telas legadas (Onboarding/Settings) que só exibem
     // a faixa; a fonte de verdade é `accessKind`.
@@ -50,10 +49,7 @@ enum ExploitSupportPolicy {
         guard minor >= 0, patch >= 0 else { return false }
 
         if major == 27 {
-            if minor == 0 { return patch <= 1 }
-            // 27.2: beta 1 e 2 funcionam, beta 3+ está corrigido.
-            if minor == 2 { return !isPatchedAirliftBuild(major: major, minor: minor, build: build) }
-            return false
+            return minor <= 3
         }
 
         return false
