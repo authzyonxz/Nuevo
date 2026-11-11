@@ -719,6 +719,7 @@ private struct ComputerPairingSheet: View {
                     }
 
                     if let pin = model.pin {
+                        let statusColor: Color = model.connectedInfo == nil ? .secondary : .green
                         VStack(spacing: 8) {
                             Text("CÓDIGO DE PAREAMENTO")
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -731,7 +732,7 @@ private struct ComputerPairingSheet: View {
                                 .textSelection(.enabled)
                             Text(model.status)
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(model.connectedInfo == nil ? .secondary : .green)
+                                .foregroundStyle(statusColor)
                                 .multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity)
