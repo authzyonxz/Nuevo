@@ -3,11 +3,10 @@
 // Seletor de backend de acesso. Duas rotas chegam ao mesmo container:
 //
 //   kernel   → kexploit_opa334 + sandbox_escape + bad_query  (iOS 17.0–18.7.1)
-//   airlift  → pairing + RSD loopback + AirTraffic ATAirlock (iOS 18.7.2+)
+//   airlift  → pareamento local + RSD loopback + AirTraffic ATAirlock (iOS 27+)
 //
-// A política de versão decide a rota; o Airlift também serve de fallback
-// quando o kernel exploit perde a corrida. O resto do app só conhece este
-// ponto de entrada.
+// A política de versão decide a rota. Airlift não é fallback para versões
+// de kernel: nessas versões o acesso continua exclusivamente local/kernel.
 
 import Foundation
 
@@ -27,7 +26,7 @@ struct AccessAvailability {
     /// Rota que será usada de fato.
     var effectiveKind: AccessKind? {
         if let policyKind {
-            if policyKind == .kernel { return kernelActive ? .kernel : (airliftReady ? .airlift : .kernel) }
+            if policyKind == .kernel { return .kernel }
             return .airlift
         }
         return airliftReady ? .airlift : nil
@@ -62,6 +61,9 @@ enum AccessBackend {
 
     /// Pré-voo da rota Airlift com mensagem acionável.
     static func requireAirliftReady() throws -> String {
+        guard policyKind == .airlift else {
+            throw AirliftError.writeFailed("Airlift não está disponível nesta versão do iOS.")
+        }
         guard let pairingPath = AirliftPairing.activePath() else {
             throw AirliftError.pairingMissing
         }
@@ -86,21 +88,19 @@ enum AccessBackend {
         let state = availability()
 
         if state.policyKind == .kernel {
-            do {
-                return try FunctionPatchStore.apply(
-                    functionID: functionID,
-                    bundleID: bundleID,
-                    payloadURL: payloadURL,
-                    filename: filename,
-                    relativePathHint: relativePathHint
-                )
-            } catch {
-                guard state.airliftReady else { throw error }
-                log("access: kernel falhou (\(error)); caindo para Airlift")
-            }
+            return try FunctionPatchStore.apply(
+                functionID: functionID,
+                bundleID: bundleID,
+                payloadURL: payloadURL,
+                filename: filename,
+                relativePathHint: relativePathHint
+            )
         }
 
-        guard state.airliftReady else {
+        guard state.policyKind == .airlift, state.airliftReady else {
+            if state.policyKind != .airlift {
+                throw AirliftError.writeFailed("Airlift não está disponível nesta versão do iOS.")
+            }
             throw AirliftError.pairingMissing
         }
 

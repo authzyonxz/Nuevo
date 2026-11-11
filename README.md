@@ -69,8 +69,6 @@ Compared with 1.1.1, version 2.0 turns 3105 from a collection of separate tools 
 | --- | --- | --- |
 | iOS 17 | kernel exploit | 17.0 through 17.7 |
 | iOS 18 | kernel exploit | 18.0 through 18.7.1 |
-| iOS 18 | Airlift | 18.7.2 through 18.7.10 |
-| iOS 26 | Airlift | 26.0 through 26.6.2 |
 | iOS 27 | Airlift | 27.0 through 27.0.1 |
 | iOS 27.2 | Airlift | beta 1 and beta 2 |
 
@@ -78,8 +76,9 @@ Unlisted iOS 27 builds are marked unsupported rather than assumed compatible.
 iOS 27.2 beta 3 and later are blocked: Apple patched the AirTraffic sync that
 Airlift depends on.
 
-The Airlift route writes into an app container over a pairing record and the
-loopback RSD tunnel — no kernel exploit. It cannot read the target container,
+The Airlift route writes into an app container over a pairing record created on
+the iPhone itself and the loopback RSD tunnel — no computer and no kernel exploit.
+It cannot read the target container,
 so a restore needs the original file published by the site. Full details,
 prerequisites and the server contract are in [docs/AIRLIFT.md](docs/AIRLIFT.md).
 

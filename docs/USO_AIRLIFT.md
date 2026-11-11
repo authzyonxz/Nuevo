@@ -1,6 +1,6 @@
 # Como usar a IPA com Airlift
 
-Guia para quem vai instalar o 3105 e rodar as funções nas versões **18.7.2 em diante**.
+Guia para quem vai instalar o 3105 e rodar as funções nas versões com pareamento local **iOS 27.0–27.0.1 e 27.2 beta 1–2**.
 A rota Airlift não usa kernel exploit: ela escreve no container por pareamento.
 Sem os três pré-requisitos abaixo nada acontece — e o app diz qual está faltando.
 
@@ -8,7 +8,7 @@ Sem os três pré-requisitos abaixo nada acontece — e o app diz qual está fal
 
 | Requisito | Detalhe |
 | --- | --- |
-| iOS | 18.0 – 18.7.10, 26.0 – 26.6.2, 27.0 – 27.0.1, 27.2 beta 1–2 |
+| iOS | 27.0 – 27.0.1, 27.2 beta 1–2 |
 | LocalDevVPN | VPN de loopback que publica o serviço RSD em `10.7.0.1:49152` |
 | Apple Books | instalado e aberto **pelo menos uma vez** |
 | Pairing record | importado (18–26) ou gerado no próprio app (27+) |
@@ -39,20 +39,9 @@ WireGuard próprios. O app só testa se existe uma interface `utun` ativa.
 
 ## 4. Parear o aparelho
 
-### iOS 18.0 – 26.x — pairing file importado
-
-1. Gere ou copie o pairing record:
-   - **SideStore:** `On My iPhone › SideStore › ALTPairingFile.mobiledevicepairing`
-   - **iLoader / Jitterbug:** exporte `<UDID>.mobiledevicepairing` para o Files
-   - **PC/Mac:** `jitterbugpair` ou `pymobiledevice3`, depois AirDrop/arquivo para o iPhone
-2. Abra o 3105 → aba **Aim** → cartão **ROTA DE ACESSO**.
-3. Toque em **Importar pairing** e escolha o arquivo.
-   Alternativa: deixe o arquivo em `On My iPhone › 3105` e toque em **Procurar pairing**.
-4. O cartão passa a mostrar o nome do aparelho e o tamanho do arquivo.
-
 ### iOS 27.0 – 27.2 beta 2 — pareamento no próprio iPhone
 
-1. No cartão de acesso, toque em **Parear iPhone**.
+1. No cartão de acesso, toque em **Conectar Airlift**.
 2. O app mostra um **PIN de 6 dígitos** e anuncia o serviço na rede local.
    Aceite o pedido de **Rede Local** se aparecer.
 3. Vá em **Ajustes › Privacidade e Segurança › Modo Desenvolvedor › Pair with 3105**.
@@ -105,8 +94,7 @@ devolve o estado limpo.
 | O que aparece | Causa | O que fazer |
 | --- | --- | --- |
 | `Túnel de loopback desligado` | LocalDevVPN parado ou fora do modo loopback | ativar o perfil e voltar ao app |
-| `Nenhum pairing file ativo` | nada importado | importar o ALTPairingFile ou parear no iOS 27 |
-| `Pairing file inválido` | arquivo truncado ou outro plist | pegar o arquivo direto do SideStore/iLoader |
+| `Nenhum pairing file ativo` | pareamento local ainda não concluído | tocar em **Conectar Airlift** no iOS 27 |
 | `ReadyForSync not observed` | Apple Books nunca aberto | abrir o Books uma vez |
 | `AssetManifest not observed` | Books instalado mas não inicializado | abrir o Books, esperar a estante carregar |
 | `Não achei o container de com.dts.freefireth` | jogo não instalado ou container renomeado | confirmar o bundle ID publicado pelo site |

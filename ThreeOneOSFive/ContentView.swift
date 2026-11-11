@@ -224,21 +224,6 @@ private struct ConfigTabView: View {
                 }
 
                 AirliftAccessCard()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("PAREAMENTO PELO COMPUTADOR", systemImage: "cable.connector")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .tracking(1.1)
-                        .foregroundStyle(.white.opacity(0.55))
-                    Text("Use o helper 3105 Pairing no Windows, macOS ou Linux com o iPhone conectado por USB. Ele gera o pairing autorizado e envia o arquivo para a pasta Documents deste app.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.62))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 20))
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.10), lineWidth: 1))
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)

@@ -496,9 +496,6 @@ final class ComputerPairingModel: ObservableObject {
 struct AirliftAccessCard: View {
     @StateObject private var model = AirliftAccessModel()
     @ObservedObject private var pairingHost = OnDevicePairing.shared
-    @StateObject private var computerPairing = ComputerPairingModel()
-    @State private var importing = false
-    @State private var showingComputerPairing = false
 
     private var testBundleID: String {
         let stored = UserDefaults.standard.string(forKey: AimFunctionConfig.bundleIDKey) ?? ""
@@ -556,32 +553,21 @@ struct AirliftAccessCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            sectionLabel("PAREAMENTO")
-            VStack(spacing: 8) {
-                actionButton("Importar pairing", symbol: "doc.badge.plus") { importing = true }
-                actionButton("Parear com computador", symbol: "desktopcomputer") {
-                    computerPairing.start()
-                    showingComputerPairing = true
-                }
-                actionButton("Parear este iPhone", symbol: "iphone") {
-                    Task { await model.pairOnDevice() }
-                }
-                actionButton("Procurar pairing", symbol: "magnifyingglass") {
-                    confirmComputerPairingIfFound()
-                }
-            }
-
-            sectionLabel("AIRLIFT E CONEXÃO")
-            VStack(spacing: 8) {
-                actionButton(model.tunnelUp ? "Túnel ativo" : "Abrir LocalDevVPN", symbol: "network") {
-                    LoopbackTunnel.openVPNApp()
-                }
-                actionButton("Testar acesso Airlift", symbol: "checkmark.shield") {
-                    Task { await model.testAccess(bundleID: testBundleID) }
-                }
+            if model.kind == .airlift {
                 if model.pairing != nil {
-                    actionButton("Remover pairing", symbol: "trash", tint: .red) {
-                        model.removePairing()
+                    Label("Airlift conectado com sucesso", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.green)
+                } else {
+                    actionButton(
+                        model.tunnelUp ? "Conectar Airlift" : "Ativar conexão local",
+                        symbol: model.tunnelUp ? "iphone" : "network"
+                    ) {
+                        if model.tunnelUp {
+                            Task { await model.pairOnDevice() }
+                        } else {
+                            LoopbackTunnel.openVPNApp()
+                        }
                     }
                 }
             }
@@ -606,20 +592,6 @@ struct AirliftAccessCard: View {
         .task { model.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             model.refresh()
-        }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
-            guard case let .success(urls) = result, let url = urls.first else { return }
-            model.importPairing(url)
-            if let info = model.pairing {
-                computerPairing.confirmConnection(info)
-            }
-        }
-        .sheet(isPresented: $showingComputerPairing, onDismiss: { computerPairing.reset() }) {
-            ComputerPairingSheet(model: computerPairing) {
-                confirmComputerPairingIfFound()
-            }
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
         }
     }
 
@@ -662,14 +634,6 @@ struct AirliftAccessCard: View {
             .tracking(1.1)
             .foregroundStyle(.secondary)
             .padding(.top, 3)
-    }
-
-    private func confirmComputerPairingIfFound() {
-        if model.pairing == nil {
-            _ = model.adoptFirstCandidate()
-        }
-        guard let info = model.pairing else { return }
-        computerPairing.confirmConnection(info)
     }
 
     private func actionButton(

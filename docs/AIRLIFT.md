@@ -1,7 +1,7 @@
 # Airlift — acesso a container sem kernel exploit
 
 Port do mecanismo do [AirCard-iOS](https://github.com/Mak5er/AirCard-iOS) para o 3105.
-Estende o alcance do app de **18.7.1** para **18.7.2 – 18.7.10, 26.x, 27.0 – 27.0.1 e 27.2 beta 1–2**
+Estende o alcance do app para **27.0 – 27.0.1 e 27.2 beta 1–2**
 sem depender de offsets de kernel.
 
 ## Por que isso funciona onde o kexploit não vai
@@ -26,9 +26,7 @@ assimetria central e ela define o desenho do patch.
 | iOS | Rota | Consequência prática |
 | --- | --- | --- |
 | 17.0 – 17.7.x | kernel | ler + escrever + backup local do original |
-| 18.0 – 18.7.1 | kernel | idem, com fallback Airlift se o exploit perder a corrida |
-| 18.7.2 – 18.7.10 | airlift | escreve; restore vem do site |
-| 26.0 – 26.6.2 | airlift | escreve; restore vem do site |
+| 18.0 – 18.7.1 | kernel | idem, sem fallback Airlift |
 | 27.0 – 27.0.1 | airlift | pareamento on-device disponível |
 | 27.2 beta 1–2 | airlift | pareamento on-device disponível |
 | 27.2 beta 3+ | bloqueado | Apple fechou o sync do AirTraffic |
@@ -40,12 +38,8 @@ nunca dispara o `kexploit_opa334` em builds onde os offsets param em 26.0.x.
 ## Pré-requisitos reais
 
 1. **LocalDevVPN** (ou WireGuard) em modo loopback, publicando o RSD em `10.7.0.1`.
-2. **Pairing record**:
-   - iOS 18 – 27.0.1: importar `ALTPairingFile.mobiledevicepairing` do SideStore,
-     iLoader, Jitterbug, AltStore ou gerado por `jitterbugpair` / `pymobiledevice3`;
-   - iOS 27+: também dá para parear o aparelho consigo mesmo pelo cartão de acesso
-     (o app anuncia `_remotepairing-pairable-host._tcp` e mostra o PIN para
-     Ajustes › Privacidade e Segurança › Modo Desenvolvedor).
+2. **Pareamento local**: em iOS 27.0–27.0.1 e 27.2 beta 1–2, o próprio app anuncia
+   o host e mostra o PIN para Ajustes › Privacidade e Segurança › Modo Desenvolvedor.
 3. **Apple Books instalado e aberto pelo menos uma vez** — o sync do `airtrafficd`
    só aceita `ReadyForSync` quando existe âncora de livros.
 

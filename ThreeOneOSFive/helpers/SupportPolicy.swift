@@ -4,8 +4,8 @@ import Foundation
 ///
 /// Três faixas, três regras:
 ///  - kernel exploit  → iOS 17.0–17.7.x e 18.0–18.7.1 (kexploit_opa334)
-///  - airlift         → iOS 18.7.2–18.7.10, 26.0–26.6.2, 27.0–27.0.1,
-///                      27.2 beta 1–2 (pairing + RSD loopback + AirTraffic)
+///  - airlift         → iOS 27.0–27.0.1 e 27.2 beta 1–2, com pareamento
+///                      iniciado no próprio iPhone (sem computador)
 ///  - bloqueado       → 27.2 beta 3+ (Apple corrigiu), 18.7.11+, 26.6.3+
 enum ExploitSupportPolicy {
 
@@ -15,16 +15,12 @@ enum ExploitSupportPolicy {
         "iOS 16.6–16.7.10 (somente UI)",
         "iOS 17.0–17.7.x (kernel)",
         "iOS 18.0–18.7.1 (kernel)",
-        "iOS 18.7.2–18.7.10 (airlift)",
-        "iOS 26.0–26.6.2 (airlift)",
         "iOS 27.0–27.0.1 (airlift)",
         "iOS 27.2 beta 1–2 (airlift)"
     ]
 
     static let kernelIOS17Range = "17.0–17.7.x"
     static let kernelIOS18Range = "18.0–18.7.1"
-    static let airliftIOS18Range = "18.7.2–18.7.10"
-    static let airliftIOS26Range = "26.0–26.6.2"
     static let airliftIOS27Range = "27.0–27.0.1"
 
     /// Beta 3 em diante: a Apple fechou o sync exploit do AirTraffic.
@@ -34,7 +30,7 @@ enum ExploitSupportPolicy {
     // a faixa; a fonte de verdade é `accessKind`.
     static let verifiedIOS17Range = kernelIOS17Range
     static let verifiedIOS18Range = kernelIOS18Range
-    static let verifiedIOS26Range = airliftIOS26Range
+    static let verifiedIOS26Range = "não suportado — Airlift local somente no iOS 27"
     static let verifiedIOS27Builds: [(beta: Int, publicBeta: Int?, build: String)] = [
         (1, nil, "24A5355q"),
         (2, nil, "24A5370h"),
@@ -52,16 +48,6 @@ enum ExploitSupportPolicy {
 
     static func supportsAirlift(major: Int, minor: Int, patch: Int, build: String) -> Bool {
         guard minor >= 0, patch >= 0 else { return false }
-
-        // iOS 18.7.2 … 18.7.10 — acima do último kernel exploit verificado.
-        if major == 18 {
-            return minor == 7 && patch >= 2 && patch <= 10
-        }
-
-        // iOS 26.0 … 26.6.2
-        if major == 26 {
-            return minor < 6 || (minor == 6 && patch <= 2)
-        }
 
         if major == 27 {
             if minor == 0 { return patch <= 1 }
@@ -107,14 +93,6 @@ enum ExploitSupportPolicy {
 
         if major == 16 {
             return minor == 6 || (minor == 7 && patch <= 10)
-        }
-
-        if major == 18 {
-            return minor == 7 && patch > 1
-        }
-
-        if major == 26 {
-            return minor > 6 || (minor == 6 && patch > 2)
         }
 
         return major == 27
