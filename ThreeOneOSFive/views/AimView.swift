@@ -497,11 +497,6 @@ struct AirliftAccessCard: View {
     @StateObject private var model = AirliftAccessModel()
     @ObservedObject private var pairingHost = OnDevicePairing.shared
 
-    private var testBundleID: String {
-        let stored = UserDefaults.standard.string(forKey: AimFunctionConfig.bundleIDKey) ?? ""
-        return stored.isEmpty ? "com.dts.freefireth" : stored
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
@@ -553,21 +548,25 @@ struct AirliftAccessCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if model.kind == .airlift {
-                if model.pairing != nil {
-                    Label("Airlift conectado com sucesso", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.green)
-                } else {
-                    actionButton(
-                        model.tunnelUp ? "Conectar Airlift" : "Ativar conexão local",
-                        symbol: model.tunnelUp ? "iphone" : "network"
-                    ) {
-                        if model.tunnelUp {
-                            Task { await model.pairOnDevice() }
-                        } else {
-                            LoopbackTunnel.openVPNApp()
-                        }
+            if model.kind == .airlift, model.pairing != nil {
+                Label("Airlift conectado com sucesso", systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.green)
+            } else {
+                actionButton(
+                    model.kind == .airlift
+                        ? (model.tunnelUp ? "Conectar Airlift" : "Ativar conexão local")
+                        : "Conectar Airlift",
+                    symbol: model.tunnelUp ? "iphone" : "network"
+                ) {
+                    guard model.kind == .airlift else {
+                        model.message = "A conexão Airlift local só está disponível nas versões iOS 27 compatíveis."
+                        return
+                    }
+                    if model.tunnelUp {
+                        Task { await model.pairOnDevice() }
+                    } else {
+                        LoopbackTunnel.openVPNApp()
                     }
                 }
             }
