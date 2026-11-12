@@ -268,6 +268,7 @@
 				3105F106 /* WallpaperLabView.swift */,
 				3105F108 /* OnboardingView.swift */,
 				3105M101 /* KeyLoginView.swift */,
+				3105AL15 /* ConfigView.swift */,
 				3105N104 /* AimView.swift */,
 				3105L102 /* RepositoryMarketplaceView.swift */,
 				3105L103 /* RepositoryHomeView.swift */,
