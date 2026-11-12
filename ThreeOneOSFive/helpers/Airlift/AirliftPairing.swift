@@ -11,6 +11,7 @@ import Foundation
 import Network
 import SwiftUI
 import UIKit
+import AirliftFFI
 
 // MARK: - Store do pairing record
 
