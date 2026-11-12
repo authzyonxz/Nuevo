@@ -85,7 +85,12 @@ final class AimViewModel: ObservableObject {
         } catch let error as FunctionPatchError {
             feedback = error.errorDescription
         } catch let error as AirliftError {
-            feedback = error.errorDescription
+            if error == .booksNotInitialized {
+                feedback = "Abra o Apple Books, espere a estante carregar completamente e depois volte ao 3105 para tocar em ativar novamente."
+                Airlift.openBooks()
+            } else {
+                feedback = error.errorDescription
+            }
         } catch {
             feedback = "Não foi possível ativar \(function.title)."
         }

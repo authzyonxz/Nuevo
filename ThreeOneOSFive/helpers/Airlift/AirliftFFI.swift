@@ -8,6 +8,7 @@
 // Toda chamada é BLOQUEANTE. Sempre invocar de uma fila de fundo.
 
 import Foundation
+import UIKit
 import AirliftFFI
 
 enum AirliftError: Error, LocalizedError, Equatable {
@@ -17,6 +18,7 @@ enum AirliftError: Error, LocalizedError, Equatable {
     case tunnelDown
     case containerNotFound(String)
     case exploitFailed(String)
+    case booksNotInitialized
     case writeFailed(String)
     case pathUnknown(String)
     case respringFailed(String)
@@ -35,6 +37,8 @@ enum AirliftError: Error, LocalizedError, Equatable {
             return "Não achei o container de \(bundleID) via InstallationProxy. O app alvo está instalado?"
         case .exploitFailed(let detail):
             return "Airlift falhou: \(detail)"
+        case .booksNotInitialized:
+            return "O Apple Books ainda não inicializou o sync. Abra o Apple Books, espere a estante carregar e tente ativar novamente."
         case .writeFailed(let detail):
             return "Falha ao gravar no container: \(detail)"
         case .pathUnknown(let bundleID):
@@ -71,6 +75,17 @@ enum Airlift {
             return
         }
         host.withCString { _ = al_set_target_host($0) }
+    }
+
+    @MainActor
+    static func openBooks() {
+        guard let url = URL(string: "ibooks://") else { return }
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    }
+
+    private static func isBooksSyncError(_ message: String) -> Bool {
+        let normalized = message.lowercased()
+        return normalized.contains("readyforsync") || normalized.contains("apple books") || normalized.contains("books app")
     }
 
     // MARK: - Container
@@ -131,6 +146,7 @@ enum Airlift {
             return String(cString: ptr)
         }
         guard rc == 0 else {
+            if isBooksSyncError(failure ?? "") { throw AirliftError.booksNotInitialized }
             throw AirliftError.writeFailed(failure ?? "al_exploit_write_dir retornou \(rc)")
         }
     }
@@ -178,7 +194,10 @@ enum Airlift {
             defer { al_string_free(ptr) }
             return String(cString: ptr)
         }
-        guard rc == 0 else { throw AirliftError.exploitFailed(failure ?? "código \(rc)") }
+        guard rc == 0 else {
+            if isBooksSyncError(failure ?? "") { throw AirliftError.booksNotInitialized }
+            throw AirliftError.exploitFailed(failure ?? "código \(rc)")
+        }
         return json ?? "{}"
     }
 
