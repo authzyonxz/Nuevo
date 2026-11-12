@@ -2,28 +2,30 @@
 
 All notable user-facing changes are documented in this file.
 
-## [2.1] - 2026-03-04
+## [2.3] - 2026-03-05
 
 ### Added
 
-- **Airlift access route** — container writes over a pairing record and the loopback RSD tunnel, with no kernel exploit. Extends device support to iOS 18.7.2–18.7.10, 26.0–26.6.2, 27.0–27.0.1 and 27.2 beta 1–2.
-- On-device pairing for iOS 27+: the phone pairs with itself through Settings › Developer Mode, with no SideStore needed.
-- Pairing file import from Files, plus discovery of pairing records already in `On My iPhone/3105`.
-- Access card on the Aim tab: route (kernel or Airlift), tunnel state, pairing state, PIN, and an access test against the target bundle.
+- **Airlift access route** — container writes over a pairing record and the loopback RSD tunnel, with no kernel exploit.
+- On-device pairing: the phone pairs with itself through Settings › Developer Mode, no SideStore and no computer.
+- Pairing file import from Files, base64 paste, and discovery of pairing records already in `On My iPhone/3105`.
 - `originalSha256` in the remote manifest and `GET /api/v1/functions/<id>/original` for restores on the Airlift route.
+- **CONFIG tab** — shows the access route for the device and holds the whole Airlift connection: loopback tunnel state, pairing record, PIN, on-device pairing, import from file, base64 paste, access test against the target bundle, and the supported-version matrix.
+- Compact route strip on the Aim tab reporting which route is active and whether it is ready.
 
 ### Changed
 
-- `ExploitSupportPolicy` now resolves a single `accessKind` per build; the kernel exploit refuses to run outside iOS 17.0–18.7.1.
-- The kernel exploit falls back to Airlift automatically when it loses the race on a version that supports both.
-- Patch receipts carry the backend that wrote them, so restore returns through the same route.
-- Compatibility tables and the version list in Profile match the routes above.
+- **Airlift is now limited to the builds where pairing happens on the iPhone itself, with no cable and no computer**: iOS 27.0, 27.0.1 and 27.2 beta 1 through beta 3.
+- **iOS 27.2 beta 3 is enabled** — verified working on the Airlift path.
+- iOS 17.0–18.7.2 uses the **kernel** route; iOS 26.0–26.6.2 uses **kernel + sandbox escape + bad_query**. Neither needs VPN, pairing, or a computer.
+- `AccessKind` gained a dedicated `badQuery` value so the Config screen reports the real route instead of folding iOS 26 into "kernel".
+- Aim / C++ / Textura download and apply exactly as before; only the write backend changes per version.
 
 ### Known limits
 
 - Airlift is write-only: it cannot scan or read the target container. The site must publish `relativePath` for every function, and `originalSha256` for restores.
-- iOS 27.2 beta 3 and later are blocked: Apple patched the AirTraffic sync.
-- Requires LocalDevVPN (loopback) and Apple Books installed and opened at least once.
+- iOS 27.2 beta 4 and later are untested. `patchedAirliftBuilds` in `SupportPolicy.swift` blocks a build once it is confirmed patched.
+- Airlift requires LocalDevVPN (loopback) and Apple Books opened at least once.
 
 ## [1.0.1] - 2026-08-15
 

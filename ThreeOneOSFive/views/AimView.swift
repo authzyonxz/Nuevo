@@ -152,6 +152,7 @@ struct AimView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header
+                AimRouteStrip()
                 tutorial
                 ForEach(functions) { function in
                     functionCard(function)
@@ -386,370 +387,53 @@ struct AimView: View {
     }
 }
 
-// MARK: - Cartão de acesso (kernel vs airlift)
+// MARK: - Faixa de rota (compacta)
 
-@MainActor
-final class AirliftAccessModel: ObservableObject {
-    @Published private(set) var kind: AccessKind?
-    @Published private(set) var pairing: AirliftPairing.Info?
-    @Published private(set) var tunnelUp = false
-    @Published private(set) var busy = false
-    @Published var message: String?
-
-    func refresh() {
-        kind = AccessBackend.policyKind
-        pairing = AirliftPairing.activeInfo()
-        tunnelUp = LoopbackTunnel.isUp()
-    }
-
-    @discardableResult
-    func importPairing(_ url: URL) -> AirliftPairing.Info? {
-        do {
-            let info = try AirliftPairing.importFile(from: url)
-            pairing = info
-            message = "Pairing carregado: \(info.deviceName)."
-            refresh()
-            return info
-        } catch {
-            message = (error as? LocalizedError)?.errorDescription ?? "Falha ao importar pairing."
-            return nil
-        }
-    }
-
-    func pairOnDevice() async {
-        guard !busy else { return }
-        busy = true
-        message = nil
-        defer { busy = false }
-        do {
-            let info = try await OnDevicePairing.shared.startAndWait()
-            pairing = info
-            message = "Pareado com sucesso: \(info.deviceName)."
-        } catch {
-            message = (error as? LocalizedError)?.errorDescription ?? "Pareamento falhou."
-        }
-        refresh()
-    }
-
-    func removePairing() {
-        AirliftPairing.deleteActive()
-        pairing = nil
-        message = "Pairing removido."
-        refresh()
-    }
-
-    @discardableResult
-    func adoptFirstCandidate() -> AirliftPairing.Info? {
-        guard let first = AirliftPairing.discoverCandidates().first else {
-            message = "Nenhum pairing file encontrado em On My iPhone/3105."
-            return nil
-        }
-        return importPairing(first)
-    }
-
-    func testAccess(bundleID: String) async {
-        guard !busy else { return }
-        busy = true
-        message = "Testando Airlift em \(bundleID)…"
-        defer { busy = false }
-
-        do {
-            let pairingPath = try AccessBackend.requireAirliftReady()
-            let container = try await Task.detached(priority: .userInitiated) {
-                try Airlift.findContainer(pairingPath: pairingPath, bundleID: bundleID)
-            }.value
-            _ = try await Task.detached(priority: .userInitiated) {
-                try Airlift.runCanary(pairingPath: pairingPath, target: container)
-            }.value
-            message = "Airlift OK — escrita confirmada em \(bundleID)."
-        } catch {
-            message = (error as? LocalizedError)?.errorDescription ?? "Airlift falhou."
-        }
-    }
-}
-
-@MainActor
-final class ComputerPairingModel: ObservableObject {
-    @Published private(set) var pin: String?
-    @Published private(set) var status = "Nenhuma sessão iniciada"
-    @Published private(set) var connectedInfo: AirliftPairing.Info?
-
-    func start() {
-        let value = Int.random(in: 100_000...999_999)
-        pin = String(format: "%06d", value)
-        connectedInfo = nil
-        status = "Aguardando o helper do computador…"
-    }
-
-    func confirmConnection(_ info: AirliftPairing.Info) {
-        connectedInfo = info
-        status = "Conexão confirmada. Pairing pronto para o Airlift."
-    }
-
-    func reset() {
-        pin = nil
-        connectedInfo = nil
-        status = "Nenhuma sessão iniciada"
-    }
-}
-
-struct AirliftAccessCard: View {
-    @StateObject private var model = AirliftAccessModel()
-    @ObservedObject private var pairingHost = OnDevicePairing.shared
+/// Linha única no topo da aba: qual rota está ativa e se ela está pronta.
+/// A configuração de verdade vive na aba CONFIG.
+struct AimRouteStrip: View {
+    @State private var kind: AccessKind?
+    @State private var ready = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Text("ROTA DE ACESSO")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .tracking(1.1)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(badgeTitle)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .tracking(0.6)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
-                    .background(badgeColor.opacity(0.16), in: Capsule())
-                    .foregroundStyle(badgeColor)
-            }
+        HStack(spacing: 8) {
+            Circle()
+                .fill(ready ? Color.green : Color.orange)
+                .frame(width: 7, height: 7)
 
-            row(
-                symbol: model.tunnelUp ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
-                tint: model.tunnelUp ? .green : .orange,
-                title: "Túnel loopback",
-                detail: model.tunnelUp ? "10.7.0.1 ativo" : "LocalDevVPN desligado"
-            )
+            Text(label)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .tracking(0.6)
+                .foregroundStyle(.secondary)
 
-            row(
-                symbol: model.pairing == nil ? "xmark.circle.fill" : "checkmark.circle.fill",
-                tint: model.pairing == nil ? .orange : .green,
-                title: "Pairing record",
-                detail: model.pairing.map { "\($0.deviceName) · \($0.byteCount) bytes" } ?? "nenhum pairing importado"
-            )
-
-            if let pin = pairingHost.pin {
-                Text("PIN \(pin) — Ajustes › Modo Desenvolvedor")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.orange)
-            }
-
-            if pairingHost.running {
-                Text(pairingHost.status)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let message = model.message {
-                Text(message)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if model.kind == .airlift, model.pairing != nil {
-                Label("Airlift conectado com sucesso", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.green)
-            } else {
-                actionButton(
-                    model.kind == .airlift
-                        ? (model.tunnelUp ? "Conectar Airlift" : "Ativar conexão local")
-                        : "Conectar Airlift",
-                    symbol: model.tunnelUp ? "iphone" : "network"
-                ) {
-                    guard model.kind == .airlift else {
-                        model.message = "A conexão Airlift local só está disponível nas versões iOS 27 compatíveis."
-                        return
-                    }
-                    if model.tunnelUp {
-                        Task { await model.pairOnDevice() }
-                    } else {
-                        LoopbackTunnel.openVPNApp()
-                    }
-                }
-            }
-
-            if model.kind != .kernel {
-                Text("Airlift grava sem ler: o restore baixa o arquivo original publicado pelo site. Mantenha o Apple Books instalado e aberto ao menos uma vez.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Color(uiColor: .secondarySystemBackground).opacity(0.7),
-            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(uiColor: .separator).opacity(0.22), lineWidth: 0.7)
-        )
-        .task { model.refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            model.refresh()
-        }
-    }
-
-    private var badgeTitle: String {
-        switch model.kind {
-        case .kernel: return "KERNEL"
-        case .airlift: return "AIRLIFT"
-        case nil: return "SEM ROTA"
-        }
-    }
-
-    private var badgeColor: Color {
-        switch model.kind {
-        case .kernel: return .blue
-        case .airlift: return .green
-        case nil: return .orange
-        }
-    }
-
-    private func row(symbol: String, tint: Color, title: String, detail: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: symbol)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(tint)
-                .frame(width: 20)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                Text(detail)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
             Spacer(minLength: 4)
+
+            Text(ready ? "PRONTO" : "CONFIG")
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .tracking(0.5)
+                .foregroundStyle(ready ? Color.green : Color.orange)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.05), in: Capsule())
+        .task { refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            refresh()
         }
     }
 
-    private func sectionLabel(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 10, weight: .bold, design: .rounded))
-            .tracking(1.1)
-            .foregroundStyle(.secondary)
-            .padding(.top, 3)
-    }
-
-    private func actionButton(
-        _ title: String,
-        symbol: String,
-        tint: Color = .primary,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: symbol)
-                    .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 20)
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
-            }
-            .foregroundStyle(tint)
-            .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
-            .padding(.horizontal, 12)
-            .background(Color(uiColor: .tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .disabled(model.busy)
-    }
-}
-
-private struct ComputerPairingSheet: View {
-    @ObservedObject var model: ComputerPairingModel
-    let onCheckConnection: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Label("PAREAR COM COMPUTADOR", systemImage: "desktopcomputer")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                        Text("Use o código abaixo no helper 3105 Pairing. O arquivo será enviado para o app por USB e o Airlift poderá usar a conexão.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    if let pin = model.pin {
-                        let statusColor: Color = model.connectedInfo == nil ? .secondary : .green
-                        VStack(spacing: 8) {
-                            Text("CÓDIGO DE PAREAMENTO")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .tracking(1.1)
-                                .foregroundStyle(.secondary)
-                            Text(pin)
-                                .font(.system(size: 36, weight: .bold, design: .monospaced))
-                                .tracking(4)
-                                .foregroundStyle(.orange)
-                                .textSelection(.enabled)
-                            Text(model.status)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(statusColor)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.orange.opacity(0.28), lineWidth: 1))
-                    }
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        pairingStep("1", "Conecte o iPhone ao computador por USB e desbloqueie-o.")
-                        pairingStep("2", "Aceite “Confiar neste computador” no iPhone, se aparecer.")
-                        pairingStep("3", "Execute o helper com o código mostrado: python tools/3105-pairing-helper/3105_pairing_helper.py --pin \(model.pin ?? "000000").")
-                        pairingStep("4", "Depois toque em “Verificar conexão” para importar o pairing e confirmar o Airlift.")
-                    }
-
-                    if let info = model.connectedInfo {
-                        Label {
-                            Text("Conectado: \(info.deviceName) · \(info.byteCount) bytes")
-                                .font(.system(size: 13, weight: .semibold))
-                        } icon: {
-                            Image(systemName: "checkmark.circle.fill")
-                        }
-                        .foregroundStyle(.green)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-
-                    Button(action: onCheckConnection) {
-                        Label(model.connectedInfo == nil ? "Verificar conexão" : "Atualizar confirmação", systemImage: "arrow.clockwise")
-                            .font(.system(size: 15, weight: .semibold))
-                            .frame(maxWidth: .infinity, minHeight: 46)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
-                }
-                .padding(20)
-            }
-            .navigationTitle("Pareamento")
-            .navigationBarTitleDisplayMode(.inline)
+    private var label: String {
+        switch kind {
+        case .kernel: return "ACESSO KERNEL · iOS 17.0–18.7.2"
+        case .badQuery: return "ACESSO BAD_QUERY · iOS 26"
+        case .airlift: return "ACESSO AIRLIFT · iOS 27"
+        case nil: return "SEM ROTA DE ACESSO"
         }
     }
 
-    private func pairingStep(_ number: String, _ text: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(number)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .frame(width: 24, height: 24)
-                .background(Color.orange, in: Circle())
-            Text(text)
-                .font(.system(size: 13))
-                .foregroundStyle(.primary.opacity(0.82))
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    private func refresh() {
+        let availability = AccessBackend.availability()
+        kind = availability.policyKind
+        ready = availability.isReady
     }
 }

@@ -102,6 +102,52 @@ enum AirliftPairing {
         log("airlift: pairing removido")
     }
 
+    /// Importa um pairing record colado como base64. Serve para o caminho
+    /// "PC → copiar o blob → colar no app" quando o usuário não tem como
+    /// mandar arquivo por Files/iCloud.
+    @discardableResult
+    static func importBase64(_ text: String) throws -> Info {
+        let cleaned = text.filter { !$0.isWhitespace }
+        guard !cleaned.isEmpty else { throw ImportError.unreadable("texto vazio") }
+
+        // Aceita base64 padrão e base64url.
+        var normalized = cleaned
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let remainder = normalized.count % 4
+        if remainder > 0 { normalized += String(repeating: "=", count: 4 - remainder) }
+
+        guard let data = Data(base64Encoded: normalized), !data.isEmpty else {
+            throw ImportError.unreadable("base64 inválido")
+        }
+        guard let info = parse(data: data, fileURL: canonicalURL) else {
+            throw ImportError.notAPairingRecord
+        }
+        try data.write(to: canonicalURL, options: .atomic)
+        log("airlift: pairing importado por base64 (\(data.count) bytes)")
+        return info
+    }
+
+    /// Devolve o pairing ativo em base64 (backup/suporte).
+    static func activeBase64() -> String? {
+        guard let path = activePath(), let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
+            return nil
+        }
+        return data.base64EncodedString()
+    }
+
+    /// Adota silenciosamente o primeiro pairing file que estiver em Documents.
+    /// É o que fecha o fluxo do script no PC: ele empurra o `airlift_pairing.plist`
+    /// direto para a pasta do app e não existe mais botão para tocar.
+    @discardableResult
+    static func autoAdoptIfNeeded() -> Info? {
+        if let existing = activeInfo() { return existing }
+        guard let candidate = discoverCandidates().first else { return nil }
+        guard let info = try? importFile(from: candidate) else { return nil }
+        log("airlift: pairing adotado automaticamente de \(candidate.lastPathComponent)")
+        return info
+    }
+
     /// Varre Documents atrás de pairing files que o usuário tenha deixado lá
     /// (via Files app ou por outro sideloader).
     static func discoverCandidates() -> [URL] {
@@ -284,13 +330,13 @@ final class OnDevicePairing: NSObject, ObservableObject {
         altIRK: String,
         ctx: UnsafeMutableRawPointer
     ) -> HostOutcome {
-        var result = AirliftPairResult()
+        var result = ALPairResult()
         let rc = bind.withCString { bindC in
             name.withCString { nameC in
                 model.withCString { modelC in
                     outPath.withCString { outC in
                         altIRK.withCString { irkC in
-                            airlift_pairing_run_host(
+                            al_pairing_run_host(
                                 bindC, 0, nameC, modelC, outC, irkC,
                                 pairingReadyCallback, pairingPinCallback, ctx, &result
                             )
@@ -306,7 +352,7 @@ final class OnDevicePairing: NSObject, ObservableObject {
             pairingPath: pairingCString(result.pairing_file_path),
             altIRK: pairingCString(result.host_alt_irk_hex)
         )
-        airlift_pairing_result_free(&result)
+        al_pairing_result_free(&result)
         return outcome
     }
 
@@ -372,7 +418,7 @@ final class OnDevicePairing: NSObject, ObservableObject {
     }
 }
 
-private let pairingReadyCallback: AirliftPairReadyCallback = { ctx, serviceID, port, keys, values, count, _ in
+private let pairingReadyCallback: ALPairReadyCb = { ctx, serviceID, port, keys, values, count in
     guard let ctx, let serviceID else { return }
     let controller = Unmanaged<OnDevicePairing>.fromOpaque(ctx).takeUnretainedValue()
     let identifier = String(cString: serviceID)
@@ -389,7 +435,7 @@ private let pairingReadyCallback: AirliftPairReadyCallback = { ctx, serviceID, p
     }
 }
 
-private let pairingPinCallback: AirliftPairPinCallback = { pin, ctx in
+private let pairingPinCallback: ALPairPinCb = { pin, ctx in
     guard let pin, let ctx else { return }
     let controller = Unmanaged<OnDevicePairing>.fromOpaque(ctx).takeUnretainedValue()
     let value = String(cString: pin)

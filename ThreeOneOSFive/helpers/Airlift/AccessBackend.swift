@@ -1,18 +1,24 @@
-// language: Swift, file: AccessBackend.swift, target: iOS 18+
+// language: Swift, file: AccessBackend.swift, target: iOS 17+
 //
-// Seletor de backend de acesso. Duas rotas chegam ao mesmo container:
+// Seletor de backend de acesso. Três rotas chegam ao mesmo container:
 //
-//   kernel   → kexploit_opa334 + sandbox_escape + bad_query  (iOS 17.0–18.7.1)
-//   airlift  → pareamento local + RSD loopback + AirTraffic ATAirlock (iOS 27+)
+//   kernel    → kexploit_opa334 + sandbox_escape        (iOS 17.0–18.7.2)
+//   badQuery  → kernel + escape + bad_query grants      (iOS 26.0–26.6.2)
+//   airlift   → pareamento on-device + RSD + AirTraffic (iOS 27.0–27.2 b2)
 //
-// A política de versão decide a rota. Airlift não é fallback para versões
-// de kernel: nessas versões o acesso continua exclusivamente local/kernel.
+// kernel e badQuery usam o FunctionPatchStore (leitura, backup local, restore
+// verificado). Airlift usa o AirliftPatchStore (escrita, restore pelo site).
+// O resto do app só conhece este ponto de entrada.
 
 import Foundation
 
 enum AccessKind: String, Codable {
     case kernel
+    case badQuery
     case airlift
+
+    /// Rota que lê e escreve o container pelo kernel.
+    var usesKernel: Bool { self == .kernel || self == .badQuery }
 }
 
 struct AccessAvailability {
@@ -23,13 +29,13 @@ struct AccessAvailability {
 
     var airliftReady: Bool { pairingReady && tunnelReady }
 
-    /// Rota que será usada de fato.
-    var effectiveKind: AccessKind? {
-        if let policyKind {
-            if policyKind == .kernel { return .kernel }
-            return .airlift
+    /// Pré-requisitos da rota satisfeitos neste instante.
+    var isReady: Bool {
+        switch policyKind {
+        case .kernel, .badQuery: return kernelActive
+        case .airlift: return airliftReady
+        case nil: return false
         }
-        return airliftReady ? .airlift : nil
     }
 }
 
@@ -48,21 +54,18 @@ enum AccessBackend {
     }
 
     static func availability() -> AccessAvailability {
-        let paired = AirliftPairing.hasActive()
-        let tunnel = LoopbackTunnel.isUp()
-        let kernel = KernelExploit.hasSandboxAccess()
-        return AccessAvailability(
+        AccessAvailability(
             policyKind: policyKind,
-            pairingReady: paired,
-            tunnelReady: tunnel,
-            kernelActive: kernel
+            pairingReady: AirliftPairing.hasActive(),
+            tunnelReady: LoopbackTunnel.isUp(),
+            kernelActive: KernelExploit.hasSandboxAccess()
         )
     }
 
     /// Pré-voo da rota Airlift com mensagem acionável.
     static func requireAirliftReady() throws -> String {
         guard policyKind == .airlift else {
-            throw AirliftError.writeFailed("Airlift não está disponível nesta versão do iOS.")
+            throw AirliftError.unsupportedVersion(AppInfo.osVersion)
         }
         guard let pairingPath = AirliftPairing.activePath() else {
             throw AirliftError.pairingMissing
@@ -85,9 +88,12 @@ enum AccessBackend {
         version: Int,
         originalSha256: String?
     ) throws -> FunctionPatchReceipt {
-        let state = availability()
+        guard let kind = policyKind else {
+            throw AirliftError.unsupportedVersion(AppInfo.osVersion)
+        }
 
-        if state.policyKind == .kernel {
+        switch kind {
+        case .kernel, .badQuery:
             return try FunctionPatchStore.apply(
                 functionID: functionID,
                 bundleID: bundleID,
@@ -95,24 +101,19 @@ enum AccessBackend {
                 filename: filename,
                 relativePathHint: relativePathHint
             )
-        }
 
-        guard state.policyKind == .airlift, state.airliftReady else {
-            if state.policyKind != .airlift {
-                throw AirliftError.writeFailed("Airlift não está disponível nesta versão do iOS.")
-            }
-            throw AirliftError.pairingMissing
+        case .airlift:
+            _ = try requireAirliftReady()
+            return try AirliftPatchStore.apply(
+                functionID: functionID,
+                bundleID: bundleID,
+                payloadURL: payloadURL,
+                filename: filename,
+                relativePathHint: relativePathHint,
+                version: version,
+                originalSha256: originalSha256
+            )
         }
-
-        return try AirliftPatchStore.apply(
-            functionID: functionID,
-            bundleID: bundleID,
-            payloadURL: payloadURL,
-            filename: filename,
-            relativePathHint: relativePathHint,
-            version: version,
-            originalSha256: originalSha256
-        )
     }
 
     // MARK: - Restore
@@ -124,7 +125,7 @@ enum AccessBackend {
         force: Bool
     ) async throws {
         switch receipt.backend {
-        case .kernel:
+        case .kernel, .badQuery:
             try await Task.detached(priority: .userInitiated) {
                 try FunctionPatchStore.restore(receipt: receipt, allowChangedTargets: force)
             }.value
@@ -140,7 +141,6 @@ enum AccessBackend {
                 throw AirliftError.writeFailed("sem sessão ativa para baixar o original")
             }
 
-            // Reconvalida a licença antes de baixar bytes protegidos.
             let refreshed = try await KeyAuthClient().revalidate(access)
             let original = try await FunctionPatchClient().downloadOriginal(
                 functionID: receipt.functionID,
@@ -161,7 +161,7 @@ enum AccessBackend {
 
     // MARK: - Receipts
 
-    /// União das transações dos dois backends, por função.
+    /// União das transações das duas famílias de backend, por função.
     static func appliedReceipts() -> [String: FunctionPatchReceipt] {
         var merged = FunctionPatchStore.appliedReceipts()
         for (functionID, receipt) in AirliftPatchStore.appliedReceipts() {

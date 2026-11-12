@@ -154,7 +154,7 @@ struct ContentView: View {
                         )
                     }
                 case .config:
-                    ConfigTabView()
+                    ConfigView()
                 case .profile:
                     if let access = authorizedAccess {
                         ProfileTabView(access: access)
@@ -207,31 +207,6 @@ struct ContentView: View {
         .padding(.horizontal, 28)
         .padding(.top, 8)
         .padding(.bottom, 3)
-    }
-}
-
-private struct ConfigTabView: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label("CONFIG", systemImage: "gearshape.fill")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                    Text("Pareamento, Airlift e acesso ao dispositivo")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.56))
-                }
-
-                AirliftAccessCard()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 20)
-            .frame(maxWidth: 560, alignment: .leading)
-            .frame(maxWidth: .infinity)
-        }
-        .scrollIndicators(.hidden)
     }
 }
 

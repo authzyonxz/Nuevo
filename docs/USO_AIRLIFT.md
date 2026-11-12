@@ -1,109 +1,122 @@
-# Como usar a IPA com Airlift
+# Como usar a IPA
 
-Guia para quem vai instalar o 3105 e rodar as funções nas versões com pareamento local **iOS 27.0–27.0.1 e 27.2 beta 1–2**.
-A rota Airlift não usa kernel exploit: ela escreve no container por pareamento.
-Sem os três pré-requisitos abaixo nada acontece — e o app diz qual está faltando.
+Guia para quem vai instalar o 3105. O app escolhe a rota de acesso sozinho pela
+versão do iOS — o usuário só configura algo no **iOS 27**, e é na aba **CONFIG**.
 
-## 1. Antes de instalar
+## 1. Rota por versão
 
-| Requisito | Detalhe |
-| --- | --- |
-| iOS | 27.0 – 27.0.1, 27.2 beta 1–2 |
-| LocalDevVPN | VPN de loopback que publica o serviço RSD em `10.7.0.1:49152` |
-| Apple Books | instalado e aberto **pelo menos uma vez** |
-| Pairing record | importado (18–26) ou gerado no próprio app (27+) |
+| iOS | Rota | Precisa configurar algo? |
+| --- | --- | --- |
+| 17.0 – 18.7.2 | kernel | **Não.** Abre e funciona. |
+| 26.0 – 26.6.2 | bad_query (kernel + sandbox escape) | **Não.** Abre e funciona. |
+| 27.0 – 27.0.1 | Airlift | **Sim**, na aba CONFIG: parear + VPN. |
+| 27.2 beta 1–3 | Airlift | **Sim**, na aba CONFIG. |
+| 27.2 beta 4+ | não testado | tentar em CONFIG; o app avisa se falhar. |
 
-> **iOS 27.2 beta 3 ou superior não funciona.** A Apple corrigiu o sync do AirTraffic.
-> Se o aparelho já está nesse build, não há caminho por Airlift.
+Fora dessas faixas o app abre, mas mostra `SEM ROTA DE ACESSO` na aba CONFIG.
 
 ## 2. Instalar a IPA
 
 Assine e instale como qualquer IPA. A rota Airlift não usa entitlement de sistema —
-ela fala rede — então assinatura enterprise ou sideload comum servem igual. O que
-**não** pode é mudar o bundle ID do app: ele precisa continuar
-`com.apple.mobile.MobileHouseArrest`.
+é só rede — então assinatura enterprise ou sideload comum servem. **Não mude o
+bundle ID** (`com.apple.mobile.MobileHouseArrest`).
 
-Se a instalação for por SideStore/AltStore, o `ALTPairingFile.mobiledevicepairing`
-que o próprio SideStore criou já resolve o passo 4 sem esforço.
+## 3. iOS 17 – 18.7.2 e 26.x — nada a fazer
 
-## 3. Ligar o túnel de loopback
+Abra o app, entre com a key e use as abas Aim / C++ / Textura.
 
-1. Instale o **LocalDevVPN** (o mesmo app que o AirCard exige).
+- Em 17–18.7.2 o kernel exploit roda na abertura.
+- Em 26.x o app roda o kernel, faz o sandbox escape e concede o container via
+  `bad_query`.
+- A faixa de status no topo da aba Aim mostra `PRONTO` quando o acesso está de pé.
+
+Não precisa de VPN, não precisa de pareamento, não precisa de computador.
+
+## 4. iOS 27.0 – 27.2 beta 2 — configurar o Airlift
+
+Nessas versões o acesso é por pareamento do **próprio iPhone**, sem cabo e sem PC.
+
+### 4.1 Ligar o túnel de loopback
+
+1. Instale o **LocalDevVPN** (App Store).
 2. Abra, ative o perfil em modo **loopback** (`10.7.0.1`).
-3. Confirme que o ícone de VPN aparece na barra de status e continue com o app em segundo plano.
+3. Confirme que o ícone de VPN aparece na barra de status.
 
-O 3105 mostra `Túnel loopback · 10.7.0.1 ativo` no cartão de acesso quando enxerga a interface.
+Sem o túnel o app não alcança o serviço RSD do próprio aparelho.
 
-Qualquer solução que publique o RSD em `10.7.0.1:49152` serve — inclusive perfis
-WireGuard próprios. O app só testa se existe uma interface `utun` ativa.
+### 4.2 Parear
 
-## 4. Parear o aparelho
+Na aba **CONFIG** → **CONEXÃO AIRLIFT**:
 
-### iOS 27.0 – 27.2 beta 2 — pareamento no próprio iPhone
-
-1. No cartão de acesso, toque em **Conectar Airlift**.
-2. O app mostra um **PIN de 6 dígitos** e anuncia o serviço na rede local.
-   Aceite o pedido de **Rede Local** se aparecer.
+1. Toque em **Parear iPhone**.
+2. O app mostra um **PIN de 6 dígitos**. Aceite o pedido de **Rede Local** se aparecer.
 3. Vá em **Ajustes › Privacidade e Segurança › Modo Desenvolvedor › Pair with 3105**.
 4. Digite o PIN. Ao voltar ao app, o cartão mostra `Pareado com sucesso`.
 
 O app mantém áudio silencioso em segundo plano durante esse passo para não ser
 suspenso enquanto você está nos Ajustes.
 
-## 5. Livros
+### 4.3 Livros
 
-Só uma vez: abra o **Apple Books** e deixe carregar. O `airtrafficd` só aceita a
-sessão de sync quando existe a âncora de livros. Sem isso o Airlift falha com
+Uma vez: abra o **Apple Books** e deixe a estante carregar. O `airtrafficd` só aceita
+a sessão de sync quando existe a âncora de livros. Sem isso o Airlift falha com
 `ReadyForSync not observed`.
 
-## 6. Testar antes de usar
+### 4.4 Testar
 
-No cartão **ROTA DE ACESSO**:
+No cartão **CONEXÃO AIRLIFT**, com túnel e pareamento verdes, toque em **Testar**.
+Ele resolve o container de `com.dts.freefireth` e roda um canário de escrita/digest.
+Se passa, as funções vão aplicar.
 
-- `Túnel loopback` verde
-- `Pairing record` verde
-- Toque em **Testar** — ele resolve o container de `com.dts.freefireth` e roda um
-  canário de escrita/digest dentro dele.
+### 4.5 Plano B — só se o pareamento on-device não aparecer
 
-Se o teste passa, as funções vão aplicar. Se falha, a mensagem aponta exatamente
-qual dos três pré-requisitos está fora.
+Em alguns builds o menu Modo Desenvolvedor pode não mostrar a opção. Aí existe o
+caminho antigo, com um computador:
 
-## 7. Usar as funções
+1. iPhone no cabo, desbloqueado, com passcode ativo.
+2. Duplo clique em **`tools/PAREAR-3105.bat`** (PC com Python e iTunes/Apple Devices).
+3. O script gera o pairing record e empurra direto para o Documents do 3105.
+4. Abra o app — ele adota o arquivo sozinho.
+
+Também funciona importar um `ALTPairingFile.mobiledevicepairing` de SideStore/iLoader,
+ou colar o conteúdo em base64 no botão **Colar código**.
+
+## 5. Usar as funções
+
+Igual nas três rotas:
 
 1. Entre no jogo e aguarde até ~40% do carregamento.
 2. Saia do jogo e volte ao 3105.
-3. Aba **Aim** → toque na função desejada. Ela baixa do site, confere o SHA-256 e
-   grava no container.
-4. Volte ao jogo e chegue ao lobby.
-5. Ao entrar na partida, volte rápido ao 3105 e toque na função de novo para
-   **desativar**.
+3. Aba **Aim** → toque na função. Ela baixa do site, confere o SHA-256 e grava no
+   container do jogo.
+4. Volte ao jogo, chegue ao lobby.
+5. Ao entrar na partida, volte rápido e toque de novo para **desativar**.
 
-Uma função ativa por vez. O card mostra `Ativado` enquanto a transação está aberta.
+Uma função ativa por vez.
 
-## 8. Desativar (restore)
+## 6. Desativar
 
-No Airlift o app **não** guarda cópia do original — ele não tem permissão de leitura
-no container. Desativar baixa o arquivo original publicado pelo site
-(`originalSha256` no manifesto) e grava de volta.
+- **Kernel / bad_query:** o app guarda o original e devolve. Restore verificado.
+- **Airlift:** não há leitura do container, então o app baixa o arquivo original
+  publicado pelo site (`originalSha256`) e grava de volta. Se o site não publicou o
+  original, só reinstalar o jogo devolve o estado limpo.
 
-Se o site não publicou o original, o app avisa: nesse caso só reinstalar o jogo
-devolve o estado limpo.
-
-## 9. Problemas comuns
+## 7. Problemas comuns
 
 | O que aparece | Causa | O que fazer |
 | --- | --- | --- |
-| `Túnel de loopback desligado` | LocalDevVPN parado ou fora do modo loopback | ativar o perfil e voltar ao app |
-| `Nenhum pairing file ativo` | pareamento local ainda não concluído | tocar em **Conectar Airlift** no iOS 27 |
+| `SEM ROTA DE ACESSO` | iOS fora das faixas | conferir a tabela do item 1 |
+| `Túnel de loopback desligado` | LocalDevVPN parado | ativar o perfil e voltar |
+| `Nenhum pairing file ativo` | não pareou ainda | CONFIG → Parear iPhone |
 | `ReadyForSync not observed` | Apple Books nunca aberto | abrir o Books uma vez |
-| `AssetManifest not observed` | Books instalado mas não inicializado | abrir o Books, esperar a estante carregar |
-| `Não achei o container de com.dts.freefireth` | jogo não instalado ou container renomeado | confirmar o bundle ID publicado pelo site |
-| `O site não publicou o caminho relativo desta função` | manifesto sem `relativePath` | publicar o campo no painel |
-| `Apple corrigiu o AirTraffic sync` | iOS 27.2 beta 3+ | sem caminho por Airlift nesse build |
+| `AssetManifest not observed` | Books aberto mas não inicializado | esperar a estante carregar |
+| `Não achei o container` | jogo não instalado | conferir o bundle ID do site |
+| `caminho relativo não publicado` | manifesto sem `relativePath` | publicar no painel |
+| `Apple corrigiu o AirTraffic sync` | build não verificado | reportar o build; o app avisa antes de tentar |
 
-## 10. O que o usuário nunca precisa fazer
+## 8. O que o usuário nunca precisa fazer
 
-- Não precisa de jailbreak.
-- Não precisa de kernel exploit.
-- Não precisa mexer em arquivo do sistema, nem reiniciar o aparelho.
-- Não precisa manter o app aberto depois de aplicar a função.
+- jailbreak
+- mexer em arquivo de sistema
+- reiniciar o aparelho
+- manter o app aberto depois de aplicar a função

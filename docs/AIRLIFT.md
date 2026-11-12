@@ -1,7 +1,7 @@
 # Airlift — acesso a container sem kernel exploit
 
 Port do mecanismo do [AirCard-iOS](https://github.com/Mak5er/AirCard-iOS) para o 3105.
-Estende o alcance do app para **iOS 27.0 – 27.3**
+Estende o alcance do app de **18.7.1** para **18.7.2 – 18.7.10, 26.x, 27.0 – 27.0.1 e 27.2 beta 1–2**
 sem depender de offsets de kernel.
 
 ## Por que isso funciona onde o kexploit não vai
@@ -26,18 +26,30 @@ assimetria central e ela define o desenho do patch.
 | iOS | Rota | Consequência prática |
 | --- | --- | --- |
 | 17.0 – 17.7.x | kernel | ler + escrever + backup local do original |
-| 18.0 – 18.7.1 | kernel | idem, sem fallback Airlift |
-| 27.0 – 27.3 | airlift | pareamento on-device disponível |
+| 18.0 – 18.7.2 | kernel | idem |
+| 26.0 – 26.6.2 | bad_query | kernel + sandbox escape completo + grants |
+| 27.0 – 27.0.1 | airlift | escreve; restore vem do site; pareamento on-device |
+| 27.2 beta 1–3 | airlift | idem |
+| 27.2 beta 4+ | não testado | sem verificação do projeto |
+
+**Airlift só roda onde o pareamento acontece dentro do iPhone (27+).** Abaixo disso a
+rota é kernel, e o usuário não configura nada: sem VPN, sem pairing, sem PC.
 
 A decisão vive em `ExploitSupportPolicy.accessKind(major:minor:patch:build:)`.
-`KernelExploit.isApplicable` agora responde `false` fora da faixa de kernel, então o app
-nunca dispara o `kexploit_opa334` em builds onde os offsets param em 26.0.x.
+`KernelExploit.isApplicable` responde `true` para `.kernel` e `.badQuery`, e o app
+nunca dispara o `kexploit_opa334` na faixa do Airlift.
 
-## Pré-requisitos reais
+## Pré-requisitos reais (somente iOS 27)
 
 1. **LocalDevVPN** (ou WireGuard) em modo loopback, publicando o RSD em `10.7.0.1`.
-2. **Pareamento local**: em iOS 27.0–27.0.1 e 27.2 beta 1–2, o próprio app anuncia
-   o host e mostra o PIN para Ajustes › Privacidade e Segurança › Modo Desenvolvedor.
+2. **Pairing record**:
+   - padrão: pareamento on-device pelo botão **Parear iPhone** na aba CONFIG — o app
+     anuncia `_remotepairing-pairable-host._tcp` e mostra o PIN para
+     Ajustes › Privacidade e Segurança › Modo Desenvolvedor;
+   - plano B: `tools/PAREAR-3105.bat` (PC uma vez) ou um `ALTPairingFile` de
+     SideStore/iLoader, ou base64 em **Colar código**.
+
+   O app adota `airlift_pairing.plist` que estiver em Documents sem nenhum toque.
 3. **Apple Books instalado e aberto pelo menos uma vez** — o sync do `airtrafficd`
    só aceita `ReadyForSync` quando existe âncora de livros.
 

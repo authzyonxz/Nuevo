@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="Version" src="https://img.shields.io/badge/version-2.0-E6753A?style=flat-square">
-  <img alt="iOS" src="https://img.shields.io/badge/iOS-17.0–18.7.10%20%7C%2026.0–26.6.2%20%7C%2027.0–27.2%20b2-222222?style=flat-square">
+  <img alt="iOS" src="https://img.shields.io/badge/iOS-17.0–18.7.2%20%7C%2026.0–26.6.2%20%7C%2027.0–27.2%20b3-222222?style=flat-square">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-5-F05138?style=flat-square&logo=swift&logoColor=white">
   <img alt="Languages" src="https://img.shields.io/badge/languages-English%20%7C%20Tiếng%20Việt%20%7C%20简体中文-E6753A?style=flat-square">
 </p>
@@ -65,20 +65,23 @@ Compared with 1.1.1, version 2.0 turns 3105 from a collection of separate tools 
 
 3105 enables device-level features only for builds explicitly verified by the project:
 
-| System | Access route | Verified range/builds |
-| --- | --- | --- |
-| iOS 17 | kernel exploit | 17.0 through 17.7 |
-| iOS 18 | kernel exploit | 18.0 through 18.7.1 |
-| iOS 27 | Airlift | 27.0 through 27.0.1 |
-| iOS 27.2 | Airlift | beta 1 and beta 2 |
+| System | Access route | Verified range/builds | User setup |
+| --- | --- | --- | --- |
+| iOS 17 | kernel exploit | 17.0 through 17.7 | none |
+| iOS 18 | kernel exploit | 18.0 through 18.7.2 | none |
+| iOS 26 | kernel + sandbox escape + `bad_query` | 26.0 through 26.6.2 | none |
+| iOS 27 | Airlift | 27.0 through 27.0.1 | Config tab: pair + loopback VPN |
+| iOS 27.2 | Airlift | beta 1 through beta 3 | Config tab: pair + loopback VPN |
 
-Unlisted iOS 27 builds are marked unsupported rather than assumed compatible.
-iOS 27.2 beta 3 and later are blocked: Apple patched the AirTraffic sync that
-Airlift depends on.
+Airlift is limited to builds where the pairing happens on the iPhone itself, with no
+cable and no computer. Below iOS 27 the app uses the kernel route and the user
+configures nothing.
 
-The Airlift route writes into an app container over a pairing record created on
-the iPhone itself and the loopback RSD tunnel — no computer and no kernel exploit.
-It cannot read the target container,
+iOS 27.2 beta 4 and later are untested. Fill `patchedAirliftBuilds` in
+`SupportPolicy.swift` if a future build turns out to be patched.
+
+The Airlift route writes into an app container over a pairing record and the
+loopback RSD tunnel — no kernel exploit. It cannot read the target container,
 so a restore needs the original file published by the site. Full details,
 prerequisites and the server contract are in [docs/AIRLIFT.md](docs/AIRLIFT.md).
 

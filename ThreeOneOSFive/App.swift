@@ -70,6 +70,8 @@ class AppState: ObservableObject {
 
     func detectSupport() {
         Airlift.setup()
+        // Se o script do PC já empurrou o pairing para Documents, adota sozinho.
+        _ = AirliftPairing.autoAdoptIfNeeded()
 
         let v = AppInfo.versionTuple
         let appVersionListed = ExploitSupportPolicy.isAppVersionListed(
@@ -105,19 +107,20 @@ class AppState: ObservableObject {
         }
 
         switch kind {
-        case .kernel:
+        case .kernel, .badQuery:
             guard KernelExploit.isApplicable(
                 major: v.major,
                 minor: v.minor,
                 patch: v.patch,
                 build: AppInfo.osBuild
             ) else { return }
+            log("app: rota \(kind.rawValue) — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
             refreshKernelExploitStatus()
             maybeAutoRunKernelExploit()
 
         case .airlift:
-            // Não há exploit a executar: o acesso é pairing + túnel loopback.
-            // O cartão de acesso na aba CONFIG mostra o estado real dos dois.
+            // Não há exploit a executar: o acesso é pareamento + túnel loopback,
+            // configurados na aba Config.
             log("app: acesso por Airlift — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
             if AirliftPairing.hasActive(), LoopbackTunnel.isUp() {
                 exploitStatus = .success(method: "airlift")

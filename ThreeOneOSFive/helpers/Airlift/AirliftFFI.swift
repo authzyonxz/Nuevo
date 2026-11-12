@@ -11,6 +11,7 @@ import Foundation
 import AirliftFFI
 
 enum AirliftError: Error, LocalizedError, Equatable {
+    case unsupportedVersion(String)
     case pairingMissing
     case pairingInvalid(String)
     case tunnelDown
@@ -22,8 +23,10 @@ enum AirliftError: Error, LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
+        case .unsupportedVersion(let version):
+            return "iOS \(version) não tem rota de acesso verificada. Kernel: 17.0–18.7.2 · bad_query: 26.0–26.6.2 · Airlift: 27.0–27.2 beta 2."
         case .pairingMissing:
-            return "Nenhum pairing file ativo. Importe o ALTPairingFile do SideStore ou pareie este iPhone na aba CONFIG."
+            return "Nenhum pairing file ativo. Vá em Config e toque em Parear iPhone."
         case .pairingInvalid(let detail):
             return "Pairing file inválido: \(detail)"
         case .tunnelDown:
