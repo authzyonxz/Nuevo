@@ -219,7 +219,7 @@ enum LoopbackTunnel {
 /// Hospeda o RPPairing: anuncia por Bonjour, mantém o app vivo enquanto o
 /// usuário aprova o PIN em Ajustes › Privacidade e Segurança › Modo Desenvolvedor.
 @MainActor
-final class OnDevicePairing: NSObject, ObservableObject {
+final class OnDevicePairing: NSObject, ObservableObject, NetServiceDelegate {
     static let shared = OnDevicePairing()
 
     @Published private(set) var running = false
@@ -390,16 +390,39 @@ final class OnDevicePairing: NSObject, ObservableObject {
 
     fileprivate func startAdvertising(serviceID: String, port: Int32, txt: [String: Data]) {
         stopAdvertising()
+        let instance = serviceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? hostName : serviceID
+        var properties = txt
+        // O iOS mostra o nome do host a partir deste TXT. O service_id continua
+        // sendo usado como instance técnico do protocolo RPPairing.
+        properties["name"] = Data(hostName.utf8)
+        if properties["identifier"] == nil { properties["identifier"] = Data(instance.utf8) }
         let service = NetService(
             domain: "",
             type: "_remotepairing-pairable-host._tcp.",
-            name: serviceID,
+            name: instance,
             port: port
         )
-        service.setTXTRecord(NetService.data(fromTXTRecord: txt))
+        service.delegate = self
+        service.setTXTRecord(NetService.data(fromTXTRecord: properties))
+        service.schedule(in: .main, forMode: .common)
         service.publish()
         netService = service
-        status = "anunciando — Ajustes › Privacidade e Segurança › Modo Desenvolvedor"
+        status = "anunciando 3105 — abra Ajustes › Privacidade e Segurança › Modo Desenvolvedor"
+    }
+
+    func netServiceDidPublish(_ sender: NetService) {
+        status = "3105 visível — abra Ajustes › Modo Desenvolvedor"
+        log("airlift: Bonjour publicado name=\(sender.name) type=\(sender.type) port=\(sender.port)")
+    }
+
+    func netService(_ sender: NetService, didNotPublish errorDict: [String: NSNumber]) {
+        let details = errorDict.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: ", ")
+        status = "falha ao anunciar 3105: \(details)"
+        log("airlift: falha ao publicar Bonjour name=\(sender.name) type=\(sender.type) \(details)")
+    }
+
+    func netServiceDidStop(_ sender: NetService) {
+        log("airlift: Bonjour interrompido name=\(sender.name)")
     }
 
     fileprivate func presentPin(_ value: String) {
@@ -408,6 +431,7 @@ final class OnDevicePairing: NSObject, ObservableObject {
     }
 
     private func stopAdvertising() {
+        netService?.remove(from: .main, forMode: .common)
         netService?.stop()
         netService = nil
     }
