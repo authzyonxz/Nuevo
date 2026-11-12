@@ -99,7 +99,7 @@ enum AirliftPatchStore {
         }
 
         let container = try Airlift.findContainer(pairingPath: pairingPath, bundleID: bundleID)
-        let plan = try writePlan(container: container, relativePath: relativePath)
+        let plan = try writePlan(container: container, relativePath: relativePath, filename: filename)
 
         // Staging: o core usa o NOME do arquivo de origem como nome final.
         let stagingDirectory = fileManager.temporaryDirectory
@@ -276,7 +276,7 @@ enum AirliftPatchStore {
 
     /// Junta container + caminho relativo sem tocar no filesystem (não há
     /// permissão de leitura no alvo) e sem aceitar traversal.
-    static func writePlan(container: String, relativePath: String) throws -> WritePlan {
+    static func writePlan(container: String, relativePath: String, filename rawFilename: String) throws -> WritePlan {
         let trimmed = relativePath.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw AirliftError.pathUnknown(container)
@@ -294,13 +294,27 @@ enum AirliftPatchStore {
               !components.contains(".") else {
             throw AirliftError.writeFailed("caminho inválido: \(trimmed)")
         }
-        guard let filename = components.last, !filename.isEmpty else {
-            throw AirliftError.writeFailed("caminho sem nome de arquivo: \(trimmed)")
+        let filename = rawFilename.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !filename.isEmpty,
+              !filename.contains("/"),
+              filename != ".",
+              filename != ".." else {
+            throw AirliftError.writeFailed("nome de arquivo inválido: \(rawFilename)")
+        }
+
+        // O manifesto atual publica a pasta em relativePath e o nome real no
+        // campo filename/header (ex.: .../avatar + assetindexer...). Também
+        // aceitamos o formato antigo em que relativePath já terminava no
+        // próprio filename.
+        let directoryComponents: [String]
+        if components.last == filename {
+            directoryComponents = Array(components.dropLast())
+        } else {
+            directoryComponents = components
         }
 
         var base = container
         while base.hasSuffix("/") { base.removeLast() }
-        let directoryComponents = Array(components.dropLast())
         let destination = ([base] + directoryComponents).joined(separator: "/")
         return WritePlan(destinationDirectory: destination, filename: filename)
     }
