@@ -7,7 +7,6 @@
 import Combine
 import SwiftUI
 import UIKit
-import UniformTypeIdentifiers
 
 struct ConfigView: View {
     var body: some View {
@@ -149,28 +148,6 @@ final class AirliftAccessModel: ObservableObject {
         tunnelUp = LoopbackTunnel.isUp()
     }
 
-    func importPairing(_ url: URL) {
-        do {
-            let info = try AirliftPairing.importFile(from: url)
-            pairing = info
-            message = "Pairing carregado: \(info.deviceName)."
-            refresh()
-        } catch {
-            message = (error as? LocalizedError)?.errorDescription ?? "Falha ao importar pairing."
-        }
-    }
-
-    func importBase64(_ text: String) {
-        do {
-            let info = try AirliftPairing.importBase64(text)
-            pairing = info
-            message = "Pairing carregado: \(info.deviceName)."
-            refresh()
-        } catch {
-            message = (error as? LocalizedError)?.errorDescription ?? "Código inválido."
-        }
-    }
-
     func pairOnDevice() async {
         guard !busy else { return }
         busy = true
@@ -191,14 +168,6 @@ final class AirliftAccessModel: ObservableObject {
         pairing = nil
         message = "Pairing removido."
         refresh()
-    }
-
-    func adoptFirstCandidate() {
-        guard let first = AirliftPairing.discoverCandidates().first else {
-            message = "Nenhum pairing file encontrado em On My iPhone/3105."
-            return
-        }
-        importPairing(first)
     }
 
     func testAccess(bundleID: String) async {
@@ -225,9 +194,6 @@ final class AirliftAccessModel: ObservableObject {
 struct AirliftAccessCard: View {
     @StateObject private var model = AirliftAccessModel()
     @ObservedObject private var pairingHost = OnDevicePairing.shared
-    @State private var importing = false
-    @State private var pasting = false
-    @State private var pastedText = ""
 
     private var testBundleID: String {
         let stored = UserDefaults.standard.string(forKey: AimFunctionConfig.bundleIDKey) ?? ""
@@ -290,16 +256,10 @@ struct AirliftAccessCard: View {
             if isAirlift {
                 HStack(spacing: 8) {
                     actionButton("Parear iPhone") { Task { await model.pairOnDevice() } }
-                    actionButton("Testar") { Task { await model.testAccess(bundleID: testBundleID) } }
-                    actionButton(model.tunnelUp ? "Túnel ativo" : "Abrir VPN") {
+                    actionButton(model.tunnelUp ? "Túnel ativo" : "Abrir LocalDevVPN") {
                         LoopbackTunnel.openVPNApp()
                     }
-                }
-
-                HStack(spacing: 8) {
-                    actionButton("Importar pairing") { importing = true }
-                    actionButton("Colar código") { pasting = true }
-                    actionButton("Procurar pairing") { model.adoptFirstCandidate() }
+                    actionButton("Testar Airlift") { Task { await model.testAccess(bundleID: testBundleID) } }
                 }
 
                 if model.pairing != nil {
@@ -320,61 +280,10 @@ struct AirliftAccessCard: View {
         .cardStyle()
         .task {
             model.refresh()
-            _ = AirliftPairing.autoAdoptIfNeeded()
-            model.refresh()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             model.refresh()
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
-            guard case let .success(urls) = result, let url = urls.first else { return }
-            model.importPairing(url)
-        }
-        .sheet(isPresented: $pasting) { pasteSheet }
-    }
-
-    private var pasteSheet: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Cole o código base64 do pairing record.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-
-                TextEditor(text: $pastedText)
-                    .font(.system(size: 11, design: .monospaced))
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .frame(minHeight: 170)
-                    .padding(6)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color(uiColor: .separator).opacity(0.3), lineWidth: 0.7)
-                    )
-
-                Button {
-                    model.importBase64(pastedText)
-                    pastedText = ""
-                    pasting = false
-                } label: {
-                    Text("Importar")
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(maxWidth: .infinity, minHeight: 42)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(pastedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                Spacer(minLength: 0)
-            }
-            .padding(16)
-            .navigationTitle("Colar pairing")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { pasting = false }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
     }
 
     private func row(symbol: String, tint: Color, title: String, detail: String) -> some View {
