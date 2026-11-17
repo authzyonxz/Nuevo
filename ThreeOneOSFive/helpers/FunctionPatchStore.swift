@@ -9,8 +9,6 @@ struct FunctionPatchReceipt: Identifiable, Equatable {
     let journalURL: URL
     let appliedAt: Date
     let fileCount: Int
-    /// Qual backend gravou esta transação. Decide quem faz o restore.
-    var backend: AccessKind = .kernel
 }
 
 /// Aplica o arquivo publicado pelo site dentro do container do bundle ID alvo.
@@ -65,6 +63,64 @@ enum FunctionPatchStore {
         let createdAt: Date
         var status: Status
         var records: [Record]
+    }
+
+    /// Instala dois payloads independentes do Mod Menu na pasta publicada.
+    /// Não sobrescreve destinos e o journal remove somente estes dois arquivos.
+    @discardableResult
+    static func applyTwoFiles(
+        functionID: String,
+        bundleID rawBundleID: String,
+        firstURL: URL,
+        firstFilename: String,
+        secondURL: URL,
+        secondFilename: String,
+        destinationDirectory: String?
+    ) throws -> FunctionPatchReceipt {
+        lock.lock()
+        defer { lock.unlock() }
+        let fm = FileManager.default
+        guard functionID == "mod-menu", fm.fileExists(atPath: firstURL.path),
+              fm.fileExists(atPath: secondURL.path), let destinationDirectory,
+              !destinationDirectory.isEmpty else {
+            throw FunctionPatchError.applyFailed("o Mod Menu requer dois arquivos e uma pasta de destino publicada")
+        }
+        let bundleID = try canonicalBundleID(rawBundleID)
+        let root = try resolveContainer(bundleID: bundleID)
+        let base = try PatchPathValidator.canonicalRelativePath(destinationDirectory)
+        let sources = [(firstURL, firstFilename), (secondURL, secondFilename)]
+        guard firstFilename != secondFilename else {
+            throw FunctionPatchError.applyFailed("os dois arquivos precisam ter nomes diferentes")
+        }
+        if let previous = latestReceipt(functionID: functionID) { try restore(receipt: previous) }
+        let transactionID = UUID()
+        let transaction = try functionDirectory(functionID: functionID).appendingPathComponent(transactionID.uuidString, isDirectory: true)
+        try fm.createDirectory(at: transaction, withIntermediateDirectories: true)
+        var records: [Record] = []
+        var created: [URL] = []
+        do {
+            for (source, filename) in sources {
+                let safeName = try PatchPathValidator.canonicalRelativePath(filename)
+                let relative = try PatchPathValidator.canonicalRelativePath(base + "/" + safeName)
+                let target = try PatchPathValidator.resolveContainedTargetURL(relativePath: relative, containerRoot: root)
+                guard !fm.fileExists(atPath: target.path) else {
+                    throw FunctionPatchError.applyFailed("destino já existe: \(relative); arquivo existente preservado")
+                }
+                try fm.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try fm.copyItem(at: source, to: target)
+                created.append(target)
+                let digest = try FileDigest.sha256Hex(ofFileAt: target)
+                records.append(Record(relativePath: relative, originalExisted: false, backupFilename: nil, originalDigest: nil, replacementDigest: digest))
+            }
+            let journal = Journal(schemaVersion: 1, transactionID: transactionID, functionID: functionID, bundleID: bundleID, containerPath: root.path, filename: "\(firstFilename),\(secondFilename)", createdAt: Date(), status: .applied, records: records)
+            let journalURL = transaction.appendingPathComponent(journalFilename)
+            try write(journal, to: journalURL)
+            return FunctionPatchReceipt(id: transactionID, functionID: functionID, bundleID: bundleID, filename: journal.filename, journalURL: journalURL, appliedAt: journal.createdAt, fileCount: 2)
+        } catch {
+            for url in created { try? fm.removeItem(at: url) }
+            try? fm.removeItem(at: transaction)
+            throw error
+        }
     }
 
     // MARK: - apply

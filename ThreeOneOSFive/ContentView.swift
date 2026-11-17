@@ -5,7 +5,6 @@ private enum MainTab: Int, CaseIterable, Identifiable {
     case aim
     case cpp
     case textura
-    case config
     case profile
 
     var id: Int { rawValue }
@@ -15,7 +14,6 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         case .aim: return "Aim"
         case .cpp: return "C++"
         case .textura: return "Textura"
-        case .config: return "Config"
         case .profile: return "Profile"
         }
     }
@@ -25,7 +23,6 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         case .aim: return "scope"
         case .cpp: return "chevron.left.forwardslash.chevron.right"
         case .textura: return "paintbrush.fill"
-        case .config: return "gearshape.fill"
         case .profile: return "person.crop.circle"
         }
     }
@@ -153,8 +150,6 @@ struct ContentView: View {
                             tutorialText: "Escolha a textura desejada e siga o procedimento indicado pelo site antes de entrar no jogo."
                         )
                     }
-                case .config:
-                    ConfigView()
                 case .profile:
                     if let access = authorizedAccess {
                         ProfileTabView(access: access)

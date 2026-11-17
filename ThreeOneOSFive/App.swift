@@ -52,8 +52,6 @@ class AppState: ObservableObject {
     @Published var exploitStatus: ExploitStatus = .notStarted
     @Published var unsupportedMessage: String?
     @Published var kernelExploitRunning = false
-    /// Rota de acesso resolvida pela policy: kernel, airlift ou nenhuma.
-    @Published var accessKind: AccessKind?
 
     private var autoRunAttempted = false
 
@@ -69,10 +67,6 @@ class AppState: ObservableObject {
     var isSupported: Bool { unsupportedMessage == nil }
 
     func detectSupport() {
-        Airlift.setup()
-        // Se o script do PC já empurrou o pairing para Documents, adota sozinho.
-        _ = AirliftPairing.autoAdoptIfNeeded()
-
         let v = AppInfo.versionTuple
         let appVersionListed = ExploitSupportPolicy.isAppVersionListed(
             major: v.major,
@@ -80,14 +74,12 @@ class AppState: ObservableObject {
             patch: v.patch,
             build: AppInfo.osBuild
         )
-        let kind = ExploitSupportPolicy.accessKind(
+        let exploitVerified = ExploitSupportPolicy.isSupported(
             major: v.major,
             minor: v.minor,
             patch: v.patch,
             build: AppInfo.osBuild
         )
-        accessKind = kind
-
 #if targetEnvironment(simulator)
         if ProcessInfo.processInfo.arguments.contains("--simulate-access") {
             exploitStatus = .success(method: "Simulator preview")
@@ -100,34 +92,23 @@ class AppState: ObservableObject {
             return
         }
 
-        // Versão listada sem rota de acesso verificada: UI abre, privilégio não.
-        guard let kind else {
-            exploitStatus = .unsupported("iOS \(AppInfo.osVersion) — acesso não verificado")
+        // A listed OS version can use the app UI, but must not trigger a
+        // privileged exploit path until its implementation is verified.
+        guard exploitVerified else {
+            exploitStatus = .unsupported("iOS \(AppInfo.osVersion) — exploit not verified")
             return
         }
 
-        switch kind {
-        case .kernel, .badQuery:
-            guard KernelExploit.isApplicable(
-                major: v.major,
-                minor: v.minor,
-                patch: v.patch,
-                build: AppInfo.osBuild
-            ) else { return }
-            log("app: rota \(kind.rawValue) — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
-            refreshKernelExploitStatus()
-            maybeAutoRunKernelExploit()
+        let applicable = KernelExploit.isApplicable(
+            major: v.major,
+            minor: v.minor,
+            patch: v.patch,
+            build: AppInfo.osBuild
+        )
+        guard applicable else { return }
 
-        case .airlift:
-            // Não há exploit a executar: o acesso é pareamento + túnel loopback,
-            // configurados na aba Config.
-            log("app: acesso por Airlift — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
-            if AirliftPairing.hasActive(), LoopbackTunnel.isUp() {
-                exploitStatus = .success(method: "airlift")
-            } else if !exploitStatus.isSuccess {
-                exploitStatus = .notStarted
-            }
-        }
+        refreshKernelExploitStatus()
+        maybeAutoRunKernelExploit()
     }
 
     private func maybeAutoRunKernelExploit() {

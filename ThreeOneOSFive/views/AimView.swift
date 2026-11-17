@@ -1,7 +1,5 @@
-import Combine
 import SwiftUI
 import UIKit
-import UniformTypeIdentifiers
 
 @MainActor
 final class AimViewModel: ObservableObject {
@@ -15,7 +13,7 @@ final class AimViewModel: ObservableObject {
     private let client = FunctionPatchClient()
 
     func loadLocalState() {
-        receipts = AccessBackend.appliedReceipts()
+        receipts = FunctionPatchStore.appliedReceipts()
     }
 
     func refresh(baseURL: URL) async {
@@ -39,7 +37,7 @@ final class AimViewModel: ObservableObject {
         baseURL: URL,
         expectedSHA256: String,
         expectedVersion: Int?,
-        originalSha256: String?,
+        expectedSecondSHA256: String? = nil,
         access: KeyAuthAccess,
         onAccessUpdated: @escaping (KeyAuthAccess) -> Void
     ) async {
@@ -64,61 +62,61 @@ final class AimViewModel: ObservableObject {
                 grant: validatedAccess.grant,
                 sessionToken: validatedAccess.sessionToken,
                 expectedSHA256: expectedSHA256,
-                version: expectedVersion
+                version: expectedVersion,
+                fileSlot: 1
             )
+            let secondPayload: FunctionPayload?
+            if function.id == "mod-menu" {
+                guard let expectedSecondSHA256, expectedSecondSHA256.count == 64 else {
+                    throw FunctionPatchError.payloadUnavailable("segundo arquivo do Mod Menu")
+                }
+                secondPayload = try await client.download(
+                    functionID: function.id, baseURL: baseURL, grant: validatedAccess.grant,
+                    sessionToken: validatedAccess.sessionToken, expectedSHA256: expectedSecondSHA256,
+                    version: expectedVersion, fileSlot: 2
+                )
+            } else { secondPayload = nil }
             let receipt = try await Task.detached(priority: .userInitiated) {
-                try AccessBackend.apply(
+                if function.id == "mod-menu", let secondPayload {
+                    return try FunctionPatchStore.applyTwoFiles(
+                        functionID: function.id, bundleID: target,
+                        firstURL: payload.fileURL, firstFilename: payload.filename,
+                        secondURL: secondPayload.fileURL, secondFilename: secondPayload.filename,
+                        destinationDirectory: payload.relativePath
+                    )
+                }
+                return try FunctionPatchStore.apply(
                     functionID: function.id,
                     bundleID: target,
                     payloadURL: payload.fileURL,
                     filename: payload.filename,
-                    relativePathHint: payload.relativePath,
-                    version: payload.version,
-                    originalSha256: originalSha256
+                    relativePathHint: payload.relativePath
                 )
             }.value
             receipts[function.id] = receipt
-            let route = receipt.backend == .airlift ? "Airlift" : "Kernel"
-            feedback = "\(function.title) ativada com sucesso (\(route))."
+            feedback = "\(function.title) ativada com sucesso."
         } catch let error as KeyAuthFailure {
             feedback = error.userMessage
         } catch let error as FunctionPatchError {
             feedback = error.errorDescription
-        } catch let error as AirliftError {
-            if error == .booksNotInitialized {
-                feedback = "Abra o Apple Books, espere a estante carregar completamente e depois volte ao 3105 para tocar em ativar novamente."
-                Airlift.openBooks()
-            } else {
-                feedback = error.errorDescription
-            }
         } catch {
             feedback = "Não foi possível ativar \(function.title)."
         }
     }
 
-    func restore(
-        _ function: AimFunctionDefinition,
-        baseURL: URL?,
-        access: KeyAuthAccess,
-        force: Bool = false
-    ) async {
+    func restore(_ function: AimFunctionDefinition, force: Bool = false) async {
         guard let receipt = receipts[function.id], busyFunction == nil else { return }
         busyFunction = function.id
         feedback = nil
         defer { busyFunction = nil }
 
         do {
-            try await AccessBackend.restore(
-                receipt: receipt,
-                baseURL: baseURL,
-                access: access,
-                force: force
-            )
+            try await Task.detached(priority: .userInitiated) {
+                try FunctionPatchStore.restore(receipt: receipt, allowChangedTargets: force)
+            }.value
             receipts.removeValue(forKey: function.id)
             feedback = "\(function.title) desativada com sucesso."
         } catch let error as FunctionPatchError {
-            feedback = error.errorDescription
-        } catch let error as AirliftError {
             feedback = error.errorDescription
         } catch {
             feedback = "Não foi possível restaurar \(function.title)."
@@ -157,7 +155,6 @@ struct AimView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header
-                AimRouteStrip()
                 tutorial
                 ForEach(functions) { function in
                     functionCard(function)
@@ -285,7 +282,7 @@ struct AimView: View {
     private func handleTap(_ function: AimFunctionDefinition) {
         model.feedback = nil
         if model.receipts[function.id] != nil {
-            Task { await model.restore(function, baseURL: baseURL, access: access) }
+            Task { await model.restore(function) }
             return
         }
 
@@ -331,7 +328,7 @@ struct AimView: View {
                 baseURL: baseURL,
                 expectedSHA256: expectedSHA256,
                 expectedVersion: manifest.version,
-                originalSha256: manifest.originalSha256,
+                expectedSecondSHA256: manifest.secondSha256,
                 access: access,
                 onAccessUpdated: onAccessUpdated
             )
@@ -389,56 +386,5 @@ struct AimView: View {
 
     private func dismissNotice() {
         isNoticePresented = false
-    }
-}
-
-// MARK: - Faixa de rota (compacta)
-
-/// Linha única no topo da aba: qual rota está ativa e se ela está pronta.
-/// A configuração de verdade vive na aba CONFIG.
-struct AimRouteStrip: View {
-    @State private var kind: AccessKind?
-    @State private var ready = false
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(ready ? Color.green : Color.orange)
-                .frame(width: 7, height: 7)
-
-            Text(label)
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .tracking(0.6)
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 4)
-
-            Text(ready ? "PRONTO" : "CONFIG")
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .tracking(0.5)
-                .foregroundStyle(ready ? Color.green : Color.orange)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.white.opacity(0.05), in: Capsule())
-        .task { refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            refresh()
-        }
-    }
-
-    private var label: String {
-        switch kind {
-        case .kernel: return "ACESSO KERNEL · iOS 17.0–18.7.2"
-        case .badQuery: return "ACESSO BAD_QUERY · iOS 26"
-        case .airlift: return "ACESSO AIRLIFT · iOS 27"
-        case nil: return "SEM ROTA DE ACESSO"
-        }
-    }
-
-    private func refresh() {
-        let availability = AccessBackend.availability()
-        kind = availability.policyKind
-        ready = availability.isReady
     }
 }

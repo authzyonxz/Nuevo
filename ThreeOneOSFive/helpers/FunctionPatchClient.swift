@@ -16,14 +16,12 @@ struct FunctionPayloadManifest: Decodable, Equatable {
     let sha256: String?
     let notes: String?
     let publishedAt: Double?
-    /// Original publicado pelo site — obrigatório para o restore por Airlift,
-    /// que não tem permissão de leitura no container alvo.
-    let originalSha256: String?
+    let secondFilename: String?
+    let secondSha256: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, summary, status, available, version, filename
-        case bundleID, relativePath, destinationPath, byteSize, sha256, notes, publishedAt
-        case originalSha256
+        case bundleID, relativePath, destinationPath, byteSize, sha256, notes, publishedAt, secondFilename, secondSha256
     }
 
     init(from decoder: Decoder) throws {
@@ -44,7 +42,8 @@ struct FunctionPayloadManifest: Decodable, Equatable {
         sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
         publishedAt = try container.decodeIfPresent(Double.self, forKey: .publishedAt)
-        originalSha256 = try container.decodeIfPresent(String.self, forKey: .originalSha256)
+        secondFilename = try container.decodeIfPresent(String.self, forKey: .secondFilename)
+        secondSha256 = try container.decodeIfPresent(String.self, forKey: .secondSha256)
     }
 }
 
@@ -194,15 +193,16 @@ final class FunctionPatchClient {
         grant: String,
         sessionToken: String,
         expectedSHA256: String,
-        version: Int? = nil
+        version: Int? = nil,
+        fileSlot: Int = 1
     ) async throws -> FunctionPayload {
         var components = URLComponents(
             url: baseURL.appendingPathComponent("api/v1/functions/\(functionID)/payload"),
             resolvingAgainstBaseURL: false
         )
-        if let version {
-            components?.queryItems = [URLQueryItem(name: "version", value: String(version))]
-        }
+        var queryItems: [URLQueryItem] = [URLQueryItem(name: "file", value: String(fileSlot))]
+        if let version { queryItems.append(URLQueryItem(name: "version", value: String(version))) }
+        components?.queryItems = queryItems
         guard let url = components?.url else { throw FunctionPatchError.invalidServerURL }
 
         var request = URLRequest(url: url)
@@ -211,46 +211,6 @@ final class FunctionPatchClient {
         request.setValue("Bearer \(grant)", forHTTPHeaderField: "Authorization")
         request.setValue(sessionToken, forHTTPHeaderField: "X-KeyAuth-Session")
 
-        return try await fetchPayload(
-            request: request,
-            functionID: functionID,
-            expectedSHA256: expectedSHA256,
-            cacheKey: functionID
-        )
-    }
-
-    /// Baixa o arquivo ORIGINAL publicado pelo site.
-    /// Obrigatório para o restore no backend Airlift: aquela rota não tem
-    /// permissão de leitura no container, então o original vem do site.
-    func downloadOriginal(
-        functionID: String,
-        baseURL: URL,
-        grant: String,
-        sessionToken: String,
-        expectedSHA256: String
-    ) async throws -> FunctionPayload {
-        var request = URLRequest(
-            url: baseURL.appendingPathComponent("api/v1/functions/\(functionID)/original")
-        )
-        request.timeoutInterval = 60
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-        request.setValue("Bearer \(grant)", forHTTPHeaderField: "Authorization")
-        request.setValue(sessionToken, forHTTPHeaderField: "X-KeyAuth-Session")
-
-        return try await fetchPayload(
-            request: request,
-            functionID: functionID + "#original",
-            expectedSHA256: expectedSHA256,
-            cacheKey: functionID + "-original"
-        )
-    }
-
-    private func fetchPayload(
-        request: URLRequest,
-        functionID: String,
-        expectedSHA256: String,
-        cacheKey: String
-    ) async throws -> FunctionPayload {
         let temporaryURL: URL
         let response: URLResponse
         do {
@@ -288,7 +248,7 @@ final class FunctionPatchClient {
             throw FunctionPatchError.digestMismatch
         }
 
-        let directory = try Self.cacheDirectory(functionID: cacheKey)
+        let directory = try Self.cacheDirectory(functionID: functionID)
         let safeName = filename.replacingOccurrences(of: "/", with: "_")
         let destination = directory.appendingPathComponent("v\(versionValue)_\(safeName)")
         let fileManager = FileManager.default
