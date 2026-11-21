@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LogView: View {
     @ObservedObject var appLog = AppLog.shared
+    var showsDoneButton = true
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.appLanguage) private var language
@@ -97,8 +98,10 @@ struct LogView: View {
                     .disabled(appLog.entries.isEmpty)
                     .accessibilityLabel(language.text("logs.share"))
 
-                    Button(language.text("common.done")) { dismiss() }
-                        .fontWeight(.semibold)
+                    if showsDoneButton {
+                        Button(language.text("common.done")) { dismiss() }
+                            .fontWeight(.semibold)
+                    }
                 }
             }
         }

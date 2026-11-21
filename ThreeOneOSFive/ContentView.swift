@@ -6,6 +6,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
     case cpp
     case textura
     case profile
+    case logs
 
     var id: Int { rawValue }
 
@@ -15,6 +16,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         case .cpp: return "C++"
         case .textura: return "Textura"
         case .profile: return "Profile"
+        case .logs: return "Logs"
         }
     }
 
@@ -24,6 +26,7 @@ private enum MainTab: Int, CaseIterable, Identifiable {
         case .cpp: return "chevron.left.forwardslash.chevron.right"
         case .textura: return "paintbrush.fill"
         case .profile: return "person.crop.circle"
+        case .logs: return "text.alignleft"
         }
     }
 }
@@ -160,6 +163,8 @@ struct ContentView: View {
                             detail: "Entre com sua key para ver as informações do perfil."
                         )
                     }
+                case .logs:
+                    LogView(showsDoneButton: false)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
