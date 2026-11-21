@@ -105,10 +105,29 @@ class AppState: ObservableObject {
             patch: v.patch,
             build: AppInfo.osBuild
         )
-        guard applicable else { return }
+        guard applicable else {
+            // 26.7+/27.x: sem kexploit — o acesso vem do worse_query.
+            if WorseQuery.isGrantApplicable {
+                refreshWorseQueryStatus()
+            }
+            return
+        }
 
         refreshKernelExploitStatus()
         maybeAutoRunKernelExploit()
+    }
+
+    private func refreshWorseQueryStatus() {
+        guard !kernelExploitRunning else { return }
+        if WorseQuery.accessAvailable {
+            if !exploitStatus.isSuccess {
+                exploitStatus = .success(method: "worse_query")
+                log("app: worse_query access active — App Group grant path")
+            }
+        } else if exploitStatus.isSuccess {
+            exploitStatus = .notStarted
+            log("app: worse_query access is no longer active")
+        }
     }
 
     private func maybeAutoRunKernelExploit() {
@@ -122,7 +141,7 @@ class AppState: ObservableObject {
     }
 
     private func refreshKernelExploitStatus() {
-        guard !kernelExploitRunning else { return }
+        guard !kernelExploitRunning, !WorseQuery.isGrantApplicable else { return }
 
         // iOS < 26: kernel R/W success persists (no sandbox probe)
         // iOS >= 26: verify full sandbox escape is still active

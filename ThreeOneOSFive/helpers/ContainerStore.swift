@@ -116,9 +116,19 @@ enum ContainerStore {
 
     static func resolveAppContainerPathByMetadataScan(bundleID: String) -> String? {
         // iOS < 26: kernel R/W is enough, no need to require full sandbox escape
-        if KernelExploit.requiresSandboxEscape, !KernelExploit.hasSandboxAccess() {
+        // iOS 26.7+/27.x: worse_query grants são o acesso (sem kexploit)
+        if KernelExploit.requiresSandboxEscape,
+           !KernelExploit.hasSandboxAccess(),
+           !WorseQuery.accessAvailable {
             log("patch: metadata scan skipped — sandbox access not active")
             return nil
+        }
+        // Grant recursivo na raiz cobre a leitura dos metadata plists de cada
+        // container. Na faixa worse_query (26.7+/27.x) isso substitui o
+        // sandbox escape do kexploit.
+        let rootHandle = grantContainerAccess(appDataRoot)
+        defer {
+            if rootHandle >= 0 { releaseContainerAccess(rootHandle) }
         }
         let dirs = enumerateDirectories(path: appDataRoot)
         guard !dirs.isEmpty else {
@@ -298,7 +308,7 @@ enum ContainerStore {
     ) -> [ApplicationBundleMetadata] {
         let handle = grantContainerAccess(rootPath)
         defer {
-            if handle >= 0 { bad_query_release(handle) }
+            if handle >= 0 { releaseContainerAccess(handle) }
         }
 
         let fileManager = FileManager.default
@@ -404,7 +414,7 @@ enum ContainerStore {
                 }
             }
             defer {
-                if handle >= 0 { bad_query_release(handle) }
+                if handle >= 0 { releaseContainerAccess(handle) }
             }
 
             let names = (try? FileManager.default.contentsOfDirectory(atPath: cachePath)) ?? []
@@ -450,13 +460,7 @@ enum ContainerStore {
             return names.map { (clean as NSString).appendingPathComponent($0) }
         }
 
-        var pathC = clean.utf8CString.map { Int8($0) }
-        guard let result = bad_query_list(&pathC, maxInode) else {
-            log("enumerate: NULL for \(clean)")
-            return []
-        }
-        defer { free(result) }
-        let list = String(cString: result).components(separatedBy: "\n").filter { !$0.isEmpty }
+        let list = WorseQuery.listDirectories(path: clean, maxInode: maxInode)
         if !list.isEmpty {
             log("enumerate: inode fallback for \(clean) -> \(list.count) entries")
         } else {
@@ -475,7 +479,7 @@ enum ContainerStore {
 
         let handle = grantContainerAccess(path)
         if handle >= 0 {
-            defer { bad_query_release(handle) }
+            defer { releaseContainerAccess(handle) }
             if let names = try? FileManager.default.contentsOfDirectory(atPath: path), !names.isEmpty {
                 return names.map { (path as NSString).appendingPathComponent($0) }
             }
@@ -525,8 +529,20 @@ enum ContainerStore {
     static func grantContainerAccess(_ containerPath: String) -> Int64 {
         guard shouldUseBadQuery else { return -1 }
         let clean = containerPath.hasSuffix("/") ? String(containerPath.dropLast()) : containerPath
+        if WorseQuery.isGrantApplicable {
+            let handle = WorseQuery.grantContainerAccess(clean)
+            if handle >= 0 { return handle }
+            log("browser: worse_query grant failed \(clean) -> \(handle); falling back to bad_query")
+        }
         var pathC = clean.utf8CString.map { Int8($0) }
         return bad_query(&pathC, true, nil, false)
+    }
+
+    static func releaseContainerAccess(_ handle: Int64) {
+        guard handle >= 0 else { return }
+        // worse_query_release e bad_query_release descem no mesmo
+        // sandbox_extension_release; um único caminho cobre os dois.
+        WorseQuery.release(handle)
     }
 
     static func containersFromFilesystem() -> [InstalledApp] {
@@ -585,7 +601,7 @@ enum ContainerStore {
 
         let handle = grantContainerAccess(fallback.containerPath)
         defer {
-            if handle >= 0 { bad_query_release(handle) }
+            if handle >= 0 { releaseContainerAccess(handle) }
         }
 
         let libraryPath = (fallback.containerPath as NSString).appendingPathComponent("Library")

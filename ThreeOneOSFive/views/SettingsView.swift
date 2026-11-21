@@ -87,8 +87,7 @@ struct SettingsView: View {
                     LabeledContent("iOS 18", value: ExploitSupportPolicy.verifiedIOS18Range)
                     LabeledContent("iOS 26", value: ExploitSupportPolicy.verifiedIOS26Range)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("iOS 27.0")
-                            .font(.body)
+                        LabeledContent("iOS 27", value: ExploitSupportPolicy.verifiedIOS27Range)
                         ForEach(ExploitSupportPolicy.verifiedIOS27Builds, id: \.build) { version in
                             Text(versionLabel(version))
                             .font(.caption.monospaced())

@@ -16,12 +16,10 @@ struct FunctionPayloadManifest: Decodable, Equatable {
     let sha256: String?
     let notes: String?
     let publishedAt: Double?
-    let secondFilename: String?
-    let secondSha256: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, summary, status, available, version, filename
-        case bundleID, relativePath, destinationPath, byteSize, sha256, notes, publishedAt, secondFilename, secondSha256
+        case bundleID, relativePath, destinationPath, byteSize, sha256, notes, publishedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -42,8 +40,6 @@ struct FunctionPayloadManifest: Decodable, Equatable {
         sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
         publishedAt = try container.decodeIfPresent(Double.self, forKey: .publishedAt)
-        secondFilename = try container.decodeIfPresent(String.self, forKey: .secondFilename)
-        secondSha256 = try container.decodeIfPresent(String.self, forKey: .secondSha256)
     }
 }
 
@@ -193,16 +189,15 @@ final class FunctionPatchClient {
         grant: String,
         sessionToken: String,
         expectedSHA256: String,
-        version: Int? = nil,
-        fileSlot: Int = 1
+        version: Int? = nil
     ) async throws -> FunctionPayload {
         var components = URLComponents(
             url: baseURL.appendingPathComponent("api/v1/functions/\(functionID)/payload"),
             resolvingAgainstBaseURL: false
         )
-        var queryItems: [URLQueryItem] = [URLQueryItem(name: "file", value: String(fileSlot))]
-        if let version { queryItems.append(URLQueryItem(name: "version", value: String(version))) }
-        components?.queryItems = queryItems
+        if let version {
+            components?.queryItems = [URLQueryItem(name: "version", value: String(version))]
+        }
         guard let url = components?.url else { throw FunctionPatchError.invalidServerURL }
 
         var request = URLRequest(url: url)

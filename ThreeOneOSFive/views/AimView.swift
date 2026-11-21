@@ -37,7 +37,6 @@ final class AimViewModel: ObservableObject {
         baseURL: URL,
         expectedSHA256: String,
         expectedVersion: Int?,
-        expectedSecondSHA256: String? = nil,
         access: KeyAuthAccess,
         onAccessUpdated: @escaping (KeyAuthAccess) -> Void
     ) async {
@@ -62,30 +61,10 @@ final class AimViewModel: ObservableObject {
                 grant: validatedAccess.grant,
                 sessionToken: validatedAccess.sessionToken,
                 expectedSHA256: expectedSHA256,
-                version: expectedVersion,
-                fileSlot: 1
+                version: expectedVersion
             )
-            let secondPayload: FunctionPayload?
-            if function.id == "mod-menu" {
-                guard let expectedSecondSHA256, expectedSecondSHA256.count == 64 else {
-                    throw FunctionPatchError.payloadUnavailable("segundo arquivo do Mod Menu")
-                }
-                secondPayload = try await client.download(
-                    functionID: function.id, baseURL: baseURL, grant: validatedAccess.grant,
-                    sessionToken: validatedAccess.sessionToken, expectedSHA256: expectedSecondSHA256,
-                    version: expectedVersion, fileSlot: 2
-                )
-            } else { secondPayload = nil }
             let receipt = try await Task.detached(priority: .userInitiated) {
-                if function.id == "mod-menu", let secondPayload {
-                    return try FunctionPatchStore.applyTwoFiles(
-                        functionID: function.id, bundleID: target,
-                        firstURL: payload.fileURL, firstFilename: payload.filename,
-                        secondURL: secondPayload.fileURL, secondFilename: secondPayload.filename,
-                        destinationDirectory: payload.relativePath
-                    )
-                }
-                return try FunctionPatchStore.apply(
+                try FunctionPatchStore.apply(
                     functionID: function.id,
                     bundleID: target,
                     payloadURL: payload.fileURL,
@@ -328,7 +307,6 @@ struct AimView: View {
                 baseURL: baseURL,
                 expectedSHA256: expectedSHA256,
                 expectedVersion: manifest.version,
-                expectedSecondSHA256: manifest.secondSha256,
                 access: access,
                 onAccessUpdated: onAccessUpdated
             )
