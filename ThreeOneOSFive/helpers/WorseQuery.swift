@@ -23,15 +23,12 @@ enum WorseQueryConfig {
 }
 
 enum WorseQuery {
-    /// Faixa do worse_query: iOS 26.7+ e 27.x. De 26.0 a 26.6.2 o bad_query
-    /// ainda funciona e segue como provedor; abaixo de 26 o fluxo antigo
-    /// (kernel r/w + FileManager direto) permanece intocado.
+    /// Faixa do worse_query: todo iOS 26+ (26.0–26.7.2, 27.x, 27.3 beta).
+    /// Os query flags auto-calibram por build, então o mesmo caminho cobre
+    /// a faixa antiga do bad_query — ele fica só de fallback. Abaixo de 26
+    /// segue o kernel exploit (17/18).
     static var isGrantApplicable: Bool {
-        let v = ProcessInfo.processInfo.operatingSystemVersion
-        if v.majorVersion == 26 {
-            return v.minorVersion > 6 || (v.minorVersion == 6 && v.patchVersion > 2)
-        }
-        return v.majorVersion >= 27
+        ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 26
     }
 
     /// Consome uma sandbox extension para `path` via worse_query.
@@ -65,6 +62,12 @@ enum WorseQuery {
         cachedAccess = ok
         log("worse_query: access probe \(accessProbePath) -> \(ok) (handle=\(handle))")
         return ok
+    }
+
+    /// Re-arma a sonda — chame a cada ativação do app: a assinatura não
+    /// muda em runtime, mas o estado do daemon/group pode.
+    static func resetProbeCache() {
+        cachedAccess = nil
     }
 
     /// Enumeração de diretórios por inode. pathleak é o sucessor mais rápido

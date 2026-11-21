@@ -9,7 +9,7 @@
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
-    <string>app.star9796.celery7370</string>
+    <string>com.apple.mobile.MobileHouseArrest</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

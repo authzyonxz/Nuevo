@@ -67,6 +67,7 @@ class AppState: ObservableObject {
     var isSupported: Bool { unsupportedMessage == nil }
 
     func detectSupport() {
+        WorseQuery.resetProbeCache()
         let v = AppInfo.versionTuple
         let appVersionListed = ExploitSupportPolicy.isAppVersionListed(
             major: v.major,

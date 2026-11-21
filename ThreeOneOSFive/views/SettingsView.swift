@@ -86,15 +86,7 @@ struct SettingsView: View {
                     LabeledContent("iOS 17", value: ExploitSupportPolicy.verifiedIOS17Range)
                     LabeledContent("iOS 18", value: ExploitSupportPolicy.verifiedIOS18Range)
                     LabeledContent("iOS 26", value: ExploitSupportPolicy.verifiedIOS26Range)
-                    VStack(alignment: .leading, spacing: 8) {
-                        LabeledContent("iOS 27", value: ExploitSupportPolicy.verifiedIOS27Range)
-                        ForEach(ExploitSupportPolicy.verifiedIOS27Builds, id: \.build) { version in
-                            Text(versionLabel(version))
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 2)
+                    LabeledContent("iOS 27", value: ExploitSupportPolicy.verifiedIOS27Range)
                 } header: {
                     Text(language.text("settings.verified_versions"))
                 } footer: {

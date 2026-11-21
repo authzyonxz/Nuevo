@@ -115,21 +115,28 @@ enum ContainerStore {
     }
 
     static func resolveAppContainerPathByMetadataScan(bundleID: String) -> String? {
-        // iOS < 26: kernel R/W is enough, no need to require full sandbox escape
-        // iOS 26.7+/27.x: worse_query grants são o acesso (sem kexploit)
-        if KernelExploit.requiresSandboxEscape,
-           !KernelExploit.hasSandboxAccess(),
-           !WorseQuery.accessAvailable {
-            log("patch: metadata scan skipped — sandbox access not active")
-            return nil
-        }
-        // Grant recursivo na raiz cobre a leitura dos metadata plists de cada
-        // container. Na faixa worse_query (26.7+/27.x) isso substitui o
-        // sandbox escape do kexploit.
+        // Caminho rápido: grant recursivo na raiz + listagem direta.
         let rootHandle = grantContainerAccess(appDataRoot)
-        defer {
-            if rootHandle >= 0 { releaseContainerAccess(rootHandle) }
+        if rootHandle >= 0 {
+            defer { releaseContainerAccess(rootHandle) }
+            if let names = try? FileManager.default.contentsOfDirectory(atPath: appDataRoot),
+               !names.isEmpty {
+                for name in names {
+                    guard UUID(uuidString: name) != nil else { continue }
+                    let dir = (appDataRoot as NSString).appendingPathComponent(name)
+                    guard let metadata = readContainerMetadata(containerPath: dir),
+                          metadata.bundleID == bundleID else { continue }
+                    let canonical = ContainerDiscoveryMerger.canonicalPath(dir)
+                    guard isApplicationContainerPath(canonical) else { continue }
+                    return canonical
+                }
+                return nil
+            }
         }
+
+        // Fallback: enumeração por inode (não exige permissão) + grant por
+        // container antes de ler o metadata plist. Cobre a faixa 26+ mesmo
+        // quando o grant da raiz é negado.
         let dirs = enumerateDirectories(path: appDataRoot)
         guard !dirs.isEmpty else {
             log("patch: metadata scan unavailable — no containers enumerated")
@@ -137,6 +144,10 @@ enum ContainerStore {
         }
         for dir in dirs {
             guard UUID(uuidString: (dir as NSString).lastPathComponent) != nil else { continue }
+            let handle = grantContainerAccess(dir)
+            defer {
+                if handle >= 0 { releaseContainerAccess(handle) }
+            }
             guard let metadata = readContainerMetadata(containerPath: dir),
                   metadata.bundleID == bundleID else { continue }
             let canonical = ContainerDiscoveryMerger.canonicalPath(dir)

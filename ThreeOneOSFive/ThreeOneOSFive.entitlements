@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  O App Group NÃO vai aqui. O worse_query lê com.apple.security.application-groups
+  da assinatura FINAL em runtime (SecTaskCopyValueForEntitlement) — o grupo é o
+  que o instalador injetar na hora de re-assinar (ESign/GBox/etc.). O build
+  não carrega grupo nenhum e não fica amarrado a perfil nenhum.
+
+  Se assinares direto no Xcode com um perfil próprio que tenha App Groups,
+  adiciona aqui o(s) grupo(s) autorizado(s) nesse perfil antes de buildar:
+
+      <key>com.apple.security.application-groups</key>
+      <array>
+          <string>group.algum.autorizado</string>
+      </array>
+-->
 <plist version="1.0">
 <dict>
-	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>group.079cb3b670710588.1</string>
-		<string>group.079cb3b670710588.2</string>
-		<string>group.079cb3b670710588.3</string>
-		<string>group.079cb3b670710588.4</string>
-		<string>group.079cb3b670710588.5</string>
-	</array>
 </dict>
 </plist>
